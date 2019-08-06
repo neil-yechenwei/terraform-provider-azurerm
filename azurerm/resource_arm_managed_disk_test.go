@@ -27,6 +27,8 @@ func TestAccAzureRMManagedDisk_empty(t *testing.T) {
 				Config: testAccAzureRMManagedDisk_empty(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMManagedDiskExists(resourceName, &d, true),
+					resource.TestCheckResourceAttr(resourceName, "disk_iops_read_write", "500"),
+					resource.TestCheckResourceAttr(resourceName, "disk_mbps_read_write", "60"),
 				),
 			},
 			{
