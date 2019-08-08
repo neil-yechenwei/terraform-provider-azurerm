@@ -32,8 +32,6 @@ func TestAccDataSourceAzureRMManagedDisk_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "tags.environment", "acctest"),
 					resource.TestCheckResourceAttr(dataSourceName, "zones.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "zones.0", "2"),
-					resource.TestCheckResourceAttr(dataSourceName, "disk_iops_read_write", "120"),
-					resource.TestCheckResourceAttr(dataSourceName, "disk_mbps_read_write", "25"),
 				),
 			},
 		},
