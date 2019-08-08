@@ -100,7 +100,7 @@ func resourceArmNetworkInterfaceApplicationGatewayBackendAddressPoolAssociationC
 
 	pools := make([]network.ApplicationGatewayBackendAddressPool, 0)
 
-	// first double-check it doesn't exist
+	// first double-check it doesn't exist 123
 	resourceId := fmt.Sprintf("%s/ipConfigurations/%s|%s", networkInterfaceId, ipConfigurationName, backendAddressPoolId)
 	if p.ApplicationGatewayBackendAddressPools != nil {
 		for _, existingPool := range *p.ApplicationGatewayBackendAddressPools {
