@@ -199,7 +199,7 @@ func resourceArmManagedDiskCreateUpdate(d *schema.ResourceData, meta interface{}
 		}
 	} else {
 		if d.HasChange("disk_iops_read_write") || d.HasChange("disk_mbps_read_write") {
-			return fmt.Errorf("Both disk_iops_read_write and disk_mbps_read_write are only available for UltraSSD disks")
+			return fmt.Errorf("[ERROR] Both disk_iops_read_write and disk_mbps_read_write are only available for UltraSSD disks")
 		}
 	}
 
