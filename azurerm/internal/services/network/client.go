@@ -2,6 +2,7 @@ package network
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
+	networkMgmt "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/common"
 )
 
@@ -25,12 +26,13 @@ type Client struct {
 	RouteTablesClient               network.RouteTablesClient
 	SecurityGroupClient             network.SecurityGroupsClient
 	SecurityRuleClient              network.SecurityRulesClient
-	SubnetsClient                   network.SubnetsClient
+	SubnetsClient                   networkMgmt.SubnetsClient
 	VnetGatewayConnectionsClient    network.VirtualNetworkGatewayConnectionsClient
 	VnetGatewayClient               network.VirtualNetworkGatewaysClient
-	VnetClient                      network.VirtualNetworksClient
+	VnetClient                      networkMgmt.VirtualNetworksClient
 	VnetPeeringsClient              network.VirtualNetworkPeeringsClient
 	WatcherClient                   network.WatchersClient
+	PrivateLinkServiceClient        networkMgmt.PrivateLinkServicesClient
 }
 
 func BuildClient(o *common.ClientOptions) *Client {
@@ -72,7 +74,7 @@ func BuildClient(o *common.ClientOptions) *Client {
 	c.ProfileClient = network.NewProfilesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&c.ProfileClient.Client, o.ResourceManagerAuthorizer)
 
-	c.VnetClient = network.NewVirtualNetworksClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	c.VnetClient = networkMgmt.NewVirtualNetworksClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&c.VnetClient.Client, o.ResourceManagerAuthorizer)
 
 	c.PacketCapturesClient = network.NewPacketCapturesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
@@ -99,7 +101,7 @@ func BuildClient(o *common.ClientOptions) *Client {
 	c.SecurityRuleClient = network.NewSecurityRulesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&c.SecurityRuleClient.Client, o.ResourceManagerAuthorizer)
 
-	c.SubnetsClient = network.NewSubnetsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	c.SubnetsClient = networkMgmt.NewSubnetsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&c.SubnetsClient.Client, o.ResourceManagerAuthorizer)
 
 	c.VnetGatewayClient = network.NewVirtualNetworkGatewaysClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
@@ -110,6 +112,9 @@ func BuildClient(o *common.ClientOptions) *Client {
 
 	c.WatcherClient = network.NewWatchersClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&c.WatcherClient.Client, o.ResourceManagerAuthorizer)
+
+	c.PrivateLinkServiceClient = networkMgmt.NewPrivateLinkServicesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&c.PrivateLinkServiceClient.Client, o.ResourceManagerAuthorizer)
 
 	return &c
 }
