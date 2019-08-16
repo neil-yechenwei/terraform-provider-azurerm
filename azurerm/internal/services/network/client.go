@@ -31,8 +31,8 @@ type Client struct {
 	VnetGatewayClient               *network.VirtualNetworkGatewaysClient
 	VnetClient                      *networkMgmt.VirtualNetworksClient
 	VnetPeeringsClient              *network.VirtualNetworkPeeringsClient
-	VirtualWanClient                *network.VirtualWansClient  
-  PrivateLinkServiceClient        *networkMgmt.PrivateLinkServicesClient
+	VirtualWanClient                *network.VirtualWansClient
+	PrivateLinkServiceClient        *networkMgmt.PrivateLinkServicesClient
 	WatcherClient                   *network.WatchersClient
 }
 
@@ -113,7 +113,7 @@ func BuildClient(o *common.ClientOptions) *Client {
 	VirtualWanClient := network.NewVirtualWansClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&VirtualWanClient.Client, o.ResourceManagerAuthorizer)
 
-  PrivateLinkServiceClient := networkMgmt.NewPrivateLinkServicesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	PrivateLinkServiceClient := networkMgmt.NewPrivateLinkServicesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&PrivateLinkServiceClient.Client, o.ResourceManagerAuthorizer)
 
 	WatcherClient := network.NewWatchersClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
@@ -145,7 +145,7 @@ func BuildClient(o *common.ClientOptions) *Client {
 		VnetClient:                      &VnetClient,
 		VnetPeeringsClient:              &VnetPeeringsClient,
 		VirtualWanClient:                &VirtualWanClient,
-    PrivateLinkServiceClient:        &PrivateLinkServiceClient,
+		PrivateLinkServiceClient:        &PrivateLinkServiceClient,
 		WatcherClient:                   &WatcherClient,
 	}
 }
