@@ -435,20 +435,17 @@ func flattenArmIPConfigurations(input *[]network.PrivateLinkServiceIPConfigurati
 
 	for _, ipConfig := range *input {
 		data := make(map[string]interface{})
+
+		data["private_ip_address_allocation"] = ipConfig.PrivateIPAllocationMethod
+
+		data["private_ip_address_version"] = ipConfig.PrivateIPAddressVersion
+
 		if ipConfig.Name != nil {
 			data["name"] = *ipConfig.Name
 		}
 
 		if ipConfig.PrivateIPAddress != nil {
 			data["private_ip_address"] = *ipConfig.PrivateIPAddress
-		}
-
-		if &ipConfig.PrivateIPAllocationMethod != nil {
-			data["private_ip_address_allocation"] = ipConfig.PrivateIPAllocationMethod
-		}
-
-		if &ipConfig.PrivateIPAddressVersion != nil {
-			data["private_ip_address_version"] = ipConfig.PrivateIPAddressVersion
 		}
 
 		if ipConfig.Subnet != nil {
