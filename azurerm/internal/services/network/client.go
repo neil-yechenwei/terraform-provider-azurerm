@@ -31,6 +31,7 @@ type Client struct {
 	VnetClient                      *network.VirtualNetworksClient
 	VnetPeeringsClient              *network.VirtualNetworkPeeringsClient
 	VirtualWanClient                *network.VirtualWansClient
+	VirtualHubClient                *network.VirtualHubsClient
 	WatcherClient                   *network.WatchersClient
 }
 
@@ -111,6 +112,9 @@ func BuildClient(o *common.ClientOptions) *Client {
 	VirtualWanClient := network.NewVirtualWansClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&VirtualWanClient.Client, o.ResourceManagerAuthorizer)
 
+	VirtualHubClient := network.NewVirtualHubsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&VirtualHubClient.Client, o.ResourceManagerAuthorizer)
+
 	WatcherClient := network.NewWatchersClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&WatcherClient.Client, o.ResourceManagerAuthorizer)
 
@@ -140,6 +144,7 @@ func BuildClient(o *common.ClientOptions) *Client {
 		VnetClient:                      &VnetClient,
 		VnetPeeringsClient:              &VnetPeeringsClient,
 		VirtualWanClient:                &VirtualWanClient,
+		VirtualHubClient:                &VirtualHubClient,
 		WatcherClient:                   &WatcherClient,
 	}
 }
