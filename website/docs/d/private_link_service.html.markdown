@@ -26,6 +26,7 @@ output "private_link_service_id" {
 ## Argument Reference
 
 * `name` - (Required) Specifies the name of the Private Link Service.
+
 * `resource_group_name` - (Required) Specifies the name of the resource group the Private Link Service is located in.
 
 ## Attributes Reference

@@ -91,7 +91,7 @@ The following arguments are supported:
 
 * `ip_configuration` - (Optional) An array of references to the private link service IP configuration.
 
-* `load_balancer_frontend_ip_configuration` - (Optional) An array of references to the load balancer IP configurations.
+* `load_balancer_frontend_ip_configuration` - (Optional) An array of references to the load balancer IP configurations. It only supports Internal Load Balancer.
 
 * `auto_approval_subscription_names` - (Optional) The auto-approval list of the private link service.
 
