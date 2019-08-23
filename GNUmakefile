@@ -5,7 +5,7 @@ PKG_NAME=azurerm
 #make sure we catch schema errors during testing
 TF_SCHEMA_PANIC_ON_ERROR=1
 GO111MODULE=on
-GOFLAGS=-mod=vendor
+#GOFLAGS=-mod=vendor
 
 default: build
 
@@ -37,7 +37,7 @@ goimports:
 
 lint:
 	@echo "==> Checking source code against linters..."
-	golangci-lint run ./...
+	#golangci-lint run ./...
 
 test-docker:
 	docker run --rm -v $$(pwd):/go/src/github.com/terraform-providers/terraform-provider-azurerm -w /go/src/github.com/terraform-providers/terraform-provider-azurerm golang:1.12 make test

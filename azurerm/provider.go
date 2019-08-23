@@ -117,6 +117,7 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_virtual_network_gateway":                dataSourceArmVirtualNetworkGateway(),
 		"azurerm_virtual_network_gateway_connection":     dataSourceArmVirtualNetworkGatewayConnection(),
 		"azurerm_virtual_network":                        dataSourceArmVirtualNetwork(),
+		"azurerm_private_link_service":                   dataSourceArmPrivateLinkService(),
 	}
 
 	resources := map[string]*schema.Resource{
@@ -394,6 +395,7 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_virtual_network_peering":                                                resourceArmVirtualNetworkPeering(),
 		"azurerm_virtual_network":                                                        resourceArmVirtualNetwork(),
 		"azurerm_virtual_wan":                                                            resourceArmVirtualWan(),
+		"azurerm_private_link_service":                                                   resourceArmPrivateLinkService(),
 	}
 
 	for _, service := range supportedServices {
