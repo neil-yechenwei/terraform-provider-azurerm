@@ -37,7 +37,7 @@ goimports:
 
 lint:
 	@echo "==> Checking source code against linters..."
-	golangci-lint run --disable-all ./..
+	golangci-lint run --disable-all ./...
 
 test-docker:
 	docker run --rm -v $$(pwd):/go/src/github.com/terraform-providers/terraform-provider-azurerm -w /go/src/github.com/terraform-providers/terraform-provider-azurerm golang:1.12 make test
