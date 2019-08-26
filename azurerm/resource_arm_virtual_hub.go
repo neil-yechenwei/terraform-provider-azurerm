@@ -357,7 +357,9 @@ func expandArmHubVirtualNetworkConnections(d *schema.ResourceData) *[]network.Hu
 	hubVirtualNetworkConnections := make([]network.HubVirtualNetworkConnection, 0)
 	for _, v := range data {
 		connection := v.(map[string]interface{})
-		hubVirtualNetworkConnection := network.HubVirtualNetworkConnection{}
+		hubVirtualNetworkConnection := network.HubVirtualNetworkConnection{
+			HubVirtualNetworkConnectionProperties: &network.HubVirtualNetworkConnectionProperties{},
+		}
 
 		id := connection["id"].(string)
 		if id != "" {
@@ -369,19 +371,22 @@ func expandArmHubVirtualNetworkConnections(d *schema.ResourceData) *[]network.Hu
 			hubVirtualNetworkConnection.Name = &name
 		}
 
-		allowHubToRemoteVnetTransit := connection["allow_hub_to_remote_vnet_transit"].(bool)
-		hubVirtualNetworkConnection.AllowHubToRemoteVnetTransit = &allowHubToRemoteVnetTransit
+		if allowHubToRemoteVnetTransit := connection["allow_hub_to_remote_vnet_transit"]; allowHubToRemoteVnetTransit != nil {
+			hubVirtualNetworkConnection.HubVirtualNetworkConnectionProperties.AllowHubToRemoteVnetTransit = utils.Bool(allowHubToRemoteVnetTransit.(bool))
+		}
 
-		allowRemoteVnetToUseHubVnetGateways := connection["allow_remote_vnet_to_use_hub_vnet_gateways"].(bool)
-		hubVirtualNetworkConnection.AllowRemoteVnetToUseHubVnetGateways = &allowRemoteVnetToUseHubVnetGateways
+		if allowRemoteVnetToUseHubVnetGateways := connection["allow_remote_vnet_to_use_hub_vnet_gateways"]; allowRemoteVnetToUseHubVnetGateways != nil {
+			hubVirtualNetworkConnection.HubVirtualNetworkConnectionProperties.AllowRemoteVnetToUseHubVnetGateways = utils.Bool(allowRemoteVnetToUseHubVnetGateways.(bool))
+		}
 
-		enableInternetSecurity := connection["enable_internet_security"].(bool)
-		hubVirtualNetworkConnection.EnableInternetSecurity = &enableInternetSecurity
+		if enableInternetSecurity := connection["enable_internet_security"]; enableInternetSecurity != nil {
+			hubVirtualNetworkConnection.HubVirtualNetworkConnectionProperties.EnableInternetSecurity = utils.Bool(enableInternetSecurity.(bool))
+		}
 
-		remoteVirtualNetworkId := connection["remote_virtual_network_id"].(string)
-		log.Print("[neil] %s", remoteVirtualNetworkId)
-		if remoteVirtualNetworkId != "" {
-			hubVirtualNetworkConnection.RemoteVirtualNetwork.ID = &remoteVirtualNetworkId
+		if remoteVirtualNetworkId := connection["remote_virtual_network_id"]; remoteVirtualNetworkId != "" {
+			hubVirtualNetworkConnection.RemoteVirtualNetwork = &network.SubResource{
+				ID: utils.String(remoteVirtualNetworkId.(string)),
+			}
 		}
 
 		hubVirtualNetworkConnections = append(hubVirtualNetworkConnections, hubVirtualNetworkConnection)
