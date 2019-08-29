@@ -83,6 +83,7 @@ func resourceArmVirtualHub() *schema.Resource {
 						"id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 
 						"name": {

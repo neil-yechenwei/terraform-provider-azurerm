@@ -9,7 +9,9 @@ import (
 
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/locks"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -113,7 +115,7 @@ func resourceArmVirtualNetwork() *schema.Resource {
 				Set: resourceAzureSubnetHash,
 			},
 
-			"tags": tagsSchema(),
+			"tags": tags.Schema(),
 		},
 	}
 }
@@ -127,7 +129,7 @@ func resourceArmVirtualNetworkCreateUpdate(d *schema.ResourceData, meta interfac
 	name := d.Get("name").(string)
 	resGroup := d.Get("resource_group_name").(string)
 
-	if requireResourcesToBeImported && d.IsNewResource() {
+	if features.ShouldResourcesBeImported() && d.IsNewResource() {
 		existing, err := client.Get(ctx, resGroup, name, "")
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {
@@ -141,7 +143,7 @@ func resourceArmVirtualNetworkCreateUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	location := azure.NormalizeLocation(d.Get("location").(string))
-	tags := d.Get("tags").(map[string]interface{})
+	t := d.Get("tags").(map[string]interface{})
 
 	vnetProperties, vnetPropsErr := expandVirtualNetworkProperties(ctx, d, meta)
 	if vnetPropsErr != nil {
@@ -152,19 +154,21 @@ func resourceArmVirtualNetworkCreateUpdate(d *schema.ResourceData, meta interfac
 		Name:                           &name,
 		Location:                       &location,
 		VirtualNetworkPropertiesFormat: vnetProperties,
-		Tags:                           expandTags(tags),
+		Tags:                           tags.Expand(t),
 	}
 
 	networkSecurityGroupNames := make([]string, 0)
 	for _, subnet := range *vnet.VirtualNetworkPropertiesFormat.Subnets {
 		if subnet.NetworkSecurityGroup != nil {
-			nsgName, err := parseNetworkSecurityGroupName(*subnet.NetworkSecurityGroup.ID)
+			parsedNsgID, err := azure.ParseAzureResourceID(*subnet.NetworkSecurityGroup.ID)
 			if err != nil {
-				return err
+				return fmt.Errorf("Error parsing Network Security Group ID %q: %+v", *subnet.NetworkSecurityGroup.ID, err)
 			}
 
-			if !sliceContainsValue(networkSecurityGroupNames, nsgName) {
-				networkSecurityGroupNames = append(networkSecurityGroupNames, nsgName)
+			networkSecurityGroupName := parsedNsgID.Path["networkSecurityGroups"]
+
+			if !sliceContainsValue(networkSecurityGroupNames, networkSecurityGroupName) {
+				networkSecurityGroupNames = append(networkSecurityGroupNames, networkSecurityGroupName)
 			}
 		}
 	}
@@ -238,9 +242,7 @@ func resourceArmVirtualNetworkRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
-	flattenAndSetTags(d, resp.Tags)
-
-	return nil
+	return tags.FlattenAndSet(d, resp.Tags)
 }
 
 func resourceArmVirtualNetworkDelete(d *schema.ResourceData, meta interface{}) error {
@@ -256,7 +258,7 @@ func resourceArmVirtualNetworkDelete(d *schema.ResourceData, meta interface{}) e
 
 	nsgNames, err := expandAzureRmVirtualNetworkVirtualNetworkSecurityGroupNames(d)
 	if err != nil {
-		return fmt.Errorf("[ERROR] Error parsing Network Security Group ID's: %+v", err)
+		return fmt.Errorf("Error parsing Network Security Group ID's: %+v", err)
 	}
 
 	locks.MultipleByName(&nsgNames, virtualNetworkResourceName)
@@ -458,13 +460,15 @@ func expandAzureRmVirtualNetworkVirtualNetworkSecurityGroupNames(d *schema.Resou
 
 			networkSecurityGroupId := subnet["security_group"].(string)
 			if networkSecurityGroupId != "" {
-				nsgName, err := parseNetworkSecurityGroupName(networkSecurityGroupId)
+				parsedNsgID, err := azure.ParseAzureResourceID(networkSecurityGroupId)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("Error parsing Network Security Group ID %q: %+v", networkSecurityGroupId, err)
 				}
 
-				if !sliceContainsValue(nsgNames, nsgName) {
-					nsgNames = append(nsgNames, nsgName)
+				networkSecurityGroupName := parsedNsgID.Path["networkSecurityGroups"]
+
+				if !sliceContainsValue(nsgNames, networkSecurityGroupName) {
+					nsgNames = append(nsgNames, networkSecurityGroupName)
 				}
 			}
 		}
