@@ -21,13 +21,14 @@ func Provider() terraform.ResourceProvider {
 	// the Service Registration interface to gradually migrate Data Sources/Resources over to the
 	// new pattern.
 	// However this requires that the following be done first:
-	//  1. Migrating the top level functions into the internal package
-	//		e.g. deprecated.go, locks.go
-	//	2. Switch the remaining resources over to the new Storage SDK
+	//  1. (DONE) Migrating the top level functions into the internal package
+	//	2. (DONE) Finish migrating the SDK Clients into Packages
+	//	3. Switch the remaining resources over to the new Storage SDK
 	//		(so we can remove `getBlobStorageClientForStorageAccount` from `config.go`)
-	//	3. Finish migrating the SDK Clients into Packages
 	//	4. Making the SDK Clients public in the ArmClient prior to moving
-	//	5. Migrating the `ArmClient` from `common.go` into internal/common/clients.go
+	//  5. Introducing a parent struct which becomes a nested field in `config.go`
+	//  	for those properties, to ease migration (probably internal/common/clients.go)
+	//	6. Migrating references from the `ArmClient` to the new parent client
 	//
 	// For the moment/until that's done, we'll have to continue defining these inline
 	supportedServices := []common.ServiceRegistration{}
@@ -178,12 +179,14 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_cognitive_account":                                  resourceArmCognitiveAccount(),
 		"azurerm_connection_monitor":                                 resourceArmConnectionMonitor(),
 		"azurerm_container_group":                                    resourceArmContainerGroup(),
+		"azurerm_container_registry_webhook":                         resourceArmContainerRegistryWebhook(),
 		"azurerm_container_registry":                                 resourceArmContainerRegistry(),
 		"azurerm_container_service":                                  resourceArmContainerService(),
 		"azurerm_cosmosdb_account":                                   resourceArmCosmosDbAccount(),
 		"azurerm_cosmosdb_cassandra_keyspace":                        resourceArmCosmosDbCassandraKeyspace(),
 		"azurerm_cosmosdb_mongo_collection":                          resourceArmCosmosDbMongoCollection(),
 		"azurerm_cosmosdb_mongo_database":                            resourceArmCosmosDbMongoDatabase(),
+		"azurerm_cosmosdb_sql_container":                             resourceArmCosmosDbSQLContainer(),
 		"azurerm_cosmosdb_sql_database":                              resourceArmCosmosDbSQLDatabase(),
 		"azurerm_cosmosdb_table":                                     resourceArmCosmosDbTable(),
 		"azurerm_data_factory":                                       resourceArmDataFactory(),
@@ -281,6 +284,7 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_mariadb_database":                                   resourceArmMariaDbDatabase(),
 		"azurerm_mariadb_firewall_rule":                              resourceArmMariaDBFirewallRule(),
 		"azurerm_mariadb_server":                                     resourceArmMariaDbServer(),
+		"azurerm_mariadb_virtual_network_rule":                       resourceArmMariaDbVirtualNetworkRule(),
 		"azurerm_media_services_account":                             resourceArmMediaServicesAccount(),
 		"azurerm_metric_alertrule":                                   resourceArmMetricAlertRule(),
 		"azurerm_monitor_autoscale_setting":                          resourceArmMonitorAutoScaleSetting(),
@@ -359,6 +363,7 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_sql_active_directory_administrator":                                     resourceArmSqlAdministrator(),
 		"azurerm_sql_database":                                                           resourceArmSqlDatabase(),
 		"azurerm_sql_elasticpool":                                                        resourceArmSqlElasticPool(),
+		"azurerm_sql_failover_group":                                                     resourceArmSqlFailoverGroup(),
 		"azurerm_sql_firewall_rule":                                                      resourceArmSqlFirewallRule(),
 		"azurerm_sql_server":                                                             resourceArmSqlServer(),
 		"azurerm_sql_virtual_network_rule":                                               resourceArmSqlVirtualNetworkRule(),
@@ -395,6 +400,12 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_virtual_network_peering":                                                resourceArmVirtualNetworkPeering(),
 		"azurerm_virtual_network":                                                        resourceArmVirtualNetwork(),
 		"azurerm_virtual_wan":                                                            resourceArmVirtualWan(),
+		"azurerm_recovery_services_fabric":                                               resourceArmRecoveryServicesFabric(),
+		"azurerm_recovery_services_protection_container":                                 resourceArmRecoveryServicesProtectionContainer(),
+		"azurerm_recovery_services_replication_policy":                                   resourceArmRecoveryServicesReplicationPolicy(),
+		"azurerm_recovery_services_protection_container_mapping":                         resourceArmRecoveryServicesProtectionContainerMapping(),
+		"azurerm_recovery_network_mapping":                                               resourceArmRecoveryServicesNetworkMapping(),
+		"azurerm_recovery_replicated_vm":                                                 resourceArmRecoveryServicesReplicatedVm(),
 		"azurerm_private_link_service":                                                   resourceArmPrivateLinkService(),
 	}
 
