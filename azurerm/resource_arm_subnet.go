@@ -119,13 +119,13 @@ func resourceArmSubnet() *schema.Resource {
 								},
 							},
 						},
-
-						"private_link_service_network_policies": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
 					},
 				},
+			},
+
+			"private_link_service_network_policies": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
