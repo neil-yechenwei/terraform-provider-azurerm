@@ -169,17 +169,23 @@ func resourceArmVirtualHubCreateUpdate(d *schema.ResourceData, meta interface{})
 
 	expressRouteGatewayId := d.Get("express_route_gateway_id").(string)
 	if expressRouteGatewayId != "" {
-		hub.VirtualHubProperties.ExpressRouteGateway.ID = &expressRouteGatewayId
+		hub.VirtualHubProperties.ExpressRouteGateway = &network.SubResource{
+			ID: &expressRouteGatewayId,
+		}
 	}
 
 	p2SVpnGatewayId := d.Get("p2s_vpn_gateway_id").(string)
 	if p2SVpnGatewayId != "" {
-		hub.VirtualHubProperties.P2SVpnGateway.ID = &p2SVpnGatewayId
+		hub.VirtualHubProperties.P2SVpnGateway = &network.SubResource{
+			ID: &p2SVpnGatewayId,
+		}
 	}
 
 	vpnGatewayId := d.Get("vpn_gateway_id").(string)
 	if vpnGatewayId != "" {
-		hub.VirtualHubProperties.VpnGateway.ID = &vpnGatewayId
+		hub.VirtualHubProperties.VpnGateway = &network.SubResource{
+			ID: &vpnGatewayId,
+		}
 	}
 
 	virtualHubRoutes := expandArmRouteTable(d)
