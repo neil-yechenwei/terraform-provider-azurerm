@@ -6,7 +6,6 @@ PKG_NAME=azurerm
 TF_SCHEMA_PANIC_ON_ERROR=1
 GO111MODULE=on
 GOFLAGS=-mod=vendor
-GOPROXY=https://proxy.golang.org
 
 default: build
 
