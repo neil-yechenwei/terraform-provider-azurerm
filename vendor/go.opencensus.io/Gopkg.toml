@@ -4,8 +4,8 @@
 
 [[constraint]]
   branch = "master"
-  name = "git.apache.org/thrift.git"
-  source = "github.com/apache/thrift"
+  name = "git.apache.org/thrift"
+  source = "github.com/apache/thrift.git"
 
 [[constraint]]
   name = "github.com/golang/protobuf"
