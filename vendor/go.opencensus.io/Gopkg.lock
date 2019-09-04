@@ -4,7 +4,7 @@
 [[projects]]
   branch = "master"
   digest = "1:eee9386329f4fcdf8d6c0def0c9771b634bdd5ba460d888aa98c17d59b37a76c"
-  name = "github.com/apache/thrift"
+  name = "git.apache.org/thrift.git"
   packages = ["lib/go/thrift"]
   pruneopts = "UT"
   revision = "6e67faa92827ece022380b211c2caaadd6145bf5"
@@ -209,7 +209,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/apache/thrift/lib/go/thrift",
+    "git.apache.org/thrift.git/lib/go/thrift",
     "github.com/golang/protobuf/proto",
     "github.com/openzipkin/zipkin-go",
     "github.com/openzipkin/zipkin-go/model",
