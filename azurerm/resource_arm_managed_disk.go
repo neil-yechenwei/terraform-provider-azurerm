@@ -12,6 +12,8 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/response"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
@@ -101,8 +103,6 @@ func resourceArmManagedDisk() *schema.Resource {
 
 			"encryption_settings": encryptionSettingsSchema(),
 
-			"tags": tagsSchema(),
-
 			"disk_iops_read_write": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -114,6 +114,8 @@ func resourceArmManagedDisk() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+
+			"tags": tags.Schema(),
 		},
 	}
 }
@@ -128,7 +130,7 @@ func validateDiskSizeGB(v interface{}, _ string) (warnings []string, errors []er
 }
 
 func resourceArmManagedDiskCreateUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).diskClient
+	client := meta.(*ArmClient).compute.DisksClient
 	ctx := meta.(*ArmClient).StopContext
 
 	log.Printf("[INFO] preparing arguments for Azure ARM Managed Disk creation.")
@@ -136,7 +138,7 @@ func resourceArmManagedDiskCreateUpdate(d *schema.ResourceData, meta interface{}
 	name := d.Get("name").(string)
 	resGroup := d.Get("resource_group_name").(string)
 
-	if requireResourcesToBeImported && d.IsNewResource() {
+	if features.ShouldResourcesBeImported() && d.IsNewResource() {
 		existing, err := client.Get(ctx, resGroup, name)
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {
@@ -152,8 +154,8 @@ func resourceArmManagedDiskCreateUpdate(d *schema.ResourceData, meta interface{}
 	location := azure.NormalizeLocation(d.Get("location").(string))
 	storageAccountType := d.Get("storage_account_type").(string)
 	osType := d.Get("os_type").(string)
-	tags := d.Get("tags").(map[string]interface{})
-	expandedTags := expandTags(tags)
+	t := d.Get("tags").(map[string]interface{})
+	expandedTags := tags.Expand(t)
 	zones := azure.ExpandZones(d.Get("zones").([]interface{}))
 
 	var skuName compute.DiskStorageAccountTypes
@@ -259,10 +261,10 @@ func resourceArmManagedDiskCreateUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceArmManagedDiskRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).diskClient
+	client := meta.(*ArmClient).compute.DisksClient
 	ctx := meta.(*ArmClient).StopContext
 
-	id, err := parseAzureResourceID(d.Id())
+	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return err
 	}
@@ -291,9 +293,7 @@ func resourceArmManagedDiskRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	if props := resp.DiskProperties; props != nil {
-		if diskSize := props.DiskSizeGB; diskSize != nil {
-			d.Set("disk_size_gb", *diskSize)
-		}
+		d.Set("disk_size_gb", props.DiskSizeGB)
 		if osType := props.OsType; osType != "" {
 			d.Set("os_type", string(osType))
 		}
@@ -316,16 +316,14 @@ func resourceArmManagedDiskRead(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 
-	flattenAndSetTags(d, resp.Tags)
-
-	return nil
+	return tags.FlattenAndSet(d, resp.Tags)
 }
 
 func resourceArmManagedDiskDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).diskClient
+	client := meta.(*ArmClient).compute.DisksClient
 	ctx := meta.(*ArmClient).StopContext
 
-	id, err := parseAzureResourceID(d.Id())
+	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return err
 	}
@@ -350,13 +348,9 @@ func resourceArmManagedDiskDelete(d *schema.ResourceData, meta interface{}) erro
 
 func flattenAzureRmManagedDiskCreationData(d *schema.ResourceData, creationData *compute.CreationData) {
 	d.Set("create_option", string(creationData.CreateOption))
+	d.Set("source_resource_id", creationData.SourceResourceID)
+	d.Set("source_uri", creationData.SourceURI)
 	if ref := creationData.ImageReference; ref != nil {
-		d.Set("image_reference_id", *ref.ID)
-	}
-	if id := creationData.SourceResourceID; id != nil {
-		d.Set("source_resource_id", *id)
-	}
-	if creationData.SourceURI != nil {
-		d.Set("source_uri", *creationData.SourceURI)
+		d.Set("image_reference_id", ref.ID)
 	}
 }
