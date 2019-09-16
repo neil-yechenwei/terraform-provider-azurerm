@@ -16,9 +16,9 @@ import (
 
 func resourceArmDataFactoryLinkedServiceMySQL() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceArmDataFactoryLinkedServiceMySQLCreateOrUpdate,
+		Create: resourceArmDataFactoryLinkedServiceMySQLCreateUpdate,
 		Read:   resourceArmDataFactoryLinkedServiceMySQLRead,
-		Update: resourceArmDataFactoryLinkedServiceMySQLCreateOrUpdate,
+		Update: resourceArmDataFactoryLinkedServiceMySQLCreateUpdate,
 		Delete: resourceArmDataFactoryLinkedServiceMySQLDelete,
 
 		Importer: &schema.ResourceImporter{
@@ -69,6 +69,9 @@ func resourceArmDataFactoryLinkedServiceMySQL() *schema.Resource {
 			"parameters": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 
 			"annotations": {
@@ -82,12 +85,15 @@ func resourceArmDataFactoryLinkedServiceMySQL() *schema.Resource {
 			"additional_properties": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
 }
 
-func resourceArmDataFactoryLinkedServiceMySQLCreateOrUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceArmDataFactoryLinkedServiceMySQLCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).dataFactory.LinkedServiceClient
 	ctx := meta.(*ArmClient).StopContext
 
@@ -197,10 +203,7 @@ func resourceArmDataFactoryLinkedServiceMySQLRead(d *schema.ResourceData, meta i
 	}
 
 	d.Set("additional_properties", mysql.AdditionalProperties)
-
-	if mysql.Description != nil {
-		d.Set("description", *mysql.Description)
-	}
+	d.Set("description", mysql.Description)
 
 	annotations := flattenDataFactoryAnnotations(mysql.Annotations)
 	if err := d.Set("annotations", annotations); err != nil {

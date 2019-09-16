@@ -3,9 +3,10 @@ package azurerm
 import (
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
@@ -15,22 +16,33 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validate.NoEmptyStrings,
 			},
 
-			"location": {
+			"location": azure.SchemaLocationForDataSource(),
+
+			"resource_group": azure.SchemaResourceGroupNameForDataSource(),
+
+			"alias": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"resource_group_name": azure.SchemaResourceGroupNameForDataSource(),
-
-			"auto_approval_subscription_names": {
+			"auto_approval": {
 				Type:     schema.TypeList,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"subscriptions": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
 				},
 			},
 
@@ -42,15 +54,7 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 				},
 			},
 
-			"visibility_subscription_names": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-
-			"ip_configuration": {
+			"ip_configurations": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -59,31 +63,39 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-
-						"subnet_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-
 						"private_ip_address": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-
 						"private_ip_address_version": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-
-						"private_ip_address_allocation": {
+						"private_ip_allocation_method": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"subnet": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 
-			"load_balancer_frontend_ip_configuration": {
+			"load_balancer_frontend_ip_configurations": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -92,11 +104,322 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_ip_address": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"public_ip_address": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"location": azure.SchemaLocationForDataSource(),
+									"tags":     tagsForDataSourceSchema(),
+									"zones": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+								},
+							},
+						},
+						"public_ip_prefix": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"subnet": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"private_ip_address_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_ip_allocation_method": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zones": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
+
+			"network_interfaces": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"dns_settings": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"applied_dns_servers": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"dns_servers": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"internal_dns_name_label": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"internal_domain_name_suffix": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"internal_fqdn": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"enable_accelerated_networking": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"enable_ip_forwarding": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"hosted_workloads": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ip_configurations": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"location": azure.SchemaLocationForDataSource(),
+						"mac_address": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"network_security_group": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"location": azure.SchemaLocationForDataSource(),
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tags": tagsForDataSourceSchema(),
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"primary": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"private_endpoint": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"location": azure.SchemaLocationForDataSource(),
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tags": tagsForDataSourceSchema(),
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"resource_guid": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": tagsForDataSourceSchema(),
+						"tap_configurations": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"virtual_machine": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
+			"private_endpoint_connections": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_endpoint": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"location": azure.SchemaLocationForDataSource(),
+									"tags":     tagsForDataSourceSchema(),
+								},
+							},
+						},
+						"private_link_service_connection_state": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"action_required": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"description": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
 
 			"tags": tagsForDataSourceSchema(),
+
+			"type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"visibility": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"subscriptions": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -106,104 +429,47 @@ func dataSourceArmPrivateLinkServiceRead(d *schema.ResourceData, meta interface{
 	ctx := meta.(*ArmClient).StopContext
 
 	name := d.Get("name").(string)
-	resGroup := d.Get("resource_group_name").(string)
+	resourceGroup := d.Get("resource_group").(string)
 
-	resp, err := client.Get(ctx, resGroup, name, "")
+	resp, err := client.Get(ctx, resourceGroup, name, "")
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
-			d.SetId("")
-			return nil
+			return fmt.Errorf("Error: Private Link Service %q (Resource Group %q) was not found", name, resourceGroup)
 		}
-		return fmt.Errorf("Error making Read request on Azure Private Link Service %q (Resource Group %q): %+v", name, resGroup, err)
+		return fmt.Errorf("Error reading Private Link Service %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
 
 	d.SetId(*resp.ID)
 
 	d.Set("name", resp.Name)
-
-	d.Set("resource_group_name", resGroup)
-
+	d.Set("resource_group", resourceGroup)
 	if location := resp.Location; location != nil {
 		d.Set("location", azure.NormalizeLocation(*location))
 	}
-
-	if fqdns := resp.Fqdns; fqdns != nil {
-		d.Set("fqdns", fqdns)
-	}
-
-	if autoApproval := resp.AutoApproval; autoApproval != nil {
-		if autoApprovalSubs := autoApproval.Subscriptions; autoApprovalSubs != nil {
-			d.Set("auto_approval_subscription_names", autoApprovalSubs)
+	if privateLinkServiceProperties := resp.PrivateLinkServiceProperties; privateLinkServiceProperties != nil {
+		d.Set("alias", privateLinkServiceProperties.Alias)
+		if err := d.Set("auto_approval", flattenArmPrivateLinkServicePrivateLinkServicePropertiesAutoApproval(privateLinkServiceProperties.AutoApproval)); err != nil {
+			return fmt.Errorf("Error setting `auto_approval`: %+v", err)
+		}
+		d.Set("fqdns", utils.FlattenStringSlice(privateLinkServiceProperties.Fqdns))
+		if err := d.Set("ip_configurations", flattenArmPrivateLinkServicePrivateLinkServiceIPConfiguration(privateLinkServiceProperties.IPConfigurations)); err != nil {
+			return fmt.Errorf("Error setting `ip_configurations`: %+v", err)
+		}
+		if err := d.Set("load_balancer_frontend_ip_configurations", flattenArmPrivateLinkServiceFrontendIPConfiguration(privateLinkServiceProperties.LoadBalancerFrontendIPConfigurations)); err != nil {
+			return fmt.Errorf("Error setting `load_balancer_frontend_ip_configurations`: %+v", err)
+		}
+		if err := d.Set("network_interfaces", flattenArmPrivateLinkServiceInterface(privateLinkServiceProperties.NetworkInterfaces)); err != nil {
+			return fmt.Errorf("Error setting `network_interfaces`: %+v", err)
+		}
+		if err := d.Set("private_endpoint_connections", flattenArmPrivateLinkServicePrivateEndpointConnection(privateLinkServiceProperties.PrivateEndpointConnections)); err != nil {
+			return fmt.Errorf("Error setting `private_endpoint_connections`: %+v", err)
+		}
+		if err := d.Set("visibility", flattenArmPrivateLinkServicePrivateLinkServicePropertiesVisibility(privateLinkServiceProperties.Visibility)); err != nil {
+			return fmt.Errorf("Error setting `visibility`: %+v", err)
 		}
 	}
-
-	if visibility := resp.Visibility; visibility != nil {
-		if visibilitySubs := visibility.Subscriptions; visibilitySubs != nil {
-			d.Set("visibility_subscription_names", visibilitySubs)
-		}
-	}
-
-	frontendIPConfigs := flattenLoadBalancerFrontendIPConfigurations(resp.LoadBalancerFrontendIPConfigurations)
-	if err := d.Set("load_balancer_frontend_ip_configuration", frontendIPConfigs); err != nil {
-		return err
-	}
-
-	ipConfigs := flattenIPConfigurations(resp.IPConfigurations)
-	if err := d.Set("ip_configuration", ipConfigs); err != nil {
-		return err
-	}
-
-	flattenAndSetTags(d, resp.Tags)
+	d.Set("type", resp.Type)
+	tags.FlattenAndSet(d, resp.Tags)
 
 	return nil
-}
-
-func flattenLoadBalancerFrontendIPConfigurations(input *[]network.FrontendIPConfiguration) []interface{} {
-	frontendIPConfigs := make([]interface{}, 0)
-	if input == nil {
-		return frontendIPConfigs
-	}
-
-	for _, frontendIPConfig := range *input {
-		ipConfig := make(map[string]interface{})
-		if frontendIPConfig.ID != nil {
-			ipConfig["id"] = *frontendIPConfig.ID
-		}
-		frontendIPConfigs = append(frontendIPConfigs, ipConfig)
-	}
-
-	return frontendIPConfigs
-}
-
-func flattenIPConfigurations(input *[]network.PrivateLinkServiceIPConfiguration) []interface{} {
-	ipConfigs := make([]interface{}, 0)
-	if input == nil {
-		return ipConfigs
-	}
-
-	for _, ipConfig := range *input {
-		data := make(map[string]interface{})
-
-		data["private_ip_address_allocation"] = ipConfig.PrivateIPAllocationMethod
-
-		data["private_ip_address_version"] = ipConfig.PrivateIPAddressVersion
-
-		if ipConfig.Name != nil {
-			data["name"] = *ipConfig.Name
-		}
-
-		if ipConfig.PrivateIPAddress != nil {
-			data["private_ip_address"] = *ipConfig.PrivateIPAddress
-		}
-
-		if ipConfig.Subnet != nil {
-			if ipConfig.Subnet.ID != nil {
-				data["subnet_id"] = *ipConfig.Subnet.ID
-			}
-		}
-
-		ipConfigs = append(ipConfigs, data)
-	}
-
-	return ipConfigs
 }

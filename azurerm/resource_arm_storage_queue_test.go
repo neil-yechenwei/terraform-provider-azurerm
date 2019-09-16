@@ -158,7 +158,7 @@ func testCheckAzureRMStorageQueueExists(resourceName string) resource.TestCheckF
 		accountName := rs.Primary.Attributes["storage_account_name"]
 
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 
 		resourceGroup, err := storageClient.FindResourceGroup(ctx, accountName)
 		if err != nil {
@@ -196,7 +196,7 @@ func testCheckAzureRMStorageQueueDestroy(s *terraform.State) error {
 		accountName := rs.Primary.Attributes["storage_account_name"]
 
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 
 		resourceGroup, err := storageClient.FindResourceGroup(ctx, accountName)
 		if err != nil {
@@ -213,16 +213,12 @@ func testCheckAzureRMStorageQueueDestroy(s *terraform.State) error {
 			return fmt.Errorf("Error building Queues Client: %s", err)
 		}
 
-		metaData, err := queueClient.GetMetaData(ctx, accountName, name)
+		props, err := queueClient.GetMetaData(ctx, accountName, name)
 		if err != nil {
-			if utils.ResponseWasNotFound(metaData.Response) {
-				return nil
-			}
-
-			return fmt.Errorf("Unexpected error getting MetaData for Queue %q: %s", name, err)
+			return nil
 		}
 
-		return fmt.Errorf("Bad: Storage Queue %q (storage account: %q) still exists", name, accountName)
+		return fmt.Errorf("Queue still exists: %+v", props)
 	}
 
 	return nil

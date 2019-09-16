@@ -150,6 +150,9 @@ func resourceArmMonitorMetricAlertRule() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validateMetricAlertRuleTags,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
@@ -246,7 +249,7 @@ func resourceArmMonitorMetricAlertRuleRead(d *schema.ResourceData, meta interfac
 		if ruleCondition != nil {
 			if thresholdRuleCondition, ok := ruleCondition.AsThresholdRuleCondition(); ok && thresholdRuleCondition != nil {
 				d.Set("operator", string(thresholdRuleCondition.Operator))
-				d.Set("threshold", *thresholdRuleCondition.Threshold)
+				d.Set("threshold", thresholdRuleCondition.Threshold)
 				d.Set("period", thresholdRuleCondition.WindowSize)
 				d.Set("aggregation", string(thresholdRuleCondition.TimeAggregation))
 

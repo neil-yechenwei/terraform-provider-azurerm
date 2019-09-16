@@ -16,9 +16,9 @@ import (
 
 func resourceArmDataFactoryLinkedServiceDataLakeStorageGen2() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceArmDataFactoryLinkedServiceDataLakeStorageGen2CreateOrUpdate,
+		Create: resourceArmDataFactoryLinkedServiceDataLakeStorageGen2CreateUpdate,
 		Read:   resourceArmDataFactoryLinkedServiceDataLakeStorageGen2Read,
-		Update: resourceArmDataFactoryLinkedServiceDataLakeStorageGen2CreateOrUpdate,
+		Update: resourceArmDataFactoryLinkedServiceDataLakeStorageGen2CreateUpdate,
 		Delete: resourceArmDataFactoryLinkedServiceDataLakeStorageGen2Delete,
 
 		Importer: &schema.ResourceImporter{
@@ -86,6 +86,9 @@ func resourceArmDataFactoryLinkedServiceDataLakeStorageGen2() *schema.Resource {
 			"parameters": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 
 			"annotations": {
@@ -99,12 +102,15 @@ func resourceArmDataFactoryLinkedServiceDataLakeStorageGen2() *schema.Resource {
 			"additional_properties": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
 }
 
-func resourceArmDataFactoryLinkedServiceDataLakeStorageGen2CreateOrUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceArmDataFactoryLinkedServiceDataLakeStorageGen2CreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).dataFactory.LinkedServiceClient
 	ctx := meta.(*ArmClient).StopContext
 

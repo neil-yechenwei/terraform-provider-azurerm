@@ -78,7 +78,7 @@ func validateArmStorageQueueName(v interface{}, k string) (warnings []string, er
 }
 
 func resourceArmStorageQueueCreate(d *schema.ResourceData, meta interface{}) error {
-	storageClient := meta.(*ArmClient).storage
+	storageClient := meta.(*ArmClient).Storage
 	ctx := meta.(*ArmClient).StopContext
 
 	queueName := d.Get("name").(string)
@@ -124,7 +124,7 @@ func resourceArmStorageQueueCreate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceArmStorageQueueUpdate(d *schema.ResourceData, meta interface{}) error {
-	storageClient := meta.(*ArmClient).storage
+	storageClient := meta.(*ArmClient).Storage
 	ctx := meta.(*ArmClient).StopContext
 
 	id, err := queues.ParseResourceID(d.Id())
@@ -156,7 +156,7 @@ func resourceArmStorageQueueUpdate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceArmStorageQueueRead(d *schema.ResourceData, meta interface{}) error {
-	storageClient := meta.(*ArmClient).storage
+	storageClient := meta.(*ArmClient).Storage
 	ctx := meta.(*ArmClient).StopContext
 
 	id, err := queues.ParseResourceID(d.Id())
@@ -192,7 +192,7 @@ func resourceArmStorageQueueRead(d *schema.ResourceData, meta interface{}) error
 
 	d.Set("name", id.QueueName)
 	d.Set("storage_account_name", id.AccountName)
-	d.Set("resource_group_name", *resourceGroup)
+	d.Set("resource_group_name", resourceGroup)
 
 	if err := d.Set("metadata", storage.FlattenMetaData(metaData.MetaData)); err != nil {
 		return fmt.Errorf("Error setting `metadata`: %s", err)
@@ -202,7 +202,7 @@ func resourceArmStorageQueueRead(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceArmStorageQueueDelete(d *schema.ResourceData, meta interface{}) error {
-	storageClient := meta.(*ArmClient).storage
+	storageClient := meta.(*ArmClient).Storage
 	ctx := meta.(*ArmClient).StopContext
 
 	id, err := queues.ParseResourceID(d.Id())

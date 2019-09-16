@@ -242,7 +242,7 @@ func testCheckAzureRMStorageContainerExists(resourceName string) resource.TestCh
 			return fmt.Errorf("Not found: %s", resourceName)
 		}
 
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		containerName := rs.Primary.Attributes["name"]
@@ -281,7 +281,7 @@ func testAccARMStorageContainerDisappears(resourceName string) resource.TestChec
 			return fmt.Errorf("Not found: %s", resourceName)
 		}
 
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		containerName := rs.Primary.Attributes["name"]
@@ -314,7 +314,7 @@ func testCheckAzureRMStorageContainerDestroy(s *terraform.State) error {
 			continue
 		}
 
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		containerName := rs.Primary.Attributes["name"]
@@ -336,12 +336,10 @@ func testCheckAzureRMStorageContainerDestroy(s *terraform.State) error {
 
 		props, err := client.GetProperties(ctx, accountName, containerName)
 		if err != nil {
-			if utils.ResponseWasNotFound(props.Response) {
-				return nil
-			}
-
-			return fmt.Errorf("Error retrieving Container %q in Storage Account %q: %s", containerName, accountName, err)
+			return nil
 		}
+
+		return fmt.Errorf("Container still exists: %+v", props)
 	}
 
 	return nil
