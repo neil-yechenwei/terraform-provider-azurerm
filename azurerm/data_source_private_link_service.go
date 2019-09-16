@@ -469,7 +469,6 @@ func dataSourceArmPrivateLinkServiceRead(d *schema.ResourceData, meta interface{
 		}
 	}
 	d.Set("type", resp.Type)
-	tags.FlattenAndSet(d, resp.Tags)
 
-	return nil
+	return tags.FlattenAndSet(d, resp.Tags)
 }
