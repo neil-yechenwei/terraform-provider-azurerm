@@ -2,12 +2,14 @@ package azurerm
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -25,6 +27,22 @@ import (
 )
 
 var virtualMachineResourceName = "azurerm_virtual_machine"
+
+// TODO move into internal/tf/suppress/base64.go
+func userDataDiffSuppressFunc(_, old, new string, _ *schema.ResourceData) bool {
+	return userDataStateFunc(old) == new
+}
+
+func userDataStateFunc(v interface{}) string {
+	switch s := v.(type) {
+	case string:
+		s = utils.Base64EncodeIfNot(s)
+		hash := sha1.Sum([]byte(s))
+		return hex.EncodeToString(hash[:])
+	default:
+		return ""
+	}
+}
 
 func resourceArmVirtualMachine() *schema.Resource {
 	return &schema.Resource{
@@ -85,6 +103,18 @@ func resourceArmVirtualMachine() *schema.Resource {
 				ConflictsWith: []string{"zones"},
 			},
 
+			"proximity_placement_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+
+				// We have to ignore case due to incorrect capitalisation of resource group name in
+				// proximity placement group ID in the response we get from the API request
+				//
+				// todo can be removed when https://github.com/Azure/azure-sdk-for-go/issues/5699 is fixed
+				DiffSuppressFunc: suppress.CaseDifference,
+			},
+
 			"identity": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -136,6 +166,7 @@ func resourceArmVirtualMachine() *schema.Resource {
 				DiffSuppressFunc: suppress.CaseDifference,
 			},
 
+			//lintignore:S018
 			"storage_image_reference": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -301,6 +332,7 @@ func resourceArmVirtualMachine() *schema.Resource {
 								string(compute.StorageAccountTypesPremiumLRS),
 								string(compute.StorageAccountTypesStandardLRS),
 								string(compute.StorageAccountTypesStandardSSDLRS),
+								string(compute.StorageAccountTypesUltraSSDLRS),
 							}, true),
 						},
 
@@ -362,6 +394,22 @@ func resourceArmVirtualMachine() *schema.Resource {
 				},
 			},
 
+			"additional_capabilities": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ultra_ssd_enabled": {
+							Type:     schema.TypeBool,
+							Required: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
+
+			//lintignore:S018
 			"os_profile": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -397,6 +445,7 @@ func resourceArmVirtualMachine() *schema.Resource {
 				Set: resourceArmVirtualMachineStorageOsProfileHash,
 			},
 
+			//lintignore:S018
 			"os_profile_windows_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -483,6 +532,7 @@ func resourceArmVirtualMachine() *schema.Resource {
 				ConflictsWith: []string{"os_profile_linux_config"},
 			},
 
+			//lintignore:S018
 			"os_profile_linux_config": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -635,6 +685,9 @@ func resourceArmVirtualMachineCreateUpdate(d *schema.ResourceData, meta interfac
 			properties.DiagnosticsProfile = diagnosticsProfile
 		}
 	}
+	if _, ok := d.GetOk("additional_capabilities"); ok {
+		properties.AdditionalCapabilities = expandAzureRmVirtualMachineAdditionalCapabilities(d)
+	}
 
 	if _, ok := d.GetOk("os_profile"); ok {
 		osProfile, err2 := expandAzureRmVirtualMachineOsProfile(d)
@@ -651,6 +704,12 @@ func resourceArmVirtualMachineCreateUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		properties.AvailabilitySet = &availSet
+	}
+
+	if v, ok := d.GetOk("proximity_placement_group_id"); ok {
+		properties.ProximityPlacementGroup = &compute.SubResource{
+			ID: utils.String(v.(string)),
+		}
 	}
 
 	vm := compute.VirtualMachine{
@@ -755,8 +814,14 @@ func resourceArmVirtualMachineRead(d *schema.ResourceData, meta interface{}) err
 
 	if props := resp.VirtualMachineProperties; props != nil {
 		if availabilitySet := props.AvailabilitySet; availabilitySet != nil {
-			// TODO: why is this being lower-cased?
+			// Lowercase due to incorrect capitalisation of resource group name in
+			// availability set ID in response from get VM API request
+			// todo can be removed when https://github.com/Azure/azure-sdk-for-go/issues/5699 is fixed
 			d.Set("availability_set_id", strings.ToLower(*availabilitySet.ID))
+		}
+
+		if proximityPlacementGroup := props.ProximityPlacementGroup; proximityPlacementGroup != nil {
+			d.Set("proximity_placement_group_id", proximityPlacementGroup.ID)
 		}
 
 		if profile := props.HardwareProfile; profile != nil {
@@ -816,6 +881,9 @@ func resourceArmVirtualMachineRead(d *schema.ResourceData, meta interface{}) err
 				return fmt.Errorf("Error setting `boot_diagnostics`: %#v", err)
 			}
 		}
+		if err := d.Set("additional_capabilities", flattenAzureRmVirtualMachineAdditionalCapabilities(props.AdditionalCapabilities)); err != nil {
+			return fmt.Errorf("Error setting `additional_capabilities`: %#v", err)
+		}
 
 		if profile := props.NetworkProfile; profile != nil {
 			if err := d.Set("network_interface_ids", flattenAzureRmVirtualMachineNetworkInterfaces(profile)); err != nil {
@@ -871,7 +939,7 @@ func resourceArmVirtualMachineDelete(d *schema.ResourceData, meta interface{}) e
 	deleteDataDisks := d.Get("delete_data_disks_on_termination").(bool)
 
 	if deleteOsDisk || deleteDataDisks {
-		storageClient := meta.(*ArmClient).storage
+		storageClient := meta.(*ArmClient).Storage
 
 		props := virtualMachine.VirtualMachineProperties
 		if props == nil {
@@ -1091,6 +1159,18 @@ func flattenAzureRmVirtualMachineDiagnosticsProfile(profile *compute.BootDiagnos
 		result["storage_uri"] = *profile.StorageURI
 	}
 
+	return []interface{}{result}
+}
+
+func flattenAzureRmVirtualMachineAdditionalCapabilities(profile *compute.AdditionalCapabilities) []interface{} {
+	if profile == nil {
+		return []interface{}{}
+	}
+
+	result := make(map[string]interface{})
+	if v := profile.UltraSSDEnabled; v != nil {
+		result["ultra_ssd_enabled"] = *v
+	}
 	return []interface{}{result}
 }
 
@@ -1399,7 +1479,7 @@ func expandAzureRmVirtualMachineOsProfile(d *schema.ResourceData) (*compute.OSPr
 	}
 
 	if v := osProfile["custom_data"].(string); v != "" {
-		v = base64Encode(v)
+		v = utils.Base64EncodeIfNot(v)
 		profile.CustomData = &v
 	}
 
@@ -1637,6 +1717,20 @@ func expandAzureRmVirtualMachineDiagnosticsProfile(d *schema.ResourceData) *comp
 	}
 
 	return nil
+}
+
+func expandAzureRmVirtualMachineAdditionalCapabilities(d *schema.ResourceData) *compute.AdditionalCapabilities {
+	additionalCapabilities := d.Get("additional_capabilities").([]interface{})
+	if len(additionalCapabilities) == 0 {
+		return nil
+	}
+
+	additionalCapability := additionalCapabilities[0].(map[string]interface{})
+	capability := &compute.AdditionalCapabilities{
+		UltraSSDEnabled: utils.Bool(additionalCapability["ultra_ssd_enabled"].(bool)),
+	}
+
+	return capability
 }
 
 func expandAzureRmVirtualMachineImageReference(d *schema.ResourceData) (*compute.ImageReference, error) {

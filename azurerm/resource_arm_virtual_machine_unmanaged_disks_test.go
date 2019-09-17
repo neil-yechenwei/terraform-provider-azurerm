@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -196,7 +196,7 @@ func TestAccAzureRMVirtualMachine_tags(t *testing.T) {
 }
 
 //This is a regression test around https://github.com/hashicorp/terraform/issues/6517
-//Because we use CreateOrUpdate, we were sending an empty password on update requests
+//Because we use CreateUpdate, we were sending an empty password on update requests
 func TestAccAzureRMVirtualMachine_updateMachineSize(t *testing.T) {
 	var vm compute.VirtualMachine
 
@@ -3023,7 +3023,7 @@ func testCheckAzureRMVirtualMachineVHDExistence(blobName string, shouldExist boo
 			accountName := rs.Primary.Attributes["storage_account_name"]
 			containerName := rs.Primary.Attributes["name"]
 
-			storageClient := testAccProvider.Meta().(*ArmClient).storage
+			storageClient := testAccProvider.Meta().(*ArmClient).Storage
 			ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 			client, err := storageClient.BlobsClient(ctx, resourceGroup, accountName)

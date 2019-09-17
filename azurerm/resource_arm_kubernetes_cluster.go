@@ -1,13 +1,11 @@
 package azurerm
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-06-01/containerservice"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
@@ -48,6 +46,12 @@ func resourceArmKubernetesCluster() *schema.Resource {
 				dockerBridgeCidr := profile["docker_bridge_cidr"].(string)
 				dnsServiceIP := profile["dns_service_ip"].(string)
 				serviceCidr := profile["service_cidr"].(string)
+				podCidr := profile["pod_cidr"].(string)
+
+				// Azure network plugin is not compatible with pod_cidr
+				if podCidr != "" && networkPlugin == "azure" {
+					return fmt.Errorf("`pod_cidr` and `azure` cannot be set together.")
+				}
 
 				// All empty values.
 				if dockerBridgeCidr == "" && dnsServiceIP == "" && serviceCidr == "" {
@@ -210,9 +214,8 @@ func resourceArmKubernetesCluster() *schema.Resource {
 				},
 			},
 
-			// TODO: 2.0 - we should be able to make this a List to be able to detect changes in the Client Secret
 			"service_principal": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
@@ -233,7 +236,6 @@ func resourceArmKubernetesCluster() *schema.Resource {
 						},
 					},
 				},
-				Set: resourceKubernetesClusterServicePrincipalProfileHash,
 			},
 
 			// Optional
@@ -297,6 +299,20 @@ func resourceArmKubernetesCluster() *schema.Resource {
 										Type:         schema.TypeString,
 										Required:     true,
 										ValidateFunc: validate.NoEmptyStrings,
+									},
+								},
+							},
+						},
+
+						"kube_dashboard": {
+							Type:     schema.TypeList,
+							MaxItems: 1,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Required: true,
 									},
 								},
 							},
@@ -909,6 +925,17 @@ func expandKubernetesClusterAddonProfiles(d *schema.ResourceData) map[string]*co
 		}
 	}
 
+	kubeDashboard := profile["kube_dashboard"].([]interface{})
+	if len(kubeDashboard) > 0 {
+		value := kubeDashboard[0].(map[string]interface{})
+		enabled := value["enabled"].(bool)
+
+		addonProfiles["kubeDashboard"] = &containerservice.ManagedClusterAddonProfile{
+			Enabled: utils.Bool(enabled),
+			Config:  nil,
+		}
+	}
+
 	return addonProfiles
 }
 
@@ -974,6 +1001,20 @@ func flattenKubernetesClusterAddonProfiles(profile map[string]*containerservice.
 		aciConnectors = append(aciConnectors, output)
 	}
 	values["aci_connector_linux"] = aciConnectors
+
+	kubeDashboards := make([]interface{}, 0)
+	if kubeDashboard := profile["kubeDashboard"]; kubeDashboard != nil {
+		enabled := false
+		if enabledVal := kubeDashboard.Enabled; enabledVal != nil {
+			enabled = *enabledVal
+		}
+
+		output := map[string]interface{}{
+			"enabled": enabled,
+		}
+		kubeDashboards = append(kubeDashboards, output)
+	}
+	values["kube_dashboard"] = kubeDashboards
 
 	return []interface{}{values}
 }
@@ -1382,11 +1423,11 @@ func flattenKubernetesClusterRoleBasedAccessControl(input *containerservice.Mana
 
 func expandAzureRmKubernetesClusterServicePrincipal(d *schema.ResourceData) *containerservice.ManagedClusterServicePrincipalProfile {
 	value, exists := d.GetOk("service_principal")
-	if !exists {
+	configs := value.([]interface{})
+
+	if !exists || len(configs) == 0 {
 		return nil
 	}
-
-	configs := value.(*schema.Set).List()
 
 	config := configs[0].(map[string]interface{})
 
@@ -1401,13 +1442,9 @@ func expandAzureRmKubernetesClusterServicePrincipal(d *schema.ResourceData) *con
 	return &principal
 }
 
-func flattenAzureRmKubernetesClusterServicePrincipalProfile(profile *containerservice.ManagedClusterServicePrincipalProfile) *schema.Set {
+func flattenAzureRmKubernetesClusterServicePrincipalProfile(profile *containerservice.ManagedClusterServicePrincipalProfile) []interface{} {
 	if profile == nil {
-		return nil
-	}
-
-	servicePrincipalProfiles := &schema.Set{
-		F: resourceKubernetesClusterServicePrincipalProfileHash,
+		return []interface{}{}
 	}
 
 	values := make(map[string]interface{})
@@ -1419,20 +1456,7 @@ func flattenAzureRmKubernetesClusterServicePrincipalProfile(profile *containerse
 		values["client_secret"] = *secret
 	}
 
-	servicePrincipalProfiles.Add(values)
-
-	return servicePrincipalProfiles
-}
-
-func resourceKubernetesClusterServicePrincipalProfileHash(v interface{}) int {
-	// TODO: this method should be able to be removed in time
-	var buf bytes.Buffer
-
-	if m, ok := v.(map[string]interface{}); ok {
-		buf.WriteString(fmt.Sprintf("%s-", m["client_id"].(string)))
-	}
-
-	return hashcode.String(buf.String())
+	return []interface{}{values}
 }
 
 func flattenKubernetesClusterKubeConfig(config kubernetes.KubeConfig) []interface{} {

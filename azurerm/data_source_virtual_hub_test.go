@@ -14,30 +14,34 @@ func TestAccDataSourceAzureRMVirtualHub_basic(t *testing.T) {
 	location := testLocation()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckAzureRMVirtualHubDestroy,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceAzureRMVirtualHub_basic(ri, location),
+				Config: testAccDataSourceVirtualHub_basic(ri, location),
 				Check: resource.ComposeTestCheckFunc(
-					testCheckAzureRMVirtualHubExists(dataSourceName),
-					resource.TestCheckResourceAttrSet(dataSourceName, "virtual_wan_id"),
-					resource.TestCheckResourceAttr(dataSourceName, "tags.%", "1"),
+					resource.TestCheckResourceAttr(dataSourceName, "address_prefix", "10.0.1.0/24"),
+					resource.TestCheckResourceAttr(dataSourceName, "virtual_wan.#", "1"),
+					resource.TestCheckResourceAttr(dataSourceName, "route_table.#", "1"),
+					resource.TestCheckResourceAttr(dataSourceName, "route_table.0.routes.#", "1"),
+					resource.TestCheckResourceAttr(dataSourceName, "route_table.0.routes.0.address_prefixes.#", "2"),
+					resource.TestCheckResourceAttr(dataSourceName, "route_table.0.routes.0.address_prefixes.0", "10.0.2.0/24"),
+					resource.TestCheckResourceAttr(dataSourceName, "route_table.0.routes.0.address_prefixes.1", "10.0.3.0/24"),
+					resource.TestCheckResourceAttr(dataSourceName, "route_table.0.routes.0.next_hop_ip_address", "10.0.4.5"),
 				),
 			},
 		},
 	})
 }
 
-func testAccDataSourceAzureRMVirtualHub_basic(rInt int, location string) string {
-	template := testAccAzureRMVirtualHub_basic(rInt, location)
+func testAccDataSourceVirtualHub_basic(rInt int, location string) string {
+	config := testAccAzureRMVirtualHub_basic(rInt, location)
 	return fmt.Sprintf(`
 %s
 
 data "azurerm_virtual_hub" "test" {
-  name                = "${azurerm_virtual_hub.test.name}"
-  resource_group_name = "${azurerm_resource_group.test.name}"
+  resource_group_name = "${azurerm_virtual_hub.test.resource_group_name}"
+  name           = "${azurerm_virtual_hub.test.name}"
 }
-`, template)
+`, config)
 }

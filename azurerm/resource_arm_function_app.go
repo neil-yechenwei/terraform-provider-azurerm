@@ -74,6 +74,9 @@ func resourceArmFunctionApp() *schema.Resource {
 			"app_settings": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 
 			"enable_builtin_logging": {
@@ -205,7 +208,6 @@ func resourceArmFunctionApp() *schema.Resource {
 						"virtual_network_name": {
 							Type:     schema.TypeString,
 							Optional: true,
-							Computed: false,
 						},
 						"cors": azure.SchemaWebCorsSettings(),
 					},

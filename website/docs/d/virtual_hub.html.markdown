@@ -3,66 +3,96 @@ layout: "azurerm"
 page_title: "Azure Resource Manager: azurerm_virtual_hub"
 sidebar_current: "docs-azurerm-datasource-virtual-hub"
 description: |-
-  Gets information about an existing Virtual Hub.
+  Gets information about an existing Virtual Hub
 ---
 
 # Data Source: azurerm_virtual_hub
 
 Use this data source to access information about an existing Virtual Hub.
 
-## Example Usage
+
+## Vitual Hub Usage
 
 ```hcl
-data "azurerm_virtual_hub" "test" {
-  name                = "testvhub"
-  resource_group_name = "testRG"
-  location            = "eastus2"
+data "azurerm_virtual_hub" "example" {
+  resource_group = "acctestRG"
+  name           = "acctestvhub"
 }
 
 output "virtual_hub_id" {
-  value = "${data.azurerm_virtual_hub.test.id}"
+  value = "${data.azurerm_virtual_hub.example.id}"
 }
 ```
 
+
 ## Argument Reference
 
-* `name` - (Required) Specifies the name of the Virtual Hub.
+The following arguments are supported:
 
-* `resource_group_name` - (Required) Specifies the name of the resource group the Virtual Hub is located in.
+* `name` - (Required) The name of the VirtualHub.
 
-* `location` - (Required) Specifies the supported Azure location where the resource exists. Changing this forces a new resource to be created.
+* `resource_group_name` - (Required) The Name of the Resource Group where the App Service exists.
 
-* `address_prefix` - (Optional) Address-prefix for this VirtualHub.
 
-* `express_route_gateway_id` - (Optional) The expressRouteGateway associated with this VirtualHub.
+## Attributes Reference
 
-* `p2s_vpn_gateway_id` - (Optional) The P2SVpnGateway associated with this VirtualHub.
+The following attributes are exported:
 
-* `route_table` - (Optional) The routeTable associated with this virtual hub.
+* `location` - Resource location.
 
-* `virtual_wan_id` - (Optional) The VirtualWAN to which the VirtualHub belongs.
+* `address_prefix` - Address-prefix for this VirtualHub.
 
-* `vpn_gateway_id` - (Optional) The VpnGateway associated with this VirtualHub.
+* `express_route_gateway` - One `express_route_gateway` block defined below.
 
-* `tags` - (Optional) A mapping of tags to assign to the Virtual Hub.
+* `p2svpn_gateway` - One `p2svpn_gateway` block defined below.
+
+* `route_table` - One `route_table` block defined below.
+
+* `type` - Resource type.
+
+* `virtual_network_connections` - One or more `virtual_network_connection` block defined below.
+
+* `virtual_wan` - One `virtual_wan` block defined below.
+
+* `vpn_gateway` - One `vpn_gateway` block defined below.
+
+* `tags` - Resource tags.
+
 
 ---
 
-A `route_table` block supports the following:
+The `express_route_gateway` block contains the following:
 
-* `address_prefixes` - (Optional) List of all addressPrefixes.
-
-* `next_hop_ip_address` - (Optional) NextHop ip address.
-
-* `virtual_network_connections` - List of all vnet connections with this VirtualHub.
+* `id` - Resource ID.
 
 ---
 
-A `virtual_network_connections` block supports the following:
+The `p2svpn_gateway` block contains the following:
 
-* `id` - Resource ID of virtual network connection.
+* `id` - Resource ID.
 
-* `name` - The name of the resource that is unique within a resource group. This name can be used to access the resource.
+---
+
+The `route_table` block contains the following:
+
+* `routes` - One or more `route` block defined below.
+
+
+---
+
+The `route` block contains the following:
+
+* `address_prefixes` - List of all addressPrefixes.
+
+* `next_hop_ip_address` - NextHop ip address.
+
+---
+
+The `virtual_network_connection` block contains the following:
+
+* `id` - Resource ID.
+
+* `remote_virtual_network` - One `remote_virtual_network` block defined below.
 
 * `allow_hub_to_remote_vnet_transit` - VirtualHub to RemoteVnet transit to enabled or not.
 
@@ -70,8 +100,23 @@ A `virtual_network_connections` block supports the following:
 
 * `enable_internet_security` - Enable internet security.
 
-* `remote_virtual_network_id` - Reference to the remote virtual network.
+* `name` - The name of the resource that is unique within a resource group. This name can be used to access the resource.
 
-## Attributes Reference
 
-* `id` - The ID of the Virtual Hub.
+---
+
+The `remote_virtual_network` block contains the following:
+
+* `id` - Resource ID.
+
+---
+
+The `virtual_wan` block contains the following:
+
+* `id` - Resource ID.
+
+---
+
+The `vpn_gateway` block contains the following:
+
+* `id` - Resource ID.

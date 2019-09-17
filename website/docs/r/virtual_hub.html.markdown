@@ -1,36 +1,46 @@
 ---
 layout: "azurerm"
 page_title: "Azure Resource Manager: azurerm_virtual_hub"
-sidebar_current: "docs-azurerm-resource-network-virtual-hub"
+sidebar_current: "docs-azurerm-resource-virtual-hub"
 description: |-
-  Manages a Virtual Hub.
-
+  Manage Azure VirtualHub instance.
 ---
 
 # azurerm_virtual_hub
 
-Manages a Virtual Hub.
+Manage Azure VirtualHub instance.
 
-## Example Usage
+
+## Vitual Hub Usage
 
 ```hcl
-resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-%d"
-  location = "%s"
+resource "azurerm_resource_group" "example" {
+  name     = "acctestRG"
+  location = "Eastus2"
 }
 
-resource "azurerm_virtual_wan" "test" {
-  name                = "acctestvwan%d"
-  resource_group_name = "${azurerm_resource_group.test.name}"
-  location            = "${azurerm_resource_group.test.location}"
+resource "azurerm_virtual_wan" "example" {
+  name                = "acctestvwan-%d"
+  resource_group_name = "${azurerm_resource_group.example.name}"
+  location            = "${azurerm_resource_group.example.location}"
 }
 
-resource "azurerm_virtual_hub" "test" {
-   name                = "acctestvhub%d"
-   resource_group_name = "${azurerm_resource_group.test.name}"
-   location            = "${azurerm_resource_group.test.location}"
-   address_prefix      = "10.168.0.0/24"
-   virtual_wan_id      = "${azurerm_virtual_wan.test.id}"
+resource "azurerm_virtual_hub" "example" {
+  name           = "acctestvirtualhub-%d"
+  resource_group = "${azurerm_resource_group.example.name}"
+  location       = "${azurerm_resource_group.example.location}"
+  address_prefix = "10.0.1.0/24"
+
+  virtual_wan {
+    id = "${azurerm_virtual_wan.example.id}"
+  }
+
+  route_table {
+    routes {
+      address_prefixes    = ["10.0.2.0/24", "10.0.3.0/24"]
+      next_hop_ip_address = "10.0.4.5"
+    }
+  }
 }
 ```
 
@@ -38,62 +48,101 @@ resource "azurerm_virtual_hub" "test" {
 
 The following arguments are supported:
 
-* `name` - (Required) Specifies the name of the Virtual Hub. Changing this forces a new resource to be created.
+* `name` - (Required) The name of the VirtualHub. Changing this forces a new resource to be created.
 
-* `resource_group_name` - (Required) The name of the resource group in which to create the Virtual Hub. Changing this forces a new resource to be created.
+* `resource_group_name` - (Required) The resource group name of the VirtualHub. Changing this forces a new resource to be created.
 
-* `location` - (Required) Specifies the supported Azure location where the resource exists. Changing this forces a new resource to be created.
+* `location` - (Optional) Resource location. Changing this forces a new resource to be created.
 
 * `address_prefix` - (Optional) Address-prefix for this VirtualHub.
 
-* `express_route_gateway_id` - (Optional) The expressRouteGateway associated with this VirtualHub.
+* `express_route_gateway` - (Optional) One `express_route_gateway` block defined below.
 
-* `p2s_vpn_gateway_id` - (Optional) The P2SVpnGateway associated with this VirtualHub.
+* `p2svpn_gateway` - (Optional) One `p2svpn_gateway` block defined below.
 
-* `route_table` - (Optional) The routeTable associated with this virtual hub.
+* `route_table` - (Optional) One `route_table` block defined below.
 
-* `virtual_wan_id` - (Optional) The VirtualWAN to which the VirtualHub belongs.
+* `virtual_network_connections` - (Optional) One or more `virtual_network_connection` block defined below.
 
-* `vpn_gateway_id` - (Optional) The VpnGateway associated with this VirtualHub.
+* `virtual_wan` - (Optional) One `virtual_wan` block defined below.
 
-* `tags` - (Optional) A mapping of tags to assign to the Virtual Hub.
+* `vpn_gateway` - (Optional) One `vpn_gateway` block defined below.
+
+* `tags` - (Optional) Resource tags. Changing this forces a new resource to be created.
 
 ---
 
-A `route_table` block supports the following:
+The `express_route_gateway` block supports the following:
+
+* `id` - (Optional) Resource ID.
+
+---
+
+The `p2svpn_gateway` block supports the following:
+
+* `id` - (Optional) Resource ID.
+
+---
+
+The `route_table` block supports the following:
+
+* `routes` - (Optional) One or more `route` block defined below.
+
+
+---
+
+The `route` block supports the following:
 
 * `address_prefixes` - (Optional) List of all addressPrefixes.
 
 * `next_hop_ip_address` - (Optional) NextHop ip address.
 
-* `virtual_network_connections` - List of all vnet connections with this VirtualHub.
+---
+
+The `virtual_network_connection` block supports the following:
+
+* `id` - (Optional) Resource ID.
+
+* `remote_virtual_network` - (Optional) One `remote_virtual_network` block defined below.
+
+* `allow_hub_to_remote_vnet_transit` - (Optional) VirtualHub to RemoteVnet transit to enabled or not.
+
+* `allow_remote_vnet_to_use_hub_vnet_gateways` - (Optional) Allow RemoteVnet to use Virtual Hub's gateways.
+
+* `enable_internet_security` - (Optional) Enable internet security.
+
+* `name` - (Optional) The name of the resource that is unique within a resource group. This name can be used to access the resource.
+
 
 ---
 
-A `virtual_network_connections` block supports the following:
+The `remote_virtual_network` block supports the following:
 
-* `id` - Resource ID of virtual network connection.
+* `id` - (Optional) Resource ID.
 
-* `name` - The name of the resource that is unique within a resource group. This name can be used to access the resource.
+---
 
-* `allow_hub_to_remote_vnet_transit` - VirtualHub to RemoteVnet transit to enabled or not.
+The `virtual_wan` block supports the following:
 
-* `allow_remote_vnet_to_use_hub_vnet_gateways` - Allow RemoteVnet to use Virtual Hub's gateways.
+* `id` - (Optional) Resource ID.
 
-* `enable_internet_security` - Enable internet security.
+---
 
-* `remote_virtual_network_id` - Reference to the remote virtual network.
+The `vpn_gateway` block supports the following:
+
+* `id` - (Optional) Resource ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the Virtual Hub.
+* `type` - Resource type.
+
 
 ## Import
 
 Virtual Hub can be imported using the `resource id`, e.g.
 
 ```shell
-terraform import azurerm_virtual_hub.test /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Network/virtualHubs/testvhub
+$ terraform import azurerm_virtual_hub.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/acctestRG/providers/Microsoft.Network/virtualHubs/
 ```

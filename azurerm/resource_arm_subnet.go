@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
@@ -113,6 +113,8 @@ func resourceArmSubnet() *schema.Resource {
 											Type: schema.TypeString,
 											ValidateFunc: validation.StringInSlice([]string{
 												"Microsoft.Network/virtualNetworks/subnets/action",
+												"Microsoft.Network/virtualNetworks/subnets/join/action",
+												"Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action",
 											}, false),
 										},
 									},

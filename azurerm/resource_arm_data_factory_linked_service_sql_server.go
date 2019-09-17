@@ -17,9 +17,9 @@ import (
 
 func resourceArmDataFactoryLinkedServiceSQLServer() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceArmDataFactoryLinkedServiceSQLServerCreateOrUpdate,
+		Create: resourceArmDataFactoryLinkedServiceSQLServerCreateUpdate,
 		Read:   resourceArmDataFactoryLinkedServiceSQLServerRead,
-		Update: resourceArmDataFactoryLinkedServiceSQLServerCreateOrUpdate,
+		Update: resourceArmDataFactoryLinkedServiceSQLServerCreateUpdate,
 		Delete: resourceArmDataFactoryLinkedServiceSQLServerDelete,
 
 		Importer: &schema.ResourceImporter{
@@ -70,6 +70,9 @@ func resourceArmDataFactoryLinkedServiceSQLServer() *schema.Resource {
 			"parameters": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 
 			"annotations": {
@@ -83,12 +86,15 @@ func resourceArmDataFactoryLinkedServiceSQLServer() *schema.Resource {
 			"additional_properties": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
 }
 
-func resourceArmDataFactoryLinkedServiceSQLServerCreateOrUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceArmDataFactoryLinkedServiceSQLServerCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).dataFactory.LinkedServiceClient
 	ctx := meta.(*ArmClient).StopContext
 
@@ -192,10 +198,7 @@ func resourceArmDataFactoryLinkedServiceSQLServerRead(d *schema.ResourceData, me
 	}
 
 	d.Set("additional_properties", sqlServer.AdditionalProperties)
-
-	if sqlServer.Description != nil {
-		d.Set("description", *sqlServer.Description)
-	}
+	d.Set("description", sqlServer.Description)
 
 	annotations := flattenDataFactoryAnnotations(sqlServer.Annotations)
 	if err := d.Set("annotations", annotations); err != nil {

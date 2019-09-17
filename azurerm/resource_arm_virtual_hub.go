@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/response"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
@@ -19,6 +21,7 @@ func resourceArmVirtualHub() *schema.Resource {
 		Read:   resourceArmVirtualHubRead,
 		Update: resourceArmVirtualHubCreateUpdate,
 		Delete: resourceArmVirtualHubDelete,
+
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -31,82 +34,36 @@ func resourceArmVirtualHub() *schema.Resource {
 				ValidateFunc: validate.NoEmptyStrings,
 			},
 
-			"resource_group_name": azure.SchemaResourceGroupName(),
-
 			"location": azure.SchemaLocation(),
+
+			"resource_group_name": azure.SchemaResourceGroupNameDiffSuppress(),
 
 			"address_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"express_route_gateway_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-
-			"p2s_vpn_gateway_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-
-			"route_table": {
+			"express_route_gateway": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"address_prefixes": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-
-						"next_hop_ip_address": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
-
-			"virtual_network_connections": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
 							Type:     schema.TypeString,
 							Optional: true,
-							Computed: true,
 						},
+					},
+				},
+			},
 
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-
-						"allow_hub_to_remote_vnet_transit": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-
-						"allow_remote_vnet_to_use_hub_vnet_gateways": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-
-						"enable_internet_security": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-
-						"remote_virtual_network_id": {
+			"p2svpn_gateway": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -114,18 +71,112 @@ func resourceArmVirtualHub() *schema.Resource {
 				},
 			},
 
-			"virtual_wan_id": {
-				Type:     schema.TypeString,
+			"route_table": {
+				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"routes": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"address_prefixes": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+									"next_hop_ip_address": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 
-			"vpn_gateway_id": {
-				Type:     schema.TypeString,
+			"tags": tags.Schema(),
+
+			"virtual_network_connections": {
+				Type:     schema.TypeList,
 				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"allow_hub_to_remote_vnet_transit": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"allow_remote_vnet_to_use_hub_vnet_gateways": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"enable_internet_security": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"remote_virtual_network": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
+			"virtual_wan": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+
+			"vpn_gateway": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+
+			"type": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
-
-			"tags": tagsSchema(),
 		},
 	}
 }
@@ -134,91 +185,61 @@ func resourceArmVirtualHubCreateUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*ArmClient).network.VirtualHubClient
 	ctx := meta.(*ArmClient).StopContext
 
-	log.Printf("[INFO] preparing arguments for Virtual Hub creation.")
-
 	name := d.Get("name").(string)
 	resourceGroup := d.Get("resource_group_name").(string)
-	location := azure.NormalizeLocation(d.Get("location").(string))
-	addressPrefix := d.Get("address_prefix").(string)
-	virtualWanId := d.Get("virtual_wan_id").(string)
-	tags := d.Get("tags").(map[string]interface{})
 
-	if requireResourcesToBeImported && d.IsNewResource() {
-		existing, err := client.Get(ctx, resourceGroup, name)
+	if features.ShouldResourcesBeImported() && d.IsNewResource() {
+		resp, err := client.Get(ctx, resourceGroup, name)
 		if err != nil {
-			if !utils.ResponseWasNotFound(existing.Response) {
-				return fmt.Errorf("Error checking for presence of existing Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
+			if !utils.ResponseWasNotFound(resp.Response) {
+				return fmt.Errorf("Error checking for present of existing Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
 			}
 		}
-
-		if existing.ID != nil && *existing.ID != "" {
-			return tf.ImportAsExistsError("azurerm_virtual_hub", *existing.ID)
+		if !utils.ResponseWasNotFound(resp.Response) {
+			return tf.ImportAsExistsError("azurerm_virtual_hub", *resp.ID)
 		}
 	}
 
-	hub := network.VirtualHub{
+	location := azure.NormalizeLocation(d.Get("location").(string))
+	addressPrefix := d.Get("address_prefix").(string)
+	expressRouteGateway := d.Get("express_route_gateway").([]interface{})
+	p2svpnGateway := d.Get("p2svpn_gateway").([]interface{})
+	routeTable := d.Get("route_table").([]interface{})
+	virtualNetworkConnections := d.Get("virtual_network_connections").([]interface{})
+	virtualWan := d.Get("virtual_wan").([]interface{})
+	vpnGateway := d.Get("vpn_gateway").([]interface{})
+	t := d.Get("tags").(map[string]interface{})
+
+	virtualHubParameters := network.VirtualHub{
 		Location: utils.String(location),
-		Tags:     expandTags(tags),
 		VirtualHubProperties: &network.VirtualHubProperties{
-			AddressPrefix: &addressPrefix,
-			VirtualWan: &network.SubResource{
-				ID: utils.String(virtualWanId),
-			},
+			AddressPrefix:             utils.String(addressPrefix),
+			ExpressRouteGateway:       expandArmVirtualHubSubResource(expressRouteGateway),
+			P2SVpnGateway:             expandArmVirtualHubSubResource(p2svpnGateway),
+			RouteTable:                expandArmVirtualHubVirtualHubRouteTable(routeTable),
+			VirtualNetworkConnections: expandArmVirtualHubHubVirtualNetworkConnection(virtualNetworkConnections),
+			VirtualWan:                expandArmVirtualHubSubResource(virtualWan),
+			VpnGateway:                expandArmVirtualHubSubResource(vpnGateway),
 		},
+		Tags: tags.Expand(t),
 	}
 
-	expressRouteGatewayId := d.Get("express_route_gateway_id").(string)
-	if expressRouteGatewayId != "" {
-		hub.VirtualHubProperties.ExpressRouteGateway = &network.SubResource{
-			ID: &expressRouteGatewayId,
-		}
-	}
-
-	p2SVpnGatewayId := d.Get("p2s_vpn_gateway_id").(string)
-	if p2SVpnGatewayId != "" {
-		hub.VirtualHubProperties.P2SVpnGateway = &network.SubResource{
-			ID: &p2SVpnGatewayId,
-		}
-	}
-
-	vpnGatewayId := d.Get("vpn_gateway_id").(string)
-	if vpnGatewayId != "" {
-		hub.VirtualHubProperties.VpnGateway = &network.SubResource{
-			ID: &vpnGatewayId,
-		}
-	}
-
-	virtualHubRoutes := expandArmRouteTable(d)
-	if virtualHubRoutes != nil {
-		hub.RouteTable = &network.VirtualHubRouteTable{
-			Routes: virtualHubRoutes,
-		}
-	}
-
-	hubVirtualNetworkConnections := expandArmHubVirtualNetworkConnections(d)
-	if hubVirtualNetworkConnections != nil {
-		hub.VirtualNetworkConnections = hubVirtualNetworkConnections
-	}
-
-	future, err := client.CreateOrUpdate(ctx, resourceGroup, name, hub)
+	future, err := client.CreateOrUpdate(ctx, resourceGroup, name, virtualHubParameters)
 	if err != nil {
-		return fmt.Errorf("Error creating/updating Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
+		return fmt.Errorf("Error creating Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
-
 	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("Error waiting for creation/update of Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
+		return fmt.Errorf("Error waiting for creation of Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
 
-	read, err := client.Get(ctx, resourceGroup, name)
+	resp, err := client.Get(ctx, resourceGroup, name)
 	if err != nil {
 		return fmt.Errorf("Error retrieving Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
-
-	if read.ID == nil {
+	if resp.ID == nil {
 		return fmt.Errorf("Cannot read Virtual Hub %q (Resource Group %q) ID", name, resourceGroup)
 	}
-
-	d.SetId(*read.ID)
+	d.SetId(*resp.ID)
 
 	return resourceArmVirtualHubRead(d, meta)
 }
@@ -227,239 +248,230 @@ func resourceArmVirtualHubRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).network.VirtualHubClient
 	ctx := meta.(*ArmClient).StopContext
 
-	id, err := parseAzureResourceID(d.Id())
+	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return err
 	}
-
 	resourceGroup := id.ResourceGroup
 	name := id.Path["virtualHubs"]
 
 	resp, err := client.Get(ctx, resourceGroup, name)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
-			log.Printf("[DEBUG] Virtual Hub %q (Resource Group %q) was not found - removing from state", name, resourceGroup)
+			log.Printf("[INFO] Virtual Hub %q does not exist - removing from state", d.Id())
 			d.SetId("")
 			return nil
 		}
-
-		return fmt.Errorf("Error making Read request on Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
+		return fmt.Errorf("Error reading Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
 
-	d.Set("name", name)
+	d.Set("name", resp.Name)
 	d.Set("resource_group_name", resourceGroup)
 	if location := resp.Location; location != nil {
 		d.Set("location", azure.NormalizeLocation(*location))
 	}
-
-	if props := resp.VirtualHubProperties; props != nil {
-		if props.AddressPrefix != nil {
-			d.Set("address_prefix", props.AddressPrefix)
+	if virtualHubProperties := resp.VirtualHubProperties; virtualHubProperties != nil {
+		d.Set("address_prefix", virtualHubProperties.AddressPrefix)
+		if err := d.Set("express_route_gateway", flattenArmVirtualHubSubResource(virtualHubProperties.ExpressRouteGateway)); err != nil {
+			return fmt.Errorf("Error setting `express_route_gateway`: %+v", err)
 		}
-
-		if props.ExpressRouteGateway != nil {
-			d.Set("express_route_gateway_id", props.ExpressRouteGateway.ID)
+		if err := d.Set("p2svpn_gateway", flattenArmVirtualHubSubResource(virtualHubProperties.P2SVpnGateway)); err != nil {
+			return fmt.Errorf("Error setting `p2svpn_gateway`: %+v", err)
 		}
-
-		if props.P2SVpnGateway != nil {
-			d.Set("p2s_vpn_gateway_id", props.P2SVpnGateway.ID)
+		if err := d.Set("route_table", flattenArmVirtualHubVirtualHubRouteTable(virtualHubProperties.RouteTable)); err != nil {
+			return fmt.Errorf("Error setting `route_table`: %+v", err)
 		}
-
-		if props.RouteTable != nil {
-			virtualHubRouteTable := flattenArmVirtualHubRouteTable(props.RouteTable.Routes)
-			if virtualHubRouteTable != nil {
-				d.Set("route_table", virtualHubRouteTable)
-			}
+		if err := d.Set("virtual_network_connections", flattenArmVirtualHubHubVirtualNetworkConnection(virtualHubProperties.VirtualNetworkConnections)); err != nil {
+			return fmt.Errorf("Error setting `virtual_network_connections`: %+v", err)
 		}
-
-		if props.VirtualNetworkConnections != nil {
-			virtualNetworkConnections := flattenArmHubVirtualNetworkConnections(props.VirtualNetworkConnections)
-			if virtualNetworkConnections != nil {
-				d.Set("virtual_network_connections", virtualNetworkConnections)
-			}
+		if err := d.Set("virtual_wan", flattenArmVirtualHubSubResource(virtualHubProperties.VirtualWan)); err != nil {
+			return fmt.Errorf("Error setting `virtual_wan`: %+v", err)
 		}
-
-		if props.VirtualWan != nil {
-			d.Set("virtual_wan_id", props.VirtualWan.ID)
-		}
-
-		if props.VpnGateway != nil {
-			d.Set("vpn_gateway_id", props.VpnGateway.ID)
+		if err := d.Set("vpn_gateway", flattenArmVirtualHubSubResource(virtualHubProperties.VpnGateway)); err != nil {
+			return fmt.Errorf("Error setting `vpn_gateway`: %+v", err)
 		}
 	}
+	d.Set("type", resp.Type)
 
-	flattenAndSetTags(d, resp.Tags)
-
-	return nil
+	return tags.FlattenAndSet(d, resp.Tags)
 }
 
 func resourceArmVirtualHubDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).network.VirtualHubClient
 	ctx := meta.(*ArmClient).StopContext
 
-	id, err := parseAzureResourceID(d.Id())
+	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return err
 	}
-
 	resourceGroup := id.ResourceGroup
 	name := id.Path["virtualHubs"]
 
 	future, err := client.Delete(ctx, resourceGroup, name)
 	if err != nil {
-		// deleted outside of Terraform
 		if response.WasNotFound(future.Response()) {
 			return nil
 		}
-
 		return fmt.Errorf("Error deleting Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
 
 	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
 		if !response.WasNotFound(future.Response()) {
-			return fmt.Errorf("Error waiting for the deletion of Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
+			return fmt.Errorf("Error waiting for deleting Virtual Hub %q (Resource Group %q): %+v", name, resourceGroup, err)
 		}
 	}
 
 	return nil
 }
 
-func expandArmRouteTable(d *schema.ResourceData) *[]network.VirtualHubRoute {
-	data := d.Get("route_table").([]interface{})
-	if len(data) == 0 {
+func expandArmVirtualHubSubResource(input []interface{}) *network.SubResource {
+	if len(input) == 0 {
 		return nil
 	}
+	v := input[0].(map[string]interface{})
 
-	virtualHubRouteTable := make([]network.VirtualHubRoute, 0)
-	for _, v := range data {
-		route := v.(map[string]interface{})
-		virtualHubRoute := network.VirtualHubRoute{}
+	id := v["id"].(string)
 
-		nextHopIpAddress := route["next_hop_ip_address"].(string)
-		if nextHopIpAddress != "" {
-			virtualHubRoute.NextHopIPAddress = &nextHopIpAddress
-		}
-
-		addressPrefixes := route["address_prefixes"].([]interface{})
-		if addressPrefixes != nil {
-			addressPrefixeList := make([]string, len(addressPrefixes))
-			for i, v := range addressPrefixes {
-				addressPrefixeList[i] = fmt.Sprint(v)
-			}
-			virtualHubRoute.AddressPrefixes = &addressPrefixeList
-		}
-
-		virtualHubRouteTable = append(virtualHubRouteTable, virtualHubRoute)
+	result := network.SubResource{
+		ID: utils.String(id),
 	}
-
-	return &virtualHubRouteTable
+	return &result
 }
 
-func expandArmHubVirtualNetworkConnections(d *schema.ResourceData) *[]network.HubVirtualNetworkConnection {
-	data := d.Get("virtual_network_connections").([]interface{})
-	if len(data) == 0 {
+func expandArmVirtualHubVirtualHubRouteTable(input []interface{}) *network.VirtualHubRouteTable {
+	if len(input) == 0 {
 		return nil
 	}
+	v := input[0].(map[string]interface{})
 
-	hubVirtualNetworkConnections := make([]network.HubVirtualNetworkConnection, 0)
-	for _, v := range data {
-		connection := v.(map[string]interface{})
-		hubVirtualNetworkConnection := network.HubVirtualNetworkConnection{
-			HubVirtualNetworkConnectionProperties: &network.HubVirtualNetworkConnectionProperties{},
-		}
+	routes := v["routes"].([]interface{})
 
-		id := connection["id"].(string)
-		if id != "" {
-			hubVirtualNetworkConnection.ID = &id
-		}
-
-		name := connection["name"].(string)
-		if name != "" {
-			hubVirtualNetworkConnection.Name = &name
-		}
-
-		if allowHubToRemoteVnetTransit := connection["allow_hub_to_remote_vnet_transit"]; allowHubToRemoteVnetTransit != nil {
-			hubVirtualNetworkConnection.HubVirtualNetworkConnectionProperties.AllowHubToRemoteVnetTransit = utils.Bool(allowHubToRemoteVnetTransit.(bool))
-		}
-
-		if allowRemoteVnetToUseHubVnetGateways := connection["allow_remote_vnet_to_use_hub_vnet_gateways"]; allowRemoteVnetToUseHubVnetGateways != nil {
-			hubVirtualNetworkConnection.HubVirtualNetworkConnectionProperties.AllowRemoteVnetToUseHubVnetGateways = utils.Bool(allowRemoteVnetToUseHubVnetGateways.(bool))
-		}
-
-		if enableInternetSecurity := connection["enable_internet_security"]; enableInternetSecurity != nil {
-			hubVirtualNetworkConnection.HubVirtualNetworkConnectionProperties.EnableInternetSecurity = utils.Bool(enableInternetSecurity.(bool))
-		}
-
-		if remoteVirtualNetworkId := connection["remote_virtual_network_id"]; remoteVirtualNetworkId != "" {
-			hubVirtualNetworkConnection.RemoteVirtualNetwork = &network.SubResource{
-				ID: utils.String(remoteVirtualNetworkId.(string)),
-			}
-		}
-
-		hubVirtualNetworkConnections = append(hubVirtualNetworkConnections, hubVirtualNetworkConnection)
+	result := network.VirtualHubRouteTable{
+		Routes: expandArmVirtualHubVirtualHubRoute(routes),
 	}
-
-	return &hubVirtualNetworkConnections
+	return &result
 }
 
-func flattenArmVirtualHubRouteTable(routes *[]network.VirtualHubRoute) []interface{} {
+func expandArmVirtualHubHubVirtualNetworkConnection(input []interface{}) *[]network.HubVirtualNetworkConnection {
+	results := make([]network.HubVirtualNetworkConnection, 0)
+	for _, item := range input {
+		v := item.(map[string]interface{})
+		id := v["id"].(string)
+		remoteVirtualNetwork := v["remote_virtual_network"].([]interface{})
+		allowHubToRemoteVnetTransit := v["allow_hub_to_remote_vnet_transit"].(bool)
+		allowRemoteVnetToUseHubVnetGateways := v["allow_remote_vnet_to_use_hub_vnet_gateways"].(bool)
+		enableInternetSecurity := v["enable_internet_security"].(bool)
+		name := v["name"].(string)
+
+		result := network.HubVirtualNetworkConnection{
+			ID:   utils.String(id),
+			Name: utils.String(name),
+			HubVirtualNetworkConnectionProperties: &network.HubVirtualNetworkConnectionProperties{
+				AllowHubToRemoteVnetTransit:         utils.Bool(allowHubToRemoteVnetTransit),
+				AllowRemoteVnetToUseHubVnetGateways: utils.Bool(allowRemoteVnetToUseHubVnetGateways),
+				EnableInternetSecurity:              utils.Bool(enableInternetSecurity),
+				RemoteVirtualNetwork:                expandArmVirtualHubSubResource(remoteVirtualNetwork),
+			},
+		}
+
+		results = append(results, result)
+	}
+	return &results
+}
+
+func expandArmVirtualHubVirtualHubRoute(input []interface{}) *[]network.VirtualHubRoute {
+	results := make([]network.VirtualHubRoute, 0)
+	for _, item := range input {
+		v := item.(map[string]interface{})
+		addressPrefixes := v["address_prefixes"].([]interface{})
+		nextHopIpAddress := v["next_hop_ip_address"].(string)
+
+		result := network.VirtualHubRoute{
+			AddressPrefixes:  utils.ExpandStringSlice(addressPrefixes),
+			NextHopIPAddress: utils.String(nextHopIpAddress),
+		}
+
+		results = append(results, result)
+	}
+	return &results
+}
+
+func flattenArmVirtualHubSubResource(input *network.SubResource) []interface{} {
+	if input == nil {
+		return make([]interface{}, 0)
+	}
+
+	result := make(map[string]interface{})
+
+	if id := input.ID; id != nil {
+		result["id"] = *id
+	}
+
+	return []interface{}{result}
+}
+
+func flattenArmVirtualHubVirtualHubRouteTable(input *network.VirtualHubRouteTable) []interface{} {
+	if input == nil {
+		return make([]interface{}, 0)
+	}
+
+	result := make(map[string]interface{})
+
+	result["routes"] = flattenArmVirtualHubVirtualHubRoute(input.Routes)
+
+	return []interface{}{result}
+}
+
+func flattenArmVirtualHubHubVirtualNetworkConnection(input *[]network.HubVirtualNetworkConnection) []interface{} {
 	results := make([]interface{}, 0)
-
-	if routes == nil {
+	if input == nil {
 		return results
 	}
 
-	for _, v := range *routes {
-		route := make(map[string]interface{})
-		if v.NextHopIPAddress != nil {
-			route["next_hop_ip_address"] = v.NextHopIPAddress
+	for _, item := range *input {
+		v := make(map[string]interface{})
+
+		if id := item.ID; id != nil {
+			v["id"] = *id
+		}
+		if name := item.Name; name != nil {
+			v["name"] = *name
+		}
+		if hubVirtualNetworkConnectionProperties := item.HubVirtualNetworkConnectionProperties; hubVirtualNetworkConnectionProperties != nil {
+			if allowHubToRemoteVnetTransit := hubVirtualNetworkConnectionProperties.AllowHubToRemoteVnetTransit; allowHubToRemoteVnetTransit != nil {
+				v["allow_hub_to_remote_vnet_transit"] = *allowHubToRemoteVnetTransit
+			}
+			if allowRemoteVnetToUseHubVnetGateways := hubVirtualNetworkConnectionProperties.AllowRemoteVnetToUseHubVnetGateways; allowRemoteVnetToUseHubVnetGateways != nil {
+				v["allow_remote_vnet_to_use_hub_vnet_gateways"] = *allowRemoteVnetToUseHubVnetGateways
+			}
+			if enableInternetSecurity := hubVirtualNetworkConnectionProperties.EnableInternetSecurity; enableInternetSecurity != nil {
+				v["enable_internet_security"] = *enableInternetSecurity
+			}
+			v["remote_virtual_network"] = flattenArmVirtualHubSubResource(hubVirtualNetworkConnectionProperties.RemoteVirtualNetwork)
 		}
 
-		if v.AddressPrefixes != nil {
-			route["address_prefixes"] = v.AddressPrefixes
-		}
-
-		results = append(results, route)
+		results = append(results, v)
 	}
 
 	return results
 }
 
-func flattenArmHubVirtualNetworkConnections(input *[]network.HubVirtualNetworkConnection) []interface{} {
-	connections := make([]interface{}, 0)
-
+func flattenArmVirtualHubVirtualHubRoute(input *[]network.VirtualHubRoute) []interface{} {
+	results := make([]interface{}, 0)
 	if input == nil {
-		return connections
+		return results
 	}
 
-	for _, v := range *input {
-		connection := make(map[string]interface{})
-		if v.ID != nil {
-			connection["id"] = v.ID
+	for _, item := range *input {
+		v := make(map[string]interface{})
+
+		v["address_prefixes"] = utils.FlattenStringSlice(item.AddressPrefixes)
+		if nextHopIpAddress := item.NextHopIPAddress; nextHopIpAddress != nil {
+			v["next_hop_ip_address"] = *nextHopIpAddress
 		}
 
-		if v.Name != nil {
-			connection["name"] = v.Name
-		}
-
-		if v.AllowHubToRemoteVnetTransit != nil {
-			connection["allow_hub_to_remote_vnet_transit"] = v.AllowHubToRemoteVnetTransit
-		}
-
-		if v.AllowRemoteVnetToUseHubVnetGateways != nil {
-			connection["allow_remote_vnet_to_use_hub_vnet_gateways"] = v.AllowRemoteVnetToUseHubVnetGateways
-		}
-
-		if v.EnableInternetSecurity != nil {
-			connection["enable_internet_security"] = v.EnableInternetSecurity
-		}
-
-		if v.RemoteVirtualNetwork != nil {
-			connection["remote_virtual_network_id"] = v.RemoteVirtualNetwork.ID
-		}
-
-		connections = append(connections, connection)
+		results = append(results, v)
 	}
 
-	return connections
+	return results
 }

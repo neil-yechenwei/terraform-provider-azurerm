@@ -141,7 +141,7 @@ func testCheckAzureRMStorageTableExists(resourceName string) resource.TestCheckF
 		tableName := rs.Primary.Attributes["name"]
 		accountName := rs.Primary.Attributes["storage_account_name"]
 
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		resourceGroup, err := storageClient.FindResourceGroup(ctx, accountName)
@@ -180,7 +180,7 @@ func testAccARMStorageTableDisappears(resourceName string) resource.TestCheckFun
 		tableName := rs.Primary.Attributes["name"]
 		accountName := rs.Primary.Attributes["storage_account_name"]
 
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		resourceGroup, err := storageClient.FindResourceGroup(ctx, accountName)
@@ -222,7 +222,7 @@ func testCheckAzureRMStorageTableDestroy(s *terraform.State) error {
 		tableName := rs.Primary.Attributes["name"]
 		accountName := rs.Primary.Attributes["storage_account_name"]
 
-		storageClient := testAccProvider.Meta().(*ArmClient).storage
+		storageClient := testAccProvider.Meta().(*ArmClient).Storage
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		resourceGroup, err := storageClient.FindResourceGroup(ctx, accountName)
@@ -240,14 +240,10 @@ func testCheckAzureRMStorageTableDestroy(s *terraform.State) error {
 
 		props, err := client.Exists(ctx, accountName, tableName)
 		if err != nil {
-			if utils.ResponseWasNotFound(props) {
-				return nil
-			}
-
-			return fmt.Errorf("Error retrieving Table %q: %s", tableName, accountName)
+			return nil
 		}
 
-		return fmt.Errorf("Bad: Table %q (storage account: %q) still exists", tableName, accountName)
+		return fmt.Errorf("Table still exists: %+v", props)
 	}
 
 	return nil

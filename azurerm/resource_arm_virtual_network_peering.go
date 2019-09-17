@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
@@ -147,17 +147,20 @@ func resourceArmVirtualNetworkPeeringRead(d *schema.ResourceData, meta interface
 		return fmt.Errorf("Error making Read request on Azure virtual network peering %q: %+v", name, err)
 	}
 
-	peer := *resp.VirtualNetworkPeeringPropertiesFormat
-
 	// update appropriate values
 	d.Set("resource_group_name", resGroup)
 	d.Set("name", resp.Name)
 	d.Set("virtual_network_name", vnetName)
-	d.Set("allow_virtual_network_access", peer.AllowVirtualNetworkAccess)
-	d.Set("allow_forwarded_traffic", peer.AllowForwardedTraffic)
-	d.Set("allow_gateway_transit", peer.AllowGatewayTransit)
-	d.Set("use_remote_gateways", peer.UseRemoteGateways)
-	d.Set("remote_virtual_network_id", peer.RemoteVirtualNetwork.ID)
+
+	if peer := resp.VirtualNetworkPeeringPropertiesFormat; peer != nil {
+		d.Set("allow_virtual_network_access", peer.AllowVirtualNetworkAccess)
+		d.Set("allow_forwarded_traffic", peer.AllowForwardedTraffic)
+		d.Set("allow_gateway_transit", peer.AllowGatewayTransit)
+		d.Set("use_remote_gateways", peer.UseRemoteGateways)
+		if network := peer.RemoteVirtualNetwork; network != nil {
+			d.Set("remote_virtual_network_id", network.ID)
+		}
+	}
 
 	return nil
 }
