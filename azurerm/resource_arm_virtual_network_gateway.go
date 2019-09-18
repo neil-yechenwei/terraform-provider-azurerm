@@ -82,7 +82,7 @@ func resourceArmVirtualNetworkGateway() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				DiffSuppressFunc: suppress.CaseDifference,
-				// This validator checks for all possible values for the SKU regardless of the attributes vpn_type and
+				// This validastor checks for all possible values for the SKU regardless of the attributes vpn_type and
 				// type. For a validation which depends on the attributes vpn_type and type, refer to the special case
 				// validators validateArmVirtualNetworkGatewayPolicyBasedVpnSku, validateArmVirtualNetworkGatewayRouteBasedVpnSku
 				// and validateArmVirtualNetworkGatewayExpressRouteSku.
