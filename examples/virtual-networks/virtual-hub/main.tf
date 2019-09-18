@@ -29,16 +29,12 @@ resource "azurerm_virtual_hub" "test" {
   location       = "${azurerm_resource_group.test.location}"
   address_prefix = "10.0.1.0/24"
 
-  virtual_wan {
-    id = "${azurerm_virtual_wan.test.id}"
-  }
+  virtual_wan_id = "${azurerm_virtual_wan.test.id}"
 
   virtual_network_connections {
 	  name = "testConnection"
 	
-    remote_virtual_network {
-      id = "${azurerm_virtual_network.test.id}"
-    }
+    remote_virtual_network_id = "${azurerm_virtual_network.test.id}"
 
     allow_hub_to_remote_vnet_transit           = "false"
     allow_remote_vnet_to_use_hub_vnet_gateways = "false"
