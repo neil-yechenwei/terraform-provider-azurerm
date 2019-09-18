@@ -39,17 +39,15 @@ resource "azurerm_lb" "test" {
 }
 
 resource "azurerm_private_link_service" "test" {
-  name           = "acctestpls"
-  location       = "${azurerm_resource_group.test.location}"
-  resource_group = "${azurerm_resource_group.test.name}"
-  fqdns          = ["testFqdns2"]
+  name                = "acctestpls"
+  location            = "${azurerm_resource_group.test.location}"
+  resource_group_name = "${azurerm_resource_group.test.name}"
+  fqdns               = ["testFqdns2"]
 
   ip_configurations {
     name = "${azurerm_public_ip.test.name}"
 
-    subnet {
-      id = "${azurerm_subnet.test.id}"
-    }
+    subnet_id = "${azurerm_subnet.test.id}"
 
     private_ip_address          = "10.5.1.17"
     private_ip_address_version  = "IPv4"

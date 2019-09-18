@@ -23,7 +23,7 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 
 			"location": azure.SchemaLocationForDataSource(),
 
-			"resource_group": azure.SchemaResourceGroupNameForDataSource(),
+			"resource_group_name": azure.SchemaResourceGroupNameForDataSource(),
 
 			"alias": {
 				Type:     schema.TypeString,
@@ -63,6 +63,10 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"private_ip_allocation_method": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"private_ip_address": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -71,25 +75,9 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"private_ip_allocation_method": {
+						"subnet_id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"subnet": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
 						},
 					},
 				},
@@ -104,78 +92,6 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"private_ip_address": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"public_ip_address": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"location": azure.SchemaLocationForDataSource(),
-									"tags":     tagsForDataSourceSchema(),
-									"zones": {
-										Type:     schema.TypeList,
-										Computed: true,
-										Elem: &schema.Schema{
-											Type: schema.TypeString,
-										},
-									},
-								},
-							},
-						},
-						"public_ip_prefix": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"subnet": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"private_ip_address_version": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"private_ip_allocation_method": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"zones": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
 					},
 				},
 			},
@@ -185,163 +101,9 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"dns_settings": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"applied_dns_servers": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"dns_servers": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"internal_dns_name_label": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"internal_domain_name_suffix": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"internal_fqdn": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"enable_accelerated_networking": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"enable_ip_forwarding": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"hosted_workloads": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"ip_configurations": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"location": azure.SchemaLocationForDataSource(),
-						"mac_address": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"network_security_group": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"location": azure.SchemaLocationForDataSource(),
-									"name": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"tags": tagsForDataSourceSchema(),
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"primary": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"private_endpoint": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"location": azure.SchemaLocationForDataSource(),
-									"name": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"tags": tagsForDataSourceSchema(),
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"resource_guid": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"tags": tagsForDataSourceSchema(),
-						"tap_configurations": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"virtual_machine": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
 						},
 					},
 				},
@@ -398,8 +160,6 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 				},
 			},
 
-			"tags": tagsForDataSourceSchema(),
-
 			"type": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -420,6 +180,8 @@ func dataSourceArmPrivateLinkService() *schema.Resource {
 					},
 				},
 			},
+
+			"tags": tagsForDataSourceSchema(),
 		},
 	}
 }
@@ -429,7 +191,7 @@ func dataSourceArmPrivateLinkServiceRead(d *schema.ResourceData, meta interface{
 	ctx := meta.(*ArmClient).StopContext
 
 	name := d.Get("name").(string)
-	resourceGroup := d.Get("resource_group").(string)
+	resourceGroup := d.Get("resource_group_name").(string)
 
 	resp, err := client.Get(ctx, resourceGroup, name, "")
 	if err != nil {
@@ -442,7 +204,7 @@ func dataSourceArmPrivateLinkServiceRead(d *schema.ResourceData, meta interface{
 	d.SetId(*resp.ID)
 
 	d.Set("name", resp.Name)
-	d.Set("resource_group", resourceGroup)
+	d.Set("resource_group_name", resourceGroup)
 	if location := resp.Location; location != nil {
 		d.Set("location", azure.NormalizeLocation(*location))
 	}

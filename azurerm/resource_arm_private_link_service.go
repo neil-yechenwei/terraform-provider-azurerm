@@ -37,7 +37,7 @@ func resourceArmPrivateLinkService() *schema.Resource {
 
 			"location": azure.SchemaLocation(),
 
-			"resource_group": azure.SchemaResourceGroupNameDiffSuppress(),
+			"resource_group_name": azure.SchemaResourceGroupNameDiffSuppress(),
 
 			"auto_approval": {
 				Type:     schema.TypeList,
@@ -70,21 +70,9 @@ func resourceArmPrivateLinkService() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"private_ip_address": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"private_ip_address_version": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ValidateFunc: validation.StringInSlice([]string{
-								string(network.IPv4),
-								string(network.IPv6),
-							}, false),
-							Default: string(network.IPv4),
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validate.NoEmptyStrings,
 						},
 						"private_ip_allocation_method": {
 							Type:     schema.TypeString,
@@ -95,22 +83,24 @@ func resourceArmPrivateLinkService() *schema.Resource {
 							}, false),
 							Default: string(network.Static),
 						},
-						"subnet": {
-							Type:     schema.TypeList,
+						"private_ip_address": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validate.NoEmptyStrings,
+						},
+						"private_ip_address_version": {
+							Type:     schema.TypeString,
 							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
+							ValidateFunc: validation.StringInSlice([]string{
+								string(network.IPv4),
+								string(network.IPv6),
+							}, false),
+							Default: string(network.IPv4),
+						},
+						"subnet_id": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validate.NoEmptyStrings,
 						},
 					},
 				},
@@ -122,83 +112,9 @@ func resourceArmPrivateLinkService() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"private_ip_address": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"public_ip_address": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"location": azure.SchemaLocation(),
-									"tags":     tags.Schema(),
-									"zones": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem: &schema.Schema{
-											Type: schema.TypeString,
-										},
-									},
-								},
-							},
-						},
-						"public_ip_prefix": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"subnet": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"private_ip_address_version": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"private_ip_allocation_method": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"zones": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validate.NoEmptyStrings,
 						},
 					},
 				},
@@ -257,8 +173,6 @@ func resourceArmPrivateLinkService() *schema.Resource {
 				},
 			},
 
-			"tags": tags.Schema(),
-
 			"visibility": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -286,169 +200,9 @@ func resourceArmPrivateLinkService() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"dns_settings": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"applied_dns_servers": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"dns_servers": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"internal_dns_name_label": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"internal_domain_name_suffix": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"internal_fqdn": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"enable_accelerated_networking": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-						"enable_ip_forwarding": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-						"hosted_workloads": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
 						"id": {
 							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"ip_configurations": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"location": azure.SchemaLocation(),
-						"mac_address": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"network_security_group": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"location": azure.SchemaLocation(),
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"tags": tags.Schema(),
-									"type": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"primary": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-						"private_endpoint": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"location": azure.SchemaLocation(),
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"tags": tags.Schema(),
-									"type": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"resource_guid": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"tags": tags.Schema(),
-						"tap_configurations": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"type": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"type": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"virtual_machine": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"id": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
+							Computed: true,
 						},
 					},
 				},
@@ -458,6 +212,8 @@ func resourceArmPrivateLinkService() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"tags": tags.Schema(),
 		},
 	}
 }
@@ -467,7 +223,7 @@ func resourceArmPrivateLinkServiceCreateUpdate(d *schema.ResourceData, meta inte
 	ctx := meta.(*ArmClient).StopContext
 
 	name := d.Get("name").(string)
-	resourceGroup := d.Get("resource_group").(string)
+	resourceGroup := d.Get("resource_group_name").(string)
 
 	if features.ShouldResourcesBeImported() && d.IsNewResource() {
 		resp, err := client.Get(ctx, resourceGroup, name, "")
@@ -545,7 +301,7 @@ func resourceArmPrivateLinkServiceRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("name", resp.Name)
-	d.Set("resource_group", resourceGroup)
+	d.Set("resource_group_name", resourceGroup)
 	if location := resp.Location; location != nil {
 		d.Set("location", azure.NormalizeLocation(*location))
 	}
@@ -623,8 +379,8 @@ func expandArmPrivateLinkServicePrivateLinkServiceIPConfiguration(input []interf
 	for _, item := range input {
 		v := item.(map[string]interface{})
 		privateIpAddress := v["private_ip_address"].(string)
-		privateIpallocationMethod := v["private_ip_allocation_method"].(string)
-		subnet := v["subnet"].([]interface{})
+		privateIPAllocationMethod := v["private_ip_allocation_method"].(string)
+		subnetId := v["subnet_id"].(string)
 		privateIpAddressVersion := v["private_ip_address_version"].(string)
 		name := v["name"].(string)
 
@@ -633,8 +389,10 @@ func expandArmPrivateLinkServicePrivateLinkServiceIPConfiguration(input []interf
 			PrivateLinkServiceIPConfigurationProperties: &network.PrivateLinkServiceIPConfigurationProperties{
 				PrivateIPAddress:          utils.String(privateIpAddress),
 				PrivateIPAddressVersion:   network.IPVersion(privateIpAddressVersion),
-				PrivateIPAllocationMethod: network.IPAllocationMethod(privateIpallocationMethod),
-				Subnet:                    expandArmPrivateLinkServiceSubnet(subnet),
+				PrivateIPAllocationMethod: network.IPAllocationMethod(privateIPAllocationMethod),
+				Subnet: &network.Subnet{
+					ID: utils.String(subnetId),
+				},
 			},
 		}
 
@@ -648,27 +406,9 @@ func expandArmPrivateLinkServiceFrontendIPConfiguration(input []interface{}) *[]
 	for _, item := range input {
 		v := item.(map[string]interface{})
 		id := v["id"].(string)
-		privateIpAddress := v["private_ip_address"].(string)
-		privateIpallocationMethod := v["private_ip_allocation_method"].(string)
-		privateIpAddressVersion := v["private_ip_address_version"].(string)
-		subnet := v["subnet"].([]interface{})
-		publicIpAddress := v["public_ip_address"].([]interface{})
-		publicIpprefix := v["public_ip_prefix"].([]interface{})
-		name := v["name"].(string)
-		zones := v["zones"].([]interface{})
 
 		result := network.FrontendIPConfiguration{
-			ID:   utils.String(id),
-			Name: utils.String(name),
-			FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-				PrivateIPAddress:          utils.String(privateIpAddress),
-				PrivateIPAddressVersion:   network.IPVersion(privateIpAddressVersion),
-				PrivateIPAllocationMethod: network.IPAllocationMethod(privateIpallocationMethod),
-				PublicIPAddress:           expandArmPrivateLinkServicePublicIPAddress(publicIpAddress),
-				PublicIPPrefix:            expandArmPrivateLinkServiceSubResource(publicIpprefix),
-				Subnet:                    expandArmPrivateLinkServiceSubnet(subnet),
-			},
-			Zones: utils.ExpandStringSlice(zones),
+			ID: utils.String(id),
 		}
 
 		results = append(results, result)
@@ -709,56 +449,6 @@ func expandArmPrivateLinkServicePrivateLinkServicePropertiesVisibility(input []i
 
 	result := network.PrivateLinkServicePropertiesVisibility{
 		Subscriptions: utils.ExpandStringSlice(subscriptions),
-	}
-	return &result
-}
-
-func expandArmPrivateLinkServiceSubnet(input []interface{}) *network.Subnet {
-	if len(input) == 0 {
-		return nil
-	}
-	v := input[0].(map[string]interface{})
-
-	id := v["id"].(string)
-	name := v["name"].(string)
-
-	result := network.Subnet{
-		ID:   utils.String(id),
-		Name: utils.String(name),
-	}
-	return &result
-}
-
-func expandArmPrivateLinkServicePublicIPAddress(input []interface{}) *network.PublicIPAddress {
-	if len(input) == 0 {
-		return nil
-	}
-	v := input[0].(map[string]interface{})
-
-	id := v["id"].(string)
-	location := azure.NormalizeLocation(v["location"].(string))
-	t := v["tags"].(map[string]interface{})
-	zones := v["zones"].([]interface{})
-
-	result := network.PublicIPAddress{
-		ID:       utils.String(id),
-		Location: utils.String(location),
-		Tags:     tags.Expand(t),
-		Zones:    utils.ExpandStringSlice(zones),
-	}
-	return &result
-}
-
-func expandArmPrivateLinkServiceSubResource(input []interface{}) *network.SubResource {
-	if len(input) == 0 {
-		return nil
-	}
-	v := input[0].(map[string]interface{})
-
-	id := v["id"].(string)
-
-	result := network.SubResource{
-		ID: utils.String(id),
 	}
 	return &result
 }
@@ -824,12 +514,16 @@ func flattenArmPrivateLinkServicePrivateLinkServiceIPConfiguration(input *[]netw
 			v["name"] = *name
 		}
 		if privateLinkServiceIPConfigurationProperties := item.PrivateLinkServiceIPConfigurationProperties; privateLinkServiceIPConfigurationProperties != nil {
+			v["private_ip_allocation_method"] = string(privateLinkServiceIPConfigurationProperties.PrivateIPAllocationMethod)
 			if privateIpAddress := privateLinkServiceIPConfigurationProperties.PrivateIPAddress; privateIpAddress != nil {
 				v["private_ip_address"] = *privateIpAddress
 			}
 			v["private_ip_address_version"] = string(privateLinkServiceIPConfigurationProperties.PrivateIPAddressVersion)
-			v["private_ip_allocation_method"] = string(privateLinkServiceIPConfigurationProperties.PrivateIPAllocationMethod)
-			v["subnet"] = flattenArmPrivateLinkServiceSubnet(privateLinkServiceIPConfigurationProperties.Subnet)
+			if subnet := privateLinkServiceIPConfigurationProperties.Subnet; subnet != nil {
+				if subnetId := subnet.ID; subnetId != nil {
+					v["subnet_id"] = *subnetId
+				}
+			}
 		}
 
 		results = append(results, v)
@@ -850,17 +544,6 @@ func flattenArmPrivateLinkServiceFrontendIPConfiguration(input *[]network.Fronte
 		if id := item.ID; id != nil {
 			v["id"] = *id
 		}
-		if frontendIPConfigurationPropertiesFormat := item.FrontendIPConfigurationPropertiesFormat; frontendIPConfigurationPropertiesFormat != nil {
-			if privateIpAddress := frontendIPConfigurationPropertiesFormat.PrivateIPAddress; privateIpAddress != nil {
-				v["private_ip_address"] = *privateIpAddress
-			}
-			v["private_ip_address_version"] = string(frontendIPConfigurationPropertiesFormat.PrivateIPAddressVersion)
-			v["private_ip_allocation_method"] = string(frontendIPConfigurationPropertiesFormat.PrivateIPAllocationMethod)
-			v["public_ip_address"] = flattenArmPrivateLinkServicePublicIPAddress(frontendIPConfigurationPropertiesFormat.PublicIPAddress)
-			v["public_ip_prefix"] = flattenArmPrivateLinkServiceSubResource(frontendIPConfigurationPropertiesFormat.PublicIPPrefix)
-			v["subnet"] = flattenArmPrivateLinkServiceSubnet(frontendIPConfigurationPropertiesFormat.Subnet)
-		}
-		v["zones"] = utils.FlattenStringSlice(item.Zones)
 
 		results = append(results, v)
 	}
@@ -918,52 +601,6 @@ func flattenArmPrivateLinkServicePrivateLinkServicePropertiesVisibility(input *n
 	result := make(map[string]interface{})
 
 	result["subscriptions"] = utils.FlattenStringSlice(input.Subscriptions)
-
-	return []interface{}{result}
-}
-
-func flattenArmPrivateLinkServiceSubnet(input *network.Subnet) []interface{} {
-	if input == nil {
-		return make([]interface{}, 0)
-	}
-
-	result := make(map[string]interface{})
-
-	if id := input.ID; id != nil {
-		result["id"] = *id
-	}
-
-	return []interface{}{result}
-}
-
-func flattenArmPrivateLinkServicePublicIPAddress(input *network.PublicIPAddress) []interface{} {
-	if input == nil {
-		return make([]interface{}, 0)
-	}
-
-	result := make(map[string]interface{})
-
-	if id := input.ID; id != nil {
-		result["id"] = *id
-	}
-	if location := input.Location; location != nil {
-		result["location"] = azure.NormalizeLocation(*location)
-	}
-	result["zones"] = utils.FlattenStringSlice(input.Zones)
-
-	return []interface{}{result}
-}
-
-func flattenArmPrivateLinkServiceSubResource(input *network.SubResource) []interface{} {
-	if input == nil {
-		return make([]interface{}, 0)
-	}
-
-	result := make(map[string]interface{})
-
-	if id := input.ID; id != nil {
-		result["id"] = *id
-	}
 
 	return []interface{}{result}
 }

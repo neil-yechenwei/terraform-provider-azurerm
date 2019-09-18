@@ -23,7 +23,6 @@ func TestAccDataSourceAzureRMPrivateLinkService_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "fqdns.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "fqdns.0", "testFqdns"),
 					resource.TestCheckResourceAttr(dataSourceName, "ip_configurations.#", "1"),
-					resource.TestCheckResourceAttr(dataSourceName, "ip_configurations.0.subnet.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "ip_configurations.0.private_ip_address", "10.5.1.17"),
 					resource.TestCheckResourceAttr(dataSourceName, "ip_configurations.0.private_ip_address_version", "IPv4"),
 					resource.TestCheckResourceAttr(dataSourceName, "ip_configurations.0.private_ip_allocation_method", "Static"),
@@ -40,8 +39,8 @@ func testAccDataSourcePrivateLinkService_basic(rInt int, location string) string
 %s
 
 data "azurerm_private_link_service" "test" {
-  resource_group = "${azurerm_private_link_service.test.resource_group}"
-  name           = "${azurerm_private_link_service.test.name}"
+  resource_group_name = "${azurerm_private_link_service.test.resource_group_name}"
+  name                = "${azurerm_private_link_service.test.name}"
 }
 `, config)
 }

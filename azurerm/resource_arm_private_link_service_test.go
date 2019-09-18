@@ -27,7 +27,6 @@ func TestAccAzureRMPrivateLinkService_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "fqdns.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "fqdns.0", "testFqdns"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.subnet.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address", "10.5.1.17"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address_version", "IPv4"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_allocation_method", "Static"),
@@ -60,7 +59,6 @@ func TestAccAzureRMPrivateLinkService_complete(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "fqdns.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "fqdns.0", "testFqdns2"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.subnet.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address", "10.5.1.17"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address_version", "IPv4"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_allocation_method", "Static"),
@@ -95,7 +93,6 @@ func TestAccAzureRMPrivateLinkService_update(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "fqdns.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "fqdns.0", "testFqdns"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.subnet.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address", "10.5.1.17"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address_version", "IPv4"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_allocation_method", "Static"),
@@ -109,7 +106,6 @@ func TestAccAzureRMPrivateLinkService_update(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "fqdns.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "fqdns.0", "testFqdns2"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.subnet.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address", "10.5.1.17"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address_version", "IPv4"),
 					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_allocation_method", "Static"),
@@ -117,6 +113,24 @@ func TestAccAzureRMPrivateLinkService_update(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "tags.%", "1"),
 					resource.TestCheckResourceAttr(resourceName, "tags.env", "test"),
 				),
+			},
+			{
+				Config: testAccAzureRMPrivateLinkService_basic(ri, location),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMPrivateLinkServiceExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "fqdns.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "fqdns.0", "testFqdns"),
+					resource.TestCheckResourceAttr(resourceName, "ip_configurations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address", "10.5.1.17"),
+					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_address_version", "IPv4"),
+					resource.TestCheckResourceAttr(resourceName, "ip_configurations.0.private_ip_allocation_method", "Static"),
+					resource.TestCheckResourceAttr(resourceName, "load_balancer_frontend_ip_configurations.#", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -130,7 +144,7 @@ func testCheckAzureRMPrivateLinkServiceExists(resourceName string) resource.Test
 		}
 
 		name := rs.Primary.Attributes["name"]
-		resourceGroup := rs.Primary.Attributes["resource_group"]
+		resourceGroup := rs.Primary.Attributes["resource_group_name"]
 
 		client := testAccProvider.Meta().(*ArmClient).network.PrivateLinkServiceClient
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
@@ -156,7 +170,7 @@ func testCheckAzureRMPrivateLinkServiceDestroy(s *terraform.State) error {
 		}
 
 		name := rs.Primary.Attributes["name"]
-		resourceGroup := rs.Primary.Attributes["resource_group"]
+		resourceGroup := rs.Primary.Attributes["resource_group_name"]
 
 		if resp, err := client.Get(ctx, resourceGroup, name, ""); err != nil {
 			if !utils.ResponseWasNotFound(resp.Response) {
@@ -213,20 +227,16 @@ resource "azurerm_lb" "test" {
 }
 
 resource "azurerm_private_link_service" "test" {
-  name           = "acctestpls-%d"
-  location       = "${azurerm_resource_group.test.location}"
-  resource_group = "${azurerm_resource_group.test.name}"
-  fqdns          = ["testFqdns"]
+  name                = "acctestpls-%d"
+  location            = "${azurerm_resource_group.test.location}"
+  resource_group_name = "${azurerm_resource_group.test.name}"
+  fqdns               = ["testFqdns"]
 
   ip_configurations {
-    name = "${azurerm_public_ip.test.name}"
-
-    subnet {
-      id = "${azurerm_subnet.test.id}"
-    }
-
-    private_ip_address          = "10.5.1.17"
-    private_ip_address_version  = "IPv4"
+    name                         = "${azurerm_public_ip.test.name}"
+    subnet_id                    = "${azurerm_subnet.test.id}"
+    private_ip_address           = "10.5.1.17"
+    private_ip_address_version   = "IPv4"
     private_ip_allocation_method = "Static"
   }
 
@@ -280,20 +290,16 @@ resource "azurerm_lb" "test" {
 }
 
 resource "azurerm_private_link_service" "test" {
-  name           = "acctestpls-%d"
-  location       = "${azurerm_resource_group.test.location}"
-  resource_group = "${azurerm_resource_group.test.name}"
-  fqdns          = ["testFqdns2"]
+  name                = "acctestpls-%d"
+  location            = "${azurerm_resource_group.test.location}"
+  resource_group_name = "${azurerm_resource_group.test.name}"
+  fqdns               = ["testFqdns2"]
 
   ip_configurations {
-    name = "${azurerm_public_ip.test.name}"
-
-    subnet {
-      id = "${azurerm_subnet.test.id}"
-    }
-
-    private_ip_address          = "10.5.1.17"
-    private_ip_address_version  = "IPv4"
+    name                         = "${azurerm_public_ip.test.name}"
+    subnet_id                    = "${azurerm_subnet.test.id}"
+    private_ip_address           = "10.5.1.17"
+    private_ip_address_version   = "IPv4"
     private_ip_allocation_method = "Static"
   }
 
