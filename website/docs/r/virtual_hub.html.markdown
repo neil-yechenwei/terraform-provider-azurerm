@@ -26,14 +26,12 @@ resource "azurerm_virtual_wan" "example" {
 }
 
 resource "azurerm_virtual_hub" "example" {
-  name           = "acctestvirtualhub-%d"
-  resource_group = "${azurerm_resource_group.example.name}"
-  location       = "${azurerm_resource_group.example.location}"
-  address_prefix = "10.0.1.0/24"
+  name                = "acctestvirtualhub-%d"
+  resource_group_name = "${azurerm_resource_group.example.name}"
+  location            = "${azurerm_resource_group.example.location}"
+  address_prefix      = "10.0.1.0/24"
 
-  virtual_wan {
-    id = "${azurerm_virtual_wan.example.id}"
-  }
+  virtual_wan_id = "${azurerm_virtual_wan.example.id}"
 
   route_table {
     routes {
@@ -56,38 +54,25 @@ The following arguments are supported:
 
 * `address_prefix` - (Optional) Address-prefix for this VirtualHub.
 
-* `express_route_gateway` - (Optional) One `express_route_gateway` block defined below.
+* `express_route_gateway_id` - (Optional) The resource id of express route gateway.
 
-* `p2svpn_gateway` - (Optional) One `p2svpn_gateway` block defined below.
+* `p2svpn_gateway_id` - (Optional) The resource id of p2svpn gateway.
 
 * `route_table` - (Optional) One `route_table` block defined below.
 
 * `virtual_network_connections` - (Optional) One or more `virtual_network_connection` block defined below.
 
-* `virtual_wan` - (Optional) One `virtual_wan` block defined below.
+* `virtual_wan_id` - (Optional) The resource id of virtual wan.
 
-* `vpn_gateway` - (Optional) One `vpn_gateway` block defined below.
+* `vpn_gateway_id` - (Optional) The resource id of vpn gateway.
 
 * `tags` - (Optional) Resource tags. Changing this forces a new resource to be created.
-
----
-
-The `express_route_gateway` block supports the following:
-
-* `id` - (Optional) Resource ID.
-
----
-
-The `p2svpn_gateway` block supports the following:
-
-* `id` - (Optional) Resource ID.
 
 ---
 
 The `route_table` block supports the following:
 
 * `routes` - (Optional) One or more `route` block defined below.
-
 
 ---
 
@@ -103,7 +88,7 @@ The `virtual_network_connection` block supports the following:
 
 * `id` - (Optional) Resource ID.
 
-* `remote_virtual_network` - (Optional) One `remote_virtual_network` block defined below.
+* `remote_virtual_network_id` - (Optional) The resource id of remote virtual network.
 
 * `allow_hub_to_remote_vnet_transit` - (Optional) VirtualHub to RemoteVnet transit to enabled or not.
 
@@ -113,31 +98,13 @@ The `virtual_network_connection` block supports the following:
 
 * `name` - (Optional) The name of the resource that is unique within a resource group. This name can be used to access the resource.
 
-
 ---
-
-The `remote_virtual_network` block supports the following:
-
-* `id` - (Optional) Resource ID.
-
----
-
-The `virtual_wan` block supports the following:
-
-* `id` - (Optional) Resource ID.
-
----
-
-The `vpn_gateway` block supports the following:
-
-* `id` - (Optional) Resource ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `type` - Resource type.
-
+* `id` - Resource id.
 
 ## Import
 

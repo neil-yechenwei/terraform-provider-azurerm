@@ -21,7 +21,7 @@ func TestAccDataSourceAzureRMVirtualHub_basic(t *testing.T) {
 				Config: testAccDataSourceVirtualHub_basic(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "address_prefix", "10.0.1.0/24"),
-					resource.TestCheckResourceAttr(dataSourceName, "virtual_wan.#", "1"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "virtual_wan_id"),
 					resource.TestCheckResourceAttr(dataSourceName, "route_table.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "route_table.0.routes.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "route_table.0.routes.0.address_prefixes.#", "2"),

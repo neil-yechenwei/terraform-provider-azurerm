@@ -42,41 +42,25 @@ The following attributes are exported:
 
 * `address_prefix` - Address-prefix for this VirtualHub.
 
-* `express_route_gateway` - One `express_route_gateway` block defined below.
+* `express_route_gateway_id` - The resource id of express route gateway.
 
-* `p2svpn_gateway` - One `p2svpn_gateway` block defined below.
+* `p2svpn_gateway_id` - The resource id of p2svpn gateway.
 
 * `route_table` - One `route_table` block defined below.
 
-* `type` - Resource type.
-
 * `virtual_network_connections` - One or more `virtual_network_connection` block defined below.
 
-* `virtual_wan` - One `virtual_wan` block defined below.
+* `virtual_wan_id` - The resource id of virtual wan.
 
-* `vpn_gateway` - One `vpn_gateway` block defined below.
+* `vpn_gateway_id` - The resource id of vpn gateway.
 
 * `tags` - Resource tags.
-
-
----
-
-The `express_route_gateway` block contains the following:
-
-* `id` - Resource ID.
-
----
-
-The `p2svpn_gateway` block contains the following:
-
-* `id` - Resource ID.
 
 ---
 
 The `route_table` block contains the following:
 
 * `routes` - One or more `route` block defined below.
-
 
 ---
 
@@ -92,7 +76,7 @@ The `virtual_network_connection` block contains the following:
 
 * `id` - Resource ID.
 
-* `remote_virtual_network` - One `remote_virtual_network` block defined below.
+* `remote_virtual_network_id` - The resource id of remote virtual network.
 
 * `allow_hub_to_remote_vnet_transit` - VirtualHub to RemoteVnet transit to enabled or not.
 
@@ -101,22 +85,3 @@ The `virtual_network_connection` block contains the following:
 * `enable_internet_security` - Enable internet security.
 
 * `name` - The name of the resource that is unique within a resource group. This name can be used to access the resource.
-
-
----
-
-The `remote_virtual_network` block contains the following:
-
-* `id` - Resource ID.
-
----
-
-The `virtual_wan` block contains the following:
-
-* `id` - Resource ID.
-
----
-
-The `vpn_gateway` block contains the following:
-
-* `id` - Resource ID.
