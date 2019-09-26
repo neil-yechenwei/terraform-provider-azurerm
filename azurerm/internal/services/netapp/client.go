@@ -7,6 +7,7 @@ import (
 
 type Client struct {
 	AccountClient *netapp.AccountsClient
+	PoolClient    *netapp.PoolsClient
 }
 
 func BuildClient(o *common.ClientOptions) *Client {
@@ -14,7 +15,11 @@ func BuildClient(o *common.ClientOptions) *Client {
 	AccountClient := netapp.NewAccountsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&AccountClient.Client, o.ResourceManagerAuthorizer)
 
+	PoolClient := netapp.NewPoolsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&PoolClient.Client, o.ResourceManagerAuthorizer)
+
 	return &Client{
 		AccountClient: &AccountClient,
+		PoolClient:    &PoolClient,
 	}
 }
