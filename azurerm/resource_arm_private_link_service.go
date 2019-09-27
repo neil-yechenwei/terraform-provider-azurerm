@@ -129,20 +129,24 @@ func resourceArmPrivateLinkService() *schema.Resource {
 						"id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"name": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"private_endpoint": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"id": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"location": azure.SchemaLocation(),
 									"tags":     tags.Schema(),
@@ -152,20 +156,24 @@ func resourceArmPrivateLinkService() *schema.Resource {
 						"private_link_service_connection_state": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"action_required": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"description": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"status": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 								},
 							},
