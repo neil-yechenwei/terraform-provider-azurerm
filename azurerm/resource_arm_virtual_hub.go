@@ -40,33 +40,38 @@ func resourceArmVirtualHub() *schema.Resource {
 
 			"address_prefix": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 
 			"express_route_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"p2svpn_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"route_table": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"routes": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"address_prefixes": {
 										Type:     schema.TypeList,
 										Optional: true,
+										Computed: true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
@@ -74,6 +79,7 @@ func resourceArmVirtualHub() *schema.Resource {
 									"next_hop_ip_address": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 								},
 							},
@@ -85,19 +91,23 @@ func resourceArmVirtualHub() *schema.Resource {
 			"virtual_network_connections": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"allow_hub_to_remote_vnet_transit": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"allow_remote_vnet_to_use_hub_vnet_gateways": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"enable_internet_security": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"id": {
 							Type:     schema.TypeString,
@@ -107,10 +117,12 @@ func resourceArmVirtualHub() *schema.Resource {
 						"name": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"remote_virtual_network_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -118,12 +130,13 @@ func resourceArmVirtualHub() *schema.Resource {
 
 			"virtual_wan_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 
 			"vpn_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"tags": tags.Schema(),

@@ -50,9 +50,9 @@ The following arguments are supported:
 
 * `resource_group_name` - (Required) The resource group name of the VirtualHub. Changing this forces a new resource to be created.
 
-* `location` - (Optional) Resource location. Changing this forces a new resource to be created.
+* `location` - (Required) Resource location. Changing this forces a new resource to be created.
 
-* `address_prefix` - (Optional) Address-prefix for this VirtualHub.
+* `address_prefix` - (Required) Address-prefix for this VirtualHub.
 
 * `express_route_gateway_id` - (Optional) The resource id of express route gateway.
 
@@ -62,7 +62,7 @@ The following arguments are supported:
 
 * `virtual_network_connections` - (Optional) One or more `virtual_network_connection` block defined below.
 
-* `virtual_wan_id` - (Optional) The resource id of virtual wan.
+* `virtual_wan_id` - (Required) The resource id of virtual wan.
 
 * `vpn_gateway_id` - (Optional) The resource id of vpn gateway.
 
