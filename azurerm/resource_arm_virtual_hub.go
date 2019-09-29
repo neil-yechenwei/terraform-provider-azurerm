@@ -46,13 +46,11 @@ func resourceArmVirtualHub() *schema.Resource {
 			"express_route_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 
 			"p2svpn_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 
 			"route_table": {
@@ -65,7 +63,6 @@ func resourceArmVirtualHub() *schema.Resource {
 						"routes": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"address_prefixes": {
@@ -91,7 +88,6 @@ func resourceArmVirtualHub() *schema.Resource {
 			"virtual_network_connections": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"allow_hub_to_remote_vnet_transit": {
@@ -136,7 +132,6 @@ func resourceArmVirtualHub() *schema.Resource {
 			"vpn_gateway_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 
 			"tags": tags.Schema(),
