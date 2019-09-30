@@ -31,13 +31,13 @@ output "netapp_volume_id" {
 
 The following arguments are supported:
 
-* `name` - (Required) The name of the NetApp Pool.
+* `name` - (Required) The name of the NetApp Volume.
 
 * `account_name` - (Required) The name of the NetApp account.
 
 * `pool_name` - (Required) The name of the NetApp Pool.
 
-* `resource_group_name` - (Required) The Name of the Resource Group where the NetApp Pool exists.
+* `resource_group_name` - (Required) The Name of the Resource Group where the NetApp Volume exists.
 
 
 ## Attributes Reference
@@ -55,6 +55,8 @@ The following attributes are exported:
 * `subnet_id` - The Azure Resource URI for a delegated subnet. Must have the delegation Microsoft.NetApp/volumes.
 
 * `usage_threshold` - Maximum storage quota allowed for a file system in bytes. This is a soft quota used for alerting only. Minimum size is 100 GiB. Upper limit is 100TiB.
+
+* `file_system_id` - Unique FileSystem Identifier.
 
 * `tags` - Resource tags.
 

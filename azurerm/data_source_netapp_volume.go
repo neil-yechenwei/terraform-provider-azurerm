@@ -2,12 +2,13 @@ package azurerm
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-	"strings"
 )
 
 func dataSourceArmNetAppVolume() *schema.Resource {
@@ -103,6 +104,11 @@ func dataSourceArmNetAppVolume() *schema.Resource {
 				Computed: true,
 			},
 
+			"file_system_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
 			"tags": tagsForDataSourceSchema(),
 		},
 	}
@@ -154,6 +160,10 @@ func dataSourceArmNetAppVolumeRead(d *schema.ResourceData, meta interface{}) err
 
 		if err := d.Set("usage_threshold", volumeProperties.UsageThreshold); err != nil {
 			return fmt.Errorf("Error setting `usage_threshold`: %+v", err)
+		}
+
+		if err := d.Set("file_system_id", volumeProperties.FileSystemID); err != nil {
+			return fmt.Errorf("Error setting `file_system_id`: %+v", err)
 		}
 	}
 
