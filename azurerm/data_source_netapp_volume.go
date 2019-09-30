@@ -103,6 +103,11 @@ func dataSourceArmNetAppVolume() *schema.Resource {
 				Computed: true,
 			},
 
+			"file_system_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
 			"tags": tagsForDataSourceSchema(),
 		},
 	}
@@ -154,6 +159,10 @@ func dataSourceArmNetAppVolumeRead(d *schema.ResourceData, meta interface{}) err
 
 		if err := d.Set("usage_threshold", volumeProperties.UsageThreshold); err != nil {
 			return fmt.Errorf("Error setting `usage_threshold`: %+v", err)
+		}
+
+		if err := d.Set("file_system_id", volumeProperties.FileSystemID); err != nil {
+			return fmt.Errorf("Error setting `file_system_id`: %+v", err)
 		}
 	}
 

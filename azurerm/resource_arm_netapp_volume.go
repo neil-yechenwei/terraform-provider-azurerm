@@ -141,6 +141,11 @@ func resourceArmNetAppVolume() *schema.Resource {
 				ValidateFunc: validation.IntBetween(107374182400, 109951162780000),
 			},
 
+			"file_system_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
 			"tags": tags.Schema(),
 		},
 	}
@@ -257,6 +262,10 @@ func resourceArmNetAppVolumeRead(d *schema.ResourceData, meta interface{}) error
 
 		if err := d.Set("usage_threshold", volumeProperties.UsageThreshold); err != nil {
 			return fmt.Errorf("Error setting `usage_threshold`: %+v", err)
+		}
+
+		if err := d.Set("file_system_id", volumeProperties.FileSystemID); err != nil {
+			return fmt.Errorf("Error setting `file_system_id`: %+v", err)
 		}
 	}
 

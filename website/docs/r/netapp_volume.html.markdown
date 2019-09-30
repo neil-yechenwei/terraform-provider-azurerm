@@ -129,6 +129,8 @@ The following attributes are exported:
 
 * `id` - Resource id.
 
+* `file_system_id` - Unique FileSystem Identifier.
+
 ## Import
 
 NetApp Volume can be imported using the `resource id`, e.g.
