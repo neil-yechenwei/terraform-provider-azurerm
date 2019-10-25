@@ -457,6 +457,8 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_virtual_network":                                                        resourceArmVirtualNetwork(),
 		"azurerm_virtual_wan":                                                            resourceArmVirtualWan(),
 		"azurerm_web_application_firewall_policy":                                        resourceArmWebApplicationFirewallPolicy(),
+		"azurerm_private_link_endpoint":                                                  resourceArmPrivateLinkEndpoint(),
+		"azurerm_private_link_service":                                                   resourceArmPrivateLinkService(),
 	}
 
 	// 2.0 resources

@@ -34,6 +34,8 @@ type Client struct {
 	VirtualWanClient                     *network.VirtualWansClient
 	WatcherClient                        *network.WatchersClient
 	WebApplicationFirewallPoliciesClient *network.WebApplicationFirewallPoliciesClient
+	PrivateEndpointClient                *network.PrivateEndpointsClient
+	PrivateLinkServiceClient             *network.PrivateLinkServicesClient
 }
 
 func BuildClient(o *common.ClientOptions) *Client {
@@ -121,6 +123,12 @@ func BuildClient(o *common.ClientOptions) *Client {
 	WebApplicationFirewallPoliciesClient := network.NewWebApplicationFirewallPoliciesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&WebApplicationFirewallPoliciesClient.Client, o.ResourceManagerAuthorizer)
 
+	PrivateEndpointClient := network.NewPrivateEndpointsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&PrivateEndpointClient.Client, o.ResourceManagerAuthorizer)
+
+	PrivateLinkServiceClient := network.NewPrivateLinkServicesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&PrivateLinkServiceClient.Client, o.ResourceManagerAuthorizer)
+
 	return &Client{
 		ApplicationGatewaysClient:            &ApplicationGatewaysClient,
 		ApplicationSecurityGroupsClient:      &ApplicationSecurityGroupsClient,
@@ -150,5 +158,7 @@ func BuildClient(o *common.ClientOptions) *Client {
 		VirtualWanClient:                     &VirtualWanClient,
 		WatcherClient:                        &WatcherClient,
 		WebApplicationFirewallPoliciesClient: &WebApplicationFirewallPoliciesClient,
+		PrivateEndpointClient:                &PrivateEndpointClient,
+		PrivateLinkServiceClient:             &PrivateLinkServiceClient,
 	}
 }
