@@ -34,6 +34,7 @@ type Client struct {
 	VirtualWanClient                     *network.VirtualWansClient
 	WatcherClient                        *network.WatchersClient
 	WebApplicationFirewallPoliciesClient *network.WebApplicationFirewallPoliciesClient
+	PrivateLinkServiceClient             *network.PrivateLinkServicesClient
 }
 
 func BuildClient(o *common.ClientOptions) *Client {
@@ -90,6 +91,9 @@ func BuildClient(o *common.ClientOptions) *Client {
 
 	PublicIPPrefixesClient := network.NewPublicIPPrefixesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&PublicIPPrefixesClient.Client, o.ResourceManagerAuthorizer)
+
+	PrivateLinkServiceClient := network.NewPrivateLinkServicesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&PrivateLinkServiceClient.Client, o.ResourceManagerAuthorizer)
 
 	RoutesClient := network.NewRoutesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&RoutesClient.Client, o.ResourceManagerAuthorizer)
@@ -150,5 +154,6 @@ func BuildClient(o *common.ClientOptions) *Client {
 		VirtualWanClient:                     &VirtualWanClient,
 		WatcherClient:                        &WatcherClient,
 		WebApplicationFirewallPoliciesClient: &WebApplicationFirewallPoliciesClient,
+		PrivateLinkServiceClient:             &PrivateLinkServiceClient,
 	}
 }
