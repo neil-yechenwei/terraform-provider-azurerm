@@ -152,6 +152,7 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_virtual_network_gateway":                 dataSourceArmVirtualNetworkGateway(),
 		"azurerm_virtual_network_gateway_connection":      dataSourceArmVirtualNetworkGatewayConnection(),
 		"azurerm_virtual_network":                         dataSourceArmVirtualNetwork(),
+		"azurerm_virtual_hub":                             dataSourceArmVirtualHub(),
 	}
 
 	resources := map[string]*schema.Resource{
@@ -477,6 +478,7 @@ func Provider() terraform.ResourceProvider {
 		"azurerm_virtual_network":                                                        resourceArmVirtualNetwork(),
 		"azurerm_virtual_wan":                                                            resourceArmVirtualWan(),
 		"azurerm_web_application_firewall_policy":                                        resourceArmWebApplicationFirewallPolicy(),
+		"azurerm_virtual_hub":                                                            resourceArmVirtualHub(),
 	}
 
 	// 2.0 resources
