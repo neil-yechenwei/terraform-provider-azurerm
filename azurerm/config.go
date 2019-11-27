@@ -31,6 +31,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/eventhub"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/frontdoor"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/graph"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/hanaonazure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/hdinsight"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/healthcare"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/iothub"
@@ -90,6 +91,7 @@ type ArmClient struct {
 
 	// Services
 	// NOTE: all new services should be Public as they're going to be relocated in the near-future
+	HanaOnAzure      *hanaonazure.Client
 	ManagementGroups *managementgroup.Client
 	Maps             *maps.Client
 	MariaDB          *mariadb.Client
@@ -220,6 +222,7 @@ func getArmClient(authConfig *authentication.Config, skipProviderRegistration bo
 	client.Eventhub = eventhub.BuildClient(o)
 	client.Frontdoor = frontdoor.BuildClient(o)
 	client.Graph = graph.BuildClient(o)
+	client.HanaOnAzure = hanaonazure.BuildClient(o)
 	client.HDInsight = hdinsight.BuildClient(o)
 	client.Healthcare = healthcare.BuildClient(o)
 	client.IoTHub = iothub.BuildClient(o)
