@@ -2,7 +2,9 @@ package azurerm
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-09-01/network"
@@ -86,6 +88,40 @@ func resourceArmVirtualHub() *schema.Resource {
 				},
 			},
 
+			"virtual_network_connection": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validation.StringMatch(
+								regexp.MustCompile(`^[\da-zA-Z][-_.\da-zA-Z]{0,78}[_\da-zA-Z]$`),
+								`The name must be between 1 and 80 characters and begin with a letter or number, end with a letter, number or underscore, and may contain only letters, numbers, underscores, periods, or hyphens.`,
+							),
+						},
+						"remote_virtual_network_id": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: azure.ValidateResourceID,
+						},
+						"allow_hub_to_remote_vnet_transit": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"allow_remote_vnet_to_use_hub_vnet_gateways": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"enable_internet_security": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+
 			"tags": tags.Schema(),
 		},
 	}
@@ -119,6 +155,7 @@ func resourceArmVirtualHubCreateUpdate(d *schema.ResourceData, meta interface{})
 	virtualWanId := d.Get("virtual_wan_id").(string)
 	route := d.Get("route").(*schema.Set).List()
 	t := d.Get("tags").(map[string]interface{})
+	virtualNetworkConnection := d.Get("virtual_network_connection").([]interface{})
 
 	parameters := network.VirtualHub{
 		Location: utils.String(location),
@@ -127,7 +164,8 @@ func resourceArmVirtualHubCreateUpdate(d *schema.ResourceData, meta interface{})
 			VirtualWan: &network.SubResource{
 				ID: &virtualWanId,
 			},
-			RouteTable: expandArmVirtualHubRoute(route),
+			VirtualNetworkConnections: expandArmVirtualHubVirtualNetworkConnection(virtualNetworkConnection),
+			RouteTable:                expandArmVirtualHubRoute(route),
 		},
 		Tags: tags.Expand(t),
 	}
@@ -192,6 +230,10 @@ func resourceArmVirtualHubRead(d *schema.ResourceData, meta interface{}) error {
 			virtualWanId = props.VirtualWan.ID
 		}
 		d.Set("virtual_wan_id", virtualWanId)
+
+		if err := d.Set("virtual_network_connection", flattenArmVirtualHubVirtualNetworkConnection(props.VirtualNetworkConnections)); err != nil {
+			return fmt.Errorf("Error setting `virtual_network_connection`: %+v", err)
+		}
 	}
 
 	return tags.FlattenAndSet(d, resp.Tags)
@@ -224,6 +266,88 @@ func resourceArmVirtualHubDelete(d *schema.ResourceData, meta interface{}) error
 	}
 
 	return nil
+}
+
+func expandArmVirtualHubVirtualNetworkConnection(input []interface{}) *[]network.HubVirtualNetworkConnection {
+	if len(input) == 0 {
+		return nil
+	}
+
+	results := make([]network.HubVirtualNetworkConnection, 0)
+
+	for _, item := range input {
+		if item == nil {
+			continue
+		}
+
+		v := item.(map[string]interface{})
+		name := v["name"].(string)
+		remoteVirtualNetworkId := v["remote_virtual_network_id"].(string)
+		allowHubToRemoteVnetTransit := v["allow_hub_to_remote_vnet_transit"].(bool)
+		allowRemoteVnetToUseHubVnetGateways := v["allow_remote_vnet_to_use_hub_vnet_gateways"].(bool)
+		enableInternetSecurity := v["enable_internet_security"].(bool)
+
+		results = append(results, network.HubVirtualNetworkConnection{
+			Name: utils.String(name),
+			HubVirtualNetworkConnectionProperties: &network.HubVirtualNetworkConnectionProperties{
+				RemoteVirtualNetwork: &network.SubResource{
+					ID: utils.String(remoteVirtualNetworkId),
+				},
+				AllowHubToRemoteVnetTransit:         utils.Bool(allowHubToRemoteVnetTransit),
+				AllowRemoteVnetToUseHubVnetGateways: utils.Bool(allowRemoteVnetToUseHubVnetGateways),
+				EnableInternetSecurity:              utils.Bool(enableInternetSecurity),
+			},
+		})
+	}
+
+	return &results
+}
+
+func flattenArmVirtualHubVirtualNetworkConnection(input *[]network.HubVirtualNetworkConnection) []interface{} {
+	results := make([]interface{}, 0)
+	if input == nil {
+		return results
+	}
+
+	for _, item := range *input {
+		name := ""
+		if item.Name != nil {
+			name = *item.Name
+		}
+
+		allowHubToRemoteVNetTraffic := false
+		allowRemoteVnetToUseHubVnetGateways := false
+		enableInternetSecurity := false
+		remoteVirtualNetworkId := ""
+
+		if props := item.HubVirtualNetworkConnectionProperties; props != nil {
+			if props.AllowHubToRemoteVnetTransit != nil {
+				allowHubToRemoteVNetTraffic = *props.AllowHubToRemoteVnetTransit
+			}
+
+			if props.RemoteVirtualNetwork != nil && props.RemoteVirtualNetwork.ID != nil {
+				remoteVirtualNetworkId = *props.RemoteVirtualNetwork.ID
+			}
+
+			if v := props.AllowRemoteVnetToUseHubVnetGateways; v != nil {
+				allowRemoteVnetToUseHubVnetGateways = *props.AllowRemoteVnetToUseHubVnetGateways
+			}
+
+			if props.EnableInternetSecurity != nil {
+				enableInternetSecurity = *props.EnableInternetSecurity
+			}
+		}
+
+		results = append(results, map[string]interface{}{
+			"allow_hub_to_remote_vnet_transit":           allowHubToRemoteVNetTraffic,
+			"allow_remote_vnet_to_use_hub_vnet_gateways": allowRemoteVnetToUseHubVnetGateways,
+			"enable_internet_security":                   enableInternetSecurity,
+			"name":                                       name,
+			"remote_virtual_network_id":                  remoteVirtualNetworkId,
+		})
+	}
+
+	return results
 }
 
 func expandArmVirtualHubRoute(input []interface{}) *network.VirtualHubRouteTable {
