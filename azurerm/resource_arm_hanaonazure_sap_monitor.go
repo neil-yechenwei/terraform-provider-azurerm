@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/hanaonazure/mgmt/2017-11-03-preview/hanaonazure"
+	"github.com/hashicorp/go-azure-helpers/response"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/response"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
@@ -30,6 +31,13 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:         schema.TypeString,
@@ -42,12 +50,18 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 
 			"location": azure.SchemaLocation(),
 
-			"hana_db_username": {
+			"hana_host_name": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validate.IPv4Address,
+			},
+
+			"hana_db_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validation.StringMatch(
-					regexp.MustCompile(`^[\da-zA-Z]{1,32}$`),
-					`The name must be between 1 and 32 characters in length and and may contain only letters and numbers.`,
+					regexp.MustCompile(`^[\dA-Z]{2,64}$`),
+					`The name must be between 2 and 64 characters in length and and may contain only uppercase letters and numbers.`,
 				),
 			},
 
@@ -57,24 +71,18 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 				ValidateFunc: validation.IntBetween(1024, 65535),
 			},
 
-			"hana_host_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validate.IPv4Address,
-			},
-
 			"hana_subnet_id": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: azure.ValidateResourceID,
 			},
 
-			"hana_db_name": {
+			"hana_db_username": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ValidateFunc: validation.StringMatch(
-					regexp.MustCompile(`^[\dA-Z]{2,64}$`),
-					`The name must be between 2 and 64 characters in length and and may contain only uppercase letters and numbers.`,
+					regexp.MustCompile(`^[\da-zA-Z]{1,32}$`),
+					`The name must be between 1 and 32 characters in length and and may contain only letters and numbers.`,
 				),
 			},
 
@@ -114,11 +122,6 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 				Computed: true,
 			},
 
-			"managed_resource_group_name": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
 			"tags": tags.Schema(),
 		},
 	}
@@ -126,7 +129,8 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 
 func resourceArmHanaOnAzureSapMonitorCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := timeouts.ForCreateUpdate(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	name := d.Get("name").(string)
 	resourceGroup := d.Get("resource_group_name").(string)
@@ -183,7 +187,7 @@ func resourceArmHanaOnAzureSapMonitorCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return fmt.Errorf("Error retrieving Sap Monitor %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
-	if resp.ID == nil {
+	if resp.ID == nil || *resp.ID == "" {
 		return fmt.Errorf("Cannot read Sap Monitor %q (Resource Group %q) ID", name, resourceGroup)
 	}
 	d.SetId(*resp.ID)
@@ -193,7 +197,8 @@ func resourceArmHanaOnAzureSapMonitorCreate(d *schema.ResourceData, meta interfa
 
 func resourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := timeouts.ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
@@ -228,7 +233,6 @@ func resourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interface
 		d.Set("hana_db_password_key_vault_url", props.HanaDbPasswordKeyVaultURL)
 		d.Set("hana_db_credentials_msi_id", props.HanaDbCredentialsMsiID)
 		d.Set("log_analytics_workspace_arm_id", props.LogAnalyticsWorkspaceArmID)
-		d.Set("managed_resource_group_name", props.ManagedResourceGroupName)
 	}
 
 	return tags.FlattenAndSet(d, resp.Tags)
@@ -257,7 +261,8 @@ func resourceArmHanaOnAzureSapMonitorUpdate(d *schema.ResourceData, meta interfa
 
 func resourceArmHanaOnAzureSapMonitorDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := timeouts.ForDelete(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {

@@ -2,17 +2,23 @@ package azurerm
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	azhana "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/hanaonazure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/timeouts"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
 func dataSourceArmHanaOnAzureSapMonitor() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceArmHanaOnAzureSapMonitorRead,
+
+		Timeouts: &schema.ResourceTimeout{
+			Read: schema.DefaultTimeout(5 * time.Minute),
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -25,16 +31,6 @@ func dataSourceArmHanaOnAzureSapMonitor() *schema.Resource {
 
 			"location": azure.SchemaLocationForDataSource(),
 
-			"hana_db_username": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"hana_db_sql_port": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-
 			"hana_host_name": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -46,6 +42,16 @@ func dataSourceArmHanaOnAzureSapMonitor() *schema.Resource {
 			},
 
 			"hana_db_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"hana_db_sql_port": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
+			"hana_db_username": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -75,11 +81,6 @@ func dataSourceArmHanaOnAzureSapMonitor() *schema.Resource {
 				Computed: true,
 			},
 
-			"managed_resource_group_name": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
 			"tags": tags.SchemaDataSource(),
 		},
 	}
@@ -87,7 +88,8 @@ func dataSourceArmHanaOnAzureSapMonitor() *schema.Resource {
 
 func dataSourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := timeouts.ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	name := d.Get("name").(string)
 	resourceGroup := d.Get("resource_group_name").(string)
@@ -98,6 +100,10 @@ func dataSourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interfa
 			return fmt.Errorf("Error: Sap Monitor %q (Resource Group %q) was not found", name, resourceGroup)
 		}
 		return fmt.Errorf("Error reading Sap Monitor %q (Resource Group %q): %+v", name, resourceGroup, err)
+	}
+
+	if resp.ID == nil || *resp.ID == "" {
+		return fmt.Errorf("Error retrieving Sap Monitor %q (Resource Group %q): ID was nil or empty", name, resourceGroup)
 	}
 
 	d.SetId(*resp.ID)
@@ -118,7 +124,6 @@ func dataSourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interfa
 		d.Set("hana_db_password_key_vault_url", props.HanaDbPasswordKeyVaultURL)
 		d.Set("hana_db_credentials_msi_id", props.HanaDbCredentialsMsiID)
 		d.Set("log_analytics_workspace_arm_id", props.LogAnalyticsWorkspaceArmID)
-		d.Set("managed_resource_group_name", props.ManagedResourceGroupName)
 	}
 
 	return tags.FlattenAndSet(d, resp.Tags)

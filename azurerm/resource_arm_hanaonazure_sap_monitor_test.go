@@ -78,7 +78,7 @@ func TestAccAzureRMHanaOnAzureSapMonitor_complete(t *testing.T) {
 				Config: testAccAzureRMHanaOnAzureSapMonitor_complete(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "hana_db_sql_port", "30815"),
+					resource.TestCheckResourceAttr(resourceName, "hana_db_sql_port", "30015"),
 				),
 			},
 			{
@@ -116,7 +116,7 @@ func TestAccAzureRMHanaOnAzureSapMonitor_update(t *testing.T) {
 				Config: testAccAzureRMHanaOnAzureSapMonitor_complete(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "hana_db_sql_port", "30815"),
+					resource.TestCheckResourceAttr(resourceName, "hana_db_sql_port", "30015"),
 				),
 			},
 			{
@@ -177,38 +177,22 @@ func testCheckAzureRMHanaOnAzureSapMonitorDestroy(s *terraform.State) error {
 }
 
 func testAccAzureRMHanaOnAzureSapMonitor_basic(rInt int, location string) string {
+	template := testAccAzureRMHanaOnAzureSapMonitor_template(rInt, location)
 	return fmt.Sprintf(`
-resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-hanaonazure-%d"
-  location = "%s"
-}
-
-resource "azurerm_virtual_network" "test" {
-  name                = "acctest-VirtualNetwork-%d"
-  address_space       = ["10.0.0.0/16"]
-  location            = "${azurerm_resource_group.test.location}"
-  resource_group_name = "${azurerm_resource_group.test.name}"
-}
-
-resource "azurerm_subnet" "test" {
-  name                 = "acctest-Subnet-%d"
-  resource_group_name  = "${azurerm_resource_group.test.name}"
-  virtual_network_name = "${azurerm_virtual_network.test.name}"
-  address_prefix       = "10.0.2.0/24"
-}
+%s
 
 resource "azurerm_hanaonazure_sap_monitor" "test" {
   name                = "acctest-HanaOnAzureSapMonitor-%d"
   resource_group_name = "${azurerm_resource_group.test.name}"
   location            = "${azurerm_resource_group.test.location}"
-  hana_db_username    = "SYSTEM"
-  hana_db_sql_port    = 30815
   hana_host_name      = "10.0.0.6"
-  hana_db_name        = "SYSTEMDB"
-  hana_db_password    = "Manager1"
   hana_subnet_id      = "${azurerm_subnet.test.id}"
+  hana_db_name        = "SYSTEMDB"
+  hana_db_sql_port    = 30815
+  hana_db_username    = "SYSTEM"
+  hana_db_password    = "Manager1"
 }
-`, rInt, location, rInt)
+`, template, rInt)
 }
 
 func testAccAzureRMHanaOnAzureSapMonitor_requiresImport(rInt int, location string) string {
@@ -224,6 +208,25 @@ resource "azurerm_hanaonazure_sap_monitor" "import" {
 }
 
 func testAccAzureRMHanaOnAzureSapMonitor_complete(rInt int, location string) string {
+	template := testAccAzureRMHanaOnAzureSapMonitor_template(rInt, location)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_hanaonazure_sap_monitor" "test" {
+  name                = "acctest-HanaOnAzureSapMonitor-%d"
+  resource_group_name = "${azurerm_resource_group.test.name}"
+  location            = "${azurerm_resource_group.test.location}"
+  hana_host_name      = "10.0.0.6"
+  hana_subnet_id      = "${azurerm_subnet.test.id}"
+  hana_db_name        = "SYSTEMDB"
+  hana_db_sql_port    = 30015
+  hana_db_username    = "SYSTEM"
+  hana_db_password    = "Manager1"
+}
+`, template, rInt)
+}
+
+func testAccAzureRMHanaOnAzureSapMonitor_template(rInt int, location string) string {
 	return fmt.Sprintf(`
 resource "azurerm_resource_group" "test" {
   name     = "acctestRG-hanaonazure-%d"
@@ -243,17 +246,5 @@ resource "azurerm_subnet" "test" {
   virtual_network_name = "${azurerm_virtual_network.test.name}"
   address_prefix       = "10.0.2.0/24"
 }
-
-resource "azurerm_hanaonazure_sap_monitor" "test" {
-  name                = "acctest-HanaOnAzureSapMonitor-%d"
-  resource_group_name = "${azurerm_resource_group.test.name}"
-  location            = "${azurerm_resource_group.test.location}"
-  hana_db_username    = "SYSTEM"
-  hana_db_sql_port    = 30815
-  hana_host_name      = "10.0.0.6"
-  hana_db_name        = "SYSTEMDB"
-  hana_db_password    = "Manager1"
-  hana_subnet_id      = "${azurerm_subnet.test.id}"
-}
-`, rInt, location, rInt)
+`, rInt, location, rInt, rInt)
 }

@@ -57,17 +57,17 @@ The following arguments are supported:
 
 * `location` - (Required) Specifies the supported Azure location where the resource exists. Changing this forces a new resource to be created.
 
-* `hana_db_username` - (Required) The database username of the HANA instance.
-
-* `hana_db_sql_port` - (Required) The database port of the HANA instance.
-
 * `hana_host_name` - (Required) The hostname of the HANA instance.
 
 * `hana_subnet_id` - (Required) The subnet to create Azure Monitor for SAP Solutions into.
 
-* `hana_db_password` - (Optional) The database password of the HANA instance.
+* `hana_db_name` - (Required) The database name of the HANA instance.
 
-* `hana_db_name` - (Optional) The database name of the HANA instance.
+* `hana_db_sql_port` - (Required) The database port of the HANA instance.
+
+* `hana_db_username` - (Required) The database username of the HANA instance.
+
+* `hana_db_password` - (Optional) The database password of the HANA instance.
 
 * `key_vault_id` - (Optional) The key vault id containing customer's HANA credentials. It conflicts with `hana_db_password`.
 
@@ -86,8 +86,6 @@ The following attributes are exported:
 * `id` - The ID of the HanaOnAzure Sap Monitor.
 
 * `log_analytics_workspace_arm_id` - The ARM ID of the Log Analytics Workspace that is used for monitoring.
-
-* `managed_resource_group_name` - The name of the resource group the SAP Monitor resources get deployed into.
 
 ## Import
 

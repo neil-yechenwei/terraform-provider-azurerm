@@ -40,8 +40,8 @@ func testAccDataSourceHanaOnAzureSapMonitor_basic(rInt int, location string) str
 %s
 
 data "azurerm_hanaonazure_sap_monitor" "test" {
-  resource_group = "${azurerm_hanaonazure_sap_monitor.test.resource_group_name}"
-  name           = "${azurerm_hanaonazure_sap_monitor.test.name}"
+  name                = "${azurerm_hanaonazure_sap_monitor.test.name}"
+  resource_group_name = "${azurerm_hanaonazure_sap_monitor.test.resource_group_name}"
 }
 `, config)
 }
