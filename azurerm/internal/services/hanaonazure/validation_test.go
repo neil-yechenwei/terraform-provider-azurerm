@@ -14,7 +14,7 @@ func TestValidateHanaSapMonitorName(t *testing.T) {
 		},
 		{
 			// basic example
-			input:    "hello",
+			input:    "hello1",
 			expected: true,
 		},
 		{
