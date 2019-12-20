@@ -12,6 +12,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/clients"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
 	azhana "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/hanaonazure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
@@ -127,8 +128,8 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 }
 
 func resourceArmHanaOnAzureSapMonitorCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx, cancel := timeouts.ForCreateUpdate(meta.(*ArmClient).StopContext, d)
+	client := meta.(*clients.Client).HanaOnAzure.SapMonitorClient
+	ctx, cancel := timeouts.ForCreate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
 	name := d.Get("name").(string)
@@ -195,8 +196,8 @@ func resourceArmHanaOnAzureSapMonitorCreate(d *schema.ResourceData, meta interfa
 }
 
 func resourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx, cancel := timeouts.ForRead(meta.(*ArmClient).StopContext, d)
+	client := meta.(*clients.Client).HanaOnAzure.SapMonitorClient
+	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
 	id, err := azure.ParseAzureResourceID(d.Id())
@@ -238,8 +239,8 @@ func resourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interface
 }
 
 func resourceArmHanaOnAzureSapMonitorUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx, cancel := timeouts.ForUpdate(meta.(*ArmClient).StopContext, d)
+	client := meta.(*clients.Client).HanaOnAzure.SapMonitorClient
+	ctx, cancel := timeouts.ForUpdate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
 	name := d.Get("name").(string)
@@ -259,8 +260,8 @@ func resourceArmHanaOnAzureSapMonitorUpdate(d *schema.ResourceData, meta interfa
 }
 
 func resourceArmHanaOnAzureSapMonitorDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx, cancel := timeouts.ForDelete(meta.(*ArmClient).StopContext, d)
+	client := meta.(*clients.Client).HanaOnAzure.SapMonitorClient
+	ctx, cancel := timeouts.ForDelete(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
 	id, err := azure.ParseAzureResourceID(d.Id())

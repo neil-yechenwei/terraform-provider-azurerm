@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/acceptance"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/clients"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
@@ -14,11 +16,11 @@ import (
 func TestAccAzureRMHanaOnAzureSapMonitor_basic(t *testing.T) {
 	resourceName := "azurerm_hanaonazure_sap_monitor.test"
 	ri := tf.AccRandTimeInt()
-	location := testLocation()
+	location := acceptance.Location()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
 		CheckDestroy: testCheckAzureRMHanaOnAzureSapMonitorDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -44,21 +46,22 @@ func TestAccAzureRMHanaOnAzureSapMonitor_requiresImport(t *testing.T) {
 
 	resourceName := "azurerm_hanaonazure_sap_monitor.test"
 	ri := tf.AccRandTimeInt()
+	location := acceptance.Location()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
 		CheckDestroy: testCheckAzureRMHanaOnAzureSapMonitorDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAzureRMHanaOnAzureSapMonitor_basic(ri, testLocation()),
+				Config: testAccAzureRMHanaOnAzureSapMonitor_basic(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName),
 				),
 			},
 			{
-				Config:      testAccAzureRMHanaOnAzureSapMonitor_requiresImport(ri, testLocation()),
-				ExpectError: testRequiresImportError("azurerm_hanaonazure_sap_monitor"),
+				Config:      testAccAzureRMHanaOnAzureSapMonitor_requiresImport(ri, location),
+				ExpectError: acceptance.RequiresImportError("azurerm_hanaonazure_sap_monitor"),
 			},
 		},
 	})
@@ -67,11 +70,11 @@ func TestAccAzureRMHanaOnAzureSapMonitor_requiresImport(t *testing.T) {
 func TestAccAzureRMHanaOnAzureSapMonitor_complete(t *testing.T) {
 	resourceName := "azurerm_hanaonazure_sap_monitor.test"
 	ri := tf.AccRandTimeInt()
-	location := testLocation()
+	location := acceptance.Location()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
 		CheckDestroy: testCheckAzureRMHanaOnAzureSapMonitorDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -92,11 +95,11 @@ func TestAccAzureRMHanaOnAzureSapMonitor_complete(t *testing.T) {
 func TestAccAzureRMHanaOnAzureSapMonitor_update(t *testing.T) {
 	resourceName := "azurerm_hanaonazure_sap_monitor.test"
 	ri := tf.AccRandTimeInt()
-	location := testLocation()
+	location := acceptance.Location()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
 		CheckDestroy: testCheckAzureRMHanaOnAzureSapMonitorDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -137,8 +140,8 @@ func testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName string) resource.T
 		name := rs.Primary.Attributes["name"]
 		resourceGroup := rs.Primary.Attributes["resource_group_name"]
 
-		client := testAccProvider.Meta().(*ArmClient).HanaOnAzure.SapMonitorClient
-		ctx := testAccProvider.Meta().(*ArmClient).StopContext
+		client := acceptance.AzureProvider.Meta().(*clients.Client).HanaOnAzure.SapMonitorClient
+		ctx := acceptance.AzureProvider.Meta().(*clients.Client).StopContext
 
 		if resp, err := client.Get(ctx, resourceGroup, name); err != nil {
 			if utils.ResponseWasNotFound(resp.Response) {
@@ -152,8 +155,8 @@ func testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName string) resource.T
 }
 
 func testCheckAzureRMHanaOnAzureSapMonitorDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ArmClient).HanaOnAzure.SapMonitorClient
-	ctx := testAccProvider.Meta().(*ArmClient).StopContext
+	client := acceptance.AzureProvider.Meta().(*clients.Client).HanaOnAzure.SapMonitorClient
+	ctx := acceptance.AzureProvider.Meta().(*clients.Client).StopContext
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "azurerm_hanaonazure_sap_monitor" {
