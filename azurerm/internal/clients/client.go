@@ -27,6 +27,7 @@ import (
 	eventhub "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/eventhub/client"
 	frontdoor "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/frontdoor/client"
 	graph "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/graph/client"
+	hanaOnAzure "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/hanaonazure/client"
 	hdinsight "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/hdinsight/client"
 	healthcare "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/healthcare/client"
 	iothub "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/iothub/client"
@@ -96,6 +97,7 @@ type Client struct {
 	Eventhub         *eventhub.Client
 	Frontdoor        *frontdoor.Client
 	Graph            *graph.Client
+	HanaOnAzure      *hanaOnAzure.Client
 	HDInsight        *hdinsight.Client
 	HealthCare       *healthcare.Client
 	IoTHub           *iothub.Client
@@ -164,6 +166,7 @@ func (client *Client) Build(ctx context.Context, o *common.ClientOptions) error 
 	client.Eventhub = eventhub.NewClient(o)
 	client.Frontdoor = frontdoor.NewClient(o)
 	client.Graph = graph.NewClient(o)
+	client.HanaOnAzure = hanaOnAzure.NewClient(o)
 	client.HDInsight = hdinsight.NewClient(o)
 	client.HealthCare = healthcare.NewClient(o)
 	client.IoTHub = iothub.NewClient(o)
