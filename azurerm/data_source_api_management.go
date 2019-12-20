@@ -292,8 +292,7 @@ func flattenDataSourceApiManagementAdditionalLocations(input *[]apimanagement.Ad
 		}
 
 		if prop.PublicIPAddresses != nil {
-			output["public_ip_addresses"+
-				""] = *prop.PublicIPAddresses
+			output["public_ip_addresses"] = *prop.PublicIPAddresses
 		}
 
 		if prop.GatewayRegionalURL != nil {

@@ -78,7 +78,6 @@ func TestAccAzureRMHanaOnAzureSapMonitor_complete(t *testing.T) {
 				Config: testAccAzureRMHanaOnAzureSapMonitor_complete(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "hana_db_sql_port", "30015"),
 				),
 			},
 			{
@@ -104,7 +103,7 @@ func TestAccAzureRMHanaOnAzureSapMonitor_update(t *testing.T) {
 				Config: testAccAzureRMHanaOnAzureSapMonitor_basic(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "hana_db_sql_port", "30815"),
+					resource.TestCheckResourceAttr(resourceName, "tags.ENV", "Test"),
 				),
 			},
 			{
@@ -116,7 +115,7 @@ func TestAccAzureRMHanaOnAzureSapMonitor_update(t *testing.T) {
 				Config: testAccAzureRMHanaOnAzureSapMonitor_complete(ri, location),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMHanaOnAzureSapMonitorExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "hana_db_sql_port", "30015"),
+					resource.TestCheckResourceAttr(resourceName, "tags.ENV", "Prod"),
 				),
 			},
 			{
@@ -177,20 +176,24 @@ func testCheckAzureRMHanaOnAzureSapMonitorDestroy(s *terraform.State) error {
 }
 
 func testAccAzureRMHanaOnAzureSapMonitor_basic(rInt int, location string) string {
-	template := testAccAzureRMHanaOnAzureSapMonitor_template(rInt, location)
+	template := testAccAzureRMHanaOnAzureSapMonitor_template()
 	return fmt.Sprintf(`
 %s
 
 resource "azurerm_hanaonazure_sap_monitor" "test" {
   name                = "acctest-HanaOnAzureSapMonitor-%d"
-  resource_group_name = "${azurerm_resource_group.test.name}"
-  location            = "${azurerm_resource_group.test.location}"
+  resource_group_name = "${data.azurerm_resource_group.test.name}"
+  location            = "${data.azurerm_resource_group.test.location}"
   hana_host_name      = "10.0.0.6"
-  hana_subnet_id      = "${azurerm_subnet.test.id}"
+  hana_subnet_id      = "${data.azurerm_subnet.test.id}"
   hana_db_name        = "SYSTEMDB"
-  hana_db_sql_port    = 30815
+  hana_db_sql_port    = 30215
   hana_db_username    = "SYSTEM"
-  hana_db_password    = "Manager1"
+  hana_db_password    = ""
+
+  tags = {
+    ENV = "Test"
+  }
 }
 `, template, rInt)
 }
@@ -208,43 +211,46 @@ resource "azurerm_hanaonazure_sap_monitor" "import" {
 }
 
 func testAccAzureRMHanaOnAzureSapMonitor_complete(rInt int, location string) string {
-	template := testAccAzureRMHanaOnAzureSapMonitor_template(rInt, location)
+	template := testAccAzureRMHanaOnAzureSapMonitor_template()
 	return fmt.Sprintf(`
 %s
 
-resource "azurerm_hanaonazure_sap_monitor" "test" {
-  name                = "acctest-HanaOnAzureSapMonitor-%d"
-  resource_group_name = "${azurerm_resource_group.test.name}"
-  location            = "${azurerm_resource_group.test.location}"
-  hana_host_name      = "10.0.0.6"
-  hana_subnet_id      = "${azurerm_subnet.test.id}"
-  hana_db_name        = "SYSTEMDB"
-  hana_db_sql_port    = 30015
-  hana_db_username    = "SYSTEM"
-  hana_db_password    = "Manager1"
-}
-`, template, rInt)
+resource "azurerm_user_assigned_identity" "test"{
+	name                = "acctest-msi-%d"
+	resource_group_name = "${data.azurerm_resource_group.test.name}"
+	location            = "${data.azurerm_resource_group.test.location}"
 }
 
-func testAccAzureRMHanaOnAzureSapMonitor_template(rInt int, location string) string {
+resource "azurerm_hanaonazure_sap_monitor" "test"{
+	name                           = "acctest-HanaOnAzureSapMonitor-%d"
+	resource_group_name            = "${data.azurerm_resource_group.test.name}"
+	location                       = "${data.azurerm_resource_group.test.location}"
+	hana_host_name                 = "10.0.0.6"
+	hana_subnet_id                 = "${data.azurerm_subnet.test.id}"
+	hana_db_name                   = "SYSTEMDB"
+	hana_db_sql_port               = 30215
+	hana_db_username               = "SYSTEM"
+	key_vault_id                   = ""
+	hana_db_password_key_vault_url = ""
+	hana_db_credentials_msi_id     = "${azurerm_user_assigned_identity.test.id}"
+
+    tags = {
+      ENV = "Prod"
+    }
+}
+`, template, rInt, rInt)
+}
+
+func testAccAzureRMHanaOnAzureSapMonitor_template() string {
 	return fmt.Sprintf(`
-resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-hanaonazure-%d"
-  location = "%s"
+data "azurerm_resource_group" "test" {
+  name = "HanaOnAzure-SapMonitor-RG5"
 }
 
-resource "azurerm_virtual_network" "test" {
-  name                = "acctest-VirtualNetwork-%d"
-  address_space       = ["10.0.0.0/16"]
-  location            = "${azurerm_resource_group.test.location}"
-  resource_group_name = "${azurerm_resource_group.test.name}"
+data "azurerm_subnet" "test" {
+  name                 = "hdb-subnet"
+  resource_group_name  = "${data.azurerm_resource_group.test.name}"
+  virtual_network_name = "PV1-vnet"
 }
-
-resource "azurerm_subnet" "test" {
-  name                 = "acctest-Subnet-%d"
-  resource_group_name  = "${azurerm_resource_group.test.name}"
-  virtual_network_name = "${azurerm_virtual_network.test.name}"
-  address_prefix       = "10.0.2.0/24"
-}
-`, rInt, location, rInt, rInt)
+`)
 }
