@@ -22,12 +22,6 @@ func TestAccDataSourceAzureRMHanaOnAzureSapMonitor_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(dataSourceName, "resource_group_name"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "name"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "hana_db_username"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "hana_db_sql_port"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "hana_host_name"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "hana_subnet_id"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "hana_db_name"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "hana_db_password"),
 				),
 			},
 		},

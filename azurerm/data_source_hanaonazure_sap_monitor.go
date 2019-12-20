@@ -24,7 +24,7 @@ func dataSourceArmHanaOnAzureSapMonitor() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: azhana.ValidateHanaOnAzureSapMonitorName,
+				ValidateFunc: azhana.ValidateHanaSapMonitorName,
 			},
 
 			"resource_group_name": azure.SchemaResourceGroupNameForDataSource(),
@@ -114,11 +114,11 @@ func dataSourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interfa
 		d.Set("location", azure.NormalizeLocation(*location))
 	}
 	if props := resp.SapMonitorProperties; props != nil {
-		d.Set("hana_db_username", props.HanaDbUsername)
-		d.Set("hana_db_sql_port", props.HanaDbSQLPort)
 		d.Set("hana_host_name", props.HanaHostname)
 		d.Set("hana_subnet_id", props.HanaSubnet)
 		d.Set("hana_db_name", props.HanaDbName)
+		d.Set("hana_db_sql_port", props.HanaDbSQLPort)
+		d.Set("hana_db_username", props.HanaDbUsername)
 		d.Set("hana_db_password", props.HanaDbPassword)
 		d.Set("key_vault_id", props.KeyVaultID)
 		d.Set("hana_db_password_key_vault_url", props.HanaDbPasswordKeyVaultURL)

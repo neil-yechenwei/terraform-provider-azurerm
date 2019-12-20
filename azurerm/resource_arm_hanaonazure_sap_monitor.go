@@ -3,7 +3,6 @@ package azurerm
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/hanaonazure/mgmt/2017-11-03-preview/hanaonazure"
@@ -43,7 +42,7 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: azhana.ValidateHanaOnAzureSapMonitorName,
+				ValidateFunc: azhana.ValidateHanaSapMonitorName,
 			},
 
 			"resource_group_name": azure.SchemaResourceGroupName(),
@@ -53,52 +52,50 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 			"hana_host_name": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validate.IPv4Address,
 			},
 
 			"hana_db_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ValidateFunc: validation.StringMatch(
-					regexp.MustCompile(`^[\dA-Z]{2,64}$`),
-					`The name must be between 2 and 64 characters in length and and may contain only uppercase letters and numbers.`,
-				),
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: azhana.ValidateHanaDBName,
 			},
 
 			"hana_db_sql_port": {
 				Type:         schema.TypeInt,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.IntBetween(1024, 65535),
 			},
 
 			"hana_subnet_id": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: azure.ValidateResourceID,
 			},
 
 			"hana_db_username": {
-				Type:     schema.TypeString,
-				Required: true,
-				ValidateFunc: validation.StringMatch(
-					regexp.MustCompile(`^[\da-zA-Z]{1,32}$`),
-					`The name must be between 1 and 32 characters in length and and may contain only letters and numbers.`,
-				),
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: azhana.ValidateHanaDBUserName,
 			},
 
 			"hana_db_password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
-				ValidateFunc: validation.StringMatch(
-					regexp.MustCompile(`^(.*){1,64}$`),
-					`The name must be between 1 and 64 characters in length.`,
-				),
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ForceNew:     true,
+				ValidateFunc: azhana.ValidateHanaDBPassword,
 			},
 
 			"key_vault_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				ForceNew:      true,
 				ValidateFunc:  azure.ValidateResourceID,
 				ConflictsWith: []string{"hana_db_password"},
 			},
@@ -106,6 +103,7 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 			"hana_db_password_key_vault_url": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				ForceNew:      true,
 				ValidateFunc:  validate.URLIsHTTPS,
 				ConflictsWith: []string{"hana_db_password"},
 			},
@@ -113,6 +111,7 @@ func resourceArmHanaOnAzureSapMonitor() *schema.Resource {
 			"hana_db_credentials_msi_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				ForceNew:      true,
 				ValidateFunc:  azure.ValidateResourceID,
 				ConflictsWith: []string{"hana_db_password"},
 			},
@@ -148,11 +147,11 @@ func resourceArmHanaOnAzureSapMonitorCreate(d *schema.ResourceData, meta interfa
 	}
 
 	location := azure.NormalizeLocation(d.Get("location").(string))
-	hanaDbUsername := d.Get("hana_db_username").(string)
-	hanaDbSqlPort := int32(d.Get("hana_db_sql_port").(int))
 	hanaHostName := d.Get("hana_host_name").(string)
 	hanaSubnetId := d.Get("hana_subnet_id").(string)
 	hanaDbName := d.Get("hana_db_name").(string)
+	hanaDbSqlPort := int32(d.Get("hana_db_sql_port").(int))
+	hanaDbUsername := d.Get("hana_db_username").(string)
 	hanaDbPassword := d.Get("hana_db_password").(string)
 	keyVaultId := d.Get("key_vault_id").(string)
 	hanaDbPasswordKeyVaultUrl := d.Get("hana_db_password_key_vault_url").(string)
@@ -223,12 +222,12 @@ func resourceArmHanaOnAzureSapMonitorRead(d *schema.ResourceData, meta interface
 		d.Set("location", azure.NormalizeLocation(*location))
 	}
 	if props := resp.SapMonitorProperties; props != nil {
-		d.Set("hana_db_username", props.HanaDbUsername)
-		d.Set("hana_db_sql_port", props.HanaDbSQLPort)
 		d.Set("hana_host_name", props.HanaHostname)
 		d.Set("hana_subnet_id", props.HanaSubnet)
-		d.Set("hana_db_password", props.HanaDbPassword)
 		d.Set("hana_db_name", props.HanaDbName)
+		d.Set("hana_db_sql_port", props.HanaDbSQLPort)
+		d.Set("hana_db_username", props.HanaDbUsername)
+		d.Set("hana_db_password", props.HanaDbPassword)
 		d.Set("key_vault_id", props.KeyVaultID)
 		d.Set("hana_db_password_key_vault_url", props.HanaDbPasswordKeyVaultURL)
 		d.Set("hana_db_credentials_msi_id", props.HanaDbCredentialsMsiID)
@@ -245,10 +244,10 @@ func resourceArmHanaOnAzureSapMonitorUpdate(d *schema.ResourceData, meta interfa
 
 	name := d.Get("name").(string)
 	resourceGroup := d.Get("resource_group_name").(string)
-	newTags := d.Get("tags").(map[string]interface{})
+	t := d.Get("tags").(map[string]interface{})
 
 	props := &hanaonazure.Tags{
-		Tags: tags.Expand(newTags),
+		Tags: tags.Expand(t),
 	}
 
 	_, err := client.Update(ctx, resourceGroup, name, *props)

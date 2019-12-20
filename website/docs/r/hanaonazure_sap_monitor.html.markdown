@@ -11,39 +11,30 @@ description: |-
 
 Manages a HanaOnAzure Sap Monitor.
 
-
 ## HanaOnAzure Sap Monitor Usage
 
 ```hcl
-resource "azurerm_resource_group" "example" {
+data "azurerm_resource_group" "example" {
   name     = "example-resources"
   location = "West Europe"
 }
 
-resource "azurerm_virtual_network" "example" {
-  name                = "example-virtualnetwork"
-  address_space       = ["10.0.0.0/16"]
-  location            = "${azurerm_resource_group.example.location}"
-  resource_group_name = "${azurerm_resource_group.example.name}"
-}
-
-resource "azurerm_subnet" "example" {
+data "azurerm_subnet" "example" {
   name                 = "example-subnet"
-  resource_group_name  = "${azurerm_resource_group.example.name}"
-  virtual_network_name = "${azurerm_virtual_network.example.name}"
-  address_prefix       = "10.0.2.0/24"
+  resource_group_name  = "${data.azurerm_resource_group.example.name}"
+  virtual_network_name = "PV1-vnet"
 }
 
 resource "azurerm_hanaonazure_sap_monitor" "example" {
-  name                = "example-hanaonazuresapmonitor"
-  resource_group_name = "${azurerm_resource_group.example.name}"
-  location            = "${azurerm_resource_group.example.location}"
-  hana_db_username    = "SYSTEM"
-  hana_db_sql_port    = 30815
+  name                = "examplehanaonazuresapmonitor"
+  resource_group_name = "${data.azurerm_resource_group.example.name}"
+  location            = "${data.azurerm_resource_group.example.location}"
   hana_host_name      = "10.0.0.6"
+  hana_subnet_id      = "${data.azurerm_subnet.example.id}"
   hana_db_name        = "SYSTEMDB"
-  hana_db_password    = "Manager1"
-  hana_subnet_id      = "${azurerm_subnet.example.id}"
+  hana_db_sql_port    = 30215
+  hana_db_username    = "SYSTEM"
+  hana_db_password    = "TestPWD"
 }
 ```
 
