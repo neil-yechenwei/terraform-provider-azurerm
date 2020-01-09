@@ -126,7 +126,7 @@ func resourceArmManagedApplicationDefinitionCreateUpdate(d *schema.ResourceData,
 	name := d.Get("name").(string)
 	resourceGroupName := d.Get("resource_group_name").(string)
 
-	if features.ShouldResourcesBeImported() && d.IsNewResource() {
+	if features.ShouldResourcesBeImported() {
 		existing, err := client.Get(ctx, resourceGroupName, name)
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {
@@ -250,9 +250,6 @@ func resourceArmManagedApplicationDefinitionDelete(d *schema.ResourceData, meta 
 
 	future, err := client.Delete(ctx, resourceGroupName, name)
 	if err != nil {
-		if response.WasNotFound(future.Response()) {
-			return nil
-		}
 		return fmt.Errorf("Error deleting Managed Application Definition (Managed Application Definition Name %q / Resource Group %q): %+v", name, resourceGroupName, err)
 	}
 
@@ -268,8 +265,11 @@ func resourceArmManagedApplicationDefinitionDelete(d *schema.ResourceData, meta 
 func expandArmManagedApplicationDefinitionAuthorization(input []interface{}) *[]managedapplications.ApplicationProviderAuthorization {
 	results := make([]managedapplications.ApplicationProviderAuthorization, 0)
 	for _, item := range input {
-		v := item.(map[string]interface{})
+		if item == nil {
+			continue
+		}
 
+		v := item.(map[string]interface{})
 		result := managedapplications.ApplicationProviderAuthorization{
 			RoleDefinitionID: utils.String(v["role_definition_id"].(string)),
 			PrincipalID:      utils.String(v["service_principal_id"].(string)),

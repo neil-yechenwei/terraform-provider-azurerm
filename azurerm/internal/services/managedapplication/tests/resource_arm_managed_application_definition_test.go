@@ -187,7 +187,7 @@ func testAccAzureRMManagedApplicationDefinition_requiresImport(data acceptance.T
 resource "azurerm_managed_application_definition" "import" {
   name                = "${azurerm_managed_application_definition.test.name}"
   location            = "${azurerm_managed_application_definition.test.location}"
-  resource_group_name = "${azurerm_managed_application_definition.test.name}"
+  resource_group_name = "${azurerm_resource_group.test.name}"
 }
 `, testAccAzureRMManagedApplicationDefinition_basic(data))
 }
@@ -300,7 +300,7 @@ resource "azurerm_managed_application_definition" "test" {
   }
 
   tags = {
-    ENV = "Prod"
+    ENV = "Test"
   }
 }
 `, template, data.RandomInteger)
