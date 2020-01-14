@@ -1,5 +1,5 @@
 ---
-subcategory: "ManagedApplication"
+subcategory: "Solutions"
 layout: "azurerm"
 page_title: "Azure Resource Manager: azurerm_managed_application"
 sidebar_current: "docs-azurerm-resource-managed-application"

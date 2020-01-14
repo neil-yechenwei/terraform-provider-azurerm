@@ -263,10 +263,10 @@ func expandArmManagedApplicationPlan(d *schema.ResourceData) *managedapplication
 
 	return &managedapplications.Plan{
 		Name:          utils.String(plan["name"].(string)),
-		PromotionCode: utils.String(plan["publisher"].(string)),
-		Publisher:     utils.String(plan["promotion_code"].(string)),
+		Publisher:     utils.String(plan["publisher"].(string)),
 		Product:       utils.String(plan["product"].(string)),
 		Version:       utils.String(plan["version"].(string)),
+		PromotionCode: utils.String(plan["promotion_code"].(string)),
 	}
 }
 
