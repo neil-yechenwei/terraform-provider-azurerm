@@ -63,6 +63,11 @@ func dataSourceArmManagedApplicationDefinition() *schema.Resource {
 				Computed: true,
 			},
 
+			"enabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+
 			"lock_level": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -112,6 +117,7 @@ func dataSourceArmManagedApplicationDefinitionRead(d *schema.ResourceData, meta 
 		}
 		d.Set("description", props.Description)
 		d.Set("display_name", props.DisplayName)
+		d.Set("enabled", props.IsEnabled)
 		d.Set("lock_level", string(props.LockLevel))
 	}
 	if v, ok := d.GetOk("create_ui_definition"); ok {

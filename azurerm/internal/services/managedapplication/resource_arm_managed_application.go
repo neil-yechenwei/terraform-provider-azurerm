@@ -122,7 +122,7 @@ func resourceArmManagedApplicationCreateOrUpdate(d *schema.ResourceData, meta in
 	name := d.Get("name").(string)
 	resourceGroupName := d.Get("resource_group_name").(string)
 
-	if features.ShouldResourcesBeImported() {
+	if features.ShouldResourcesBeImported() && d.IsNewResource() {
 		existing, err := client.Get(ctx, resourceGroupName, name)
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {

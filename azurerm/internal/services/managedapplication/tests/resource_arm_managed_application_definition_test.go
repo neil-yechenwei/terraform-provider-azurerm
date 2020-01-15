@@ -91,6 +91,7 @@ func TestAccAzureRMManagedApplicationDefinition_update(t *testing.T) {
 					testCheckAzureRMManagedApplicationDefinitionExists(data.ResourceName),
 					resource.TestCheckResourceAttr(data.ResourceName, "display_name", "TestManagedApplicationDefinition"),
 					resource.TestCheckResourceAttr(data.ResourceName, "description", "Test Managed Application Definition"),
+					resource.TestCheckResourceAttr(data.ResourceName, "enabled", "false"),
 					resource.TestCheckResourceAttr(data.ResourceName, "tags.%", "0"),
 				),
 			},
@@ -101,8 +102,9 @@ func TestAccAzureRMManagedApplicationDefinition_update(t *testing.T) {
 					testCheckAzureRMManagedApplicationDefinitionExists(data.ResourceName),
 					resource.TestCheckResourceAttr(data.ResourceName, "display_name", "UpdatedTestManagedApplicationDefinition"),
 					resource.TestCheckResourceAttr(data.ResourceName, "description", "Updated Test Managed Application Definition"),
+					resource.TestCheckResourceAttr(data.ResourceName, "enabled", "true"),
 					resource.TestCheckResourceAttr(data.ResourceName, "tags.%", "1"),
-					resource.TestCheckResourceAttr(data.ResourceName, "tags.ENV", "Prod"),
+					resource.TestCheckResourceAttr(data.ResourceName, "tags.ENV", "Test"),
 				),
 			},
 			data.ImportStep("create_ui_definition", "main_template", "package_file_uri"),
@@ -167,10 +169,11 @@ resource "azurerm_managed_application_definition" "test" {
   name                = "acctestAppDef%d"
   location            = "${azurerm_resource_group.test.location}"
   resource_group_name = "${azurerm_resource_group.test.name}"
-  lock_level           = "ReadOnly"
-  package_file_uri     = "https://github.com/Azure/azure-managedapp-samples/raw/master/Managed Application Sample Packages/201-managed-storage-account/managedstorage.zip"
-  display_name         = "TestManagedApplicationDefinition"
-  description          = "Test Managed Application Definition"
+  lock_level          = "ReadOnly"
+  package_file_uri    = "https://github.com/Azure/azure-managedapp-samples/raw/master/Managed Application Sample Packages/201-managed-storage-account/managedstorage.zip"
+  display_name        = "TestManagedApplicationDefinition"
+  description         = "Test Managed Application Definition"
+  enabled             = false
 
   authorization {
     service_principal_id = "${data.azurerm_client_config.current.object_id}"
@@ -201,9 +204,11 @@ resource "azurerm_managed_application_definition" "test" {
   name                = "acctestAppDef%d"
   location            = "${azurerm_resource_group.test.location}"
   resource_group_name = "${azurerm_resource_group.test.name}"
-  lock_level           = "ReadOnly"
-  display_name         = "UpdatedTestManagedApplicationDefinition"
-  description          = "Updated Test Managed Application Definition"
+  lock_level          = "ReadOnly"
+  display_name        = "UpdatedTestManagedApplicationDefinition"
+  description         = "Updated Test Managed Application Definition"
+  enabled             = true
+
   create_ui_definition = <<CREATE_UI_DEFINITION
     {
       "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",

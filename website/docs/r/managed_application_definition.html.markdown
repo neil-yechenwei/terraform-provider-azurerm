@@ -55,6 +55,8 @@ The following arguments are supported:
 
 * `description` - (Optional) The managed application definition description.
 
+* `enabled` - (Optional) The value indicating whether the package is enabled or not.
+
 * `main_template` - (Optional) The inline main template json which has resources to be provisioned. It can be a JObject or well-formed JSON string.
 
 * `package_file_uri` - (Optional) The managed application definition package file Uri. Use this element.

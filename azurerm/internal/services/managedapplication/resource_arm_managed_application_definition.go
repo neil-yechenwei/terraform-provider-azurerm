@@ -99,6 +99,11 @@ func resourceArmManagedApplicationDefinition() *schema.Resource {
 				ValidateFunc: ValidateManagedAppDefinitionDescription,
 			},
 
+			"enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+
 			"main_template": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -126,7 +131,7 @@ func resourceArmManagedApplicationDefinitionCreateUpdate(d *schema.ResourceData,
 	name := d.Get("name").(string)
 	resourceGroupName := d.Get("resource_group_name").(string)
 
-	if features.ShouldResourcesBeImported() {
+	if features.ShouldResourcesBeImported() && d.IsNewResource() {
 		existing, err := client.Get(ctx, resourceGroupName, name)
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {
@@ -142,6 +147,7 @@ func resourceArmManagedApplicationDefinitionCreateUpdate(d *schema.ResourceData,
 	authorizations := d.Get("authorization").(*schema.Set).List()
 	displayName := d.Get("display_name").(string)
 	description := d.Get("description").(string)
+	enabled := d.Get("enabled").(bool)
 	lockLevel := d.Get("lock_level").(string)
 	t := d.Get("tags").(map[string]interface{})
 
@@ -151,6 +157,7 @@ func resourceArmManagedApplicationDefinitionCreateUpdate(d *schema.ResourceData,
 			Authorizations: expandArmManagedApplicationDefinitionAuthorization(authorizations),
 			Description:    utils.String(description),
 			DisplayName:    utils.String(displayName),
+			IsEnabled:      utils.Bool(enabled),
 			LockLevel:      managedapplications.ApplicationLockLevel(lockLevel),
 		},
 		Tags: tags.Expand(t),
@@ -221,6 +228,7 @@ func resourceArmManagedApplicationDefinitionRead(d *schema.ResourceData, meta in
 		}
 		d.Set("description", props.Description)
 		d.Set("display_name", props.DisplayName)
+		d.Set("enabled", props.IsEnabled)
 		d.Set("lock_level", string(props.LockLevel))
 	}
 	if v, ok := d.GetOk("create_ui_definition"); ok {

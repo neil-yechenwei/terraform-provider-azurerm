@@ -48,6 +48,8 @@ The following attributes are exported:
 
 * `description` - The managed application definition description.
 
+* `enabled` - The value indicating whether the package is enabled or not.
+
 * `main_template` - The inline main template json which has resources to be provisioned.
 
 * `package_file_uri` - The managed application definition package file Uri.
