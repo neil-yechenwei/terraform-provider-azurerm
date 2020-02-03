@@ -19,13 +19,13 @@ resource "azurerm_resource_group" "example" {
   location = "West Europe"
 }
 resource "azurerm_managed_application_definition" "example" {
-  name                 = "example-managedapplicationdefinition"
-  location             = "${azurerm_resource_group.example.location}"
-  resource_group_name  = "${azurerm_resource_group.example.name}"
-  lock_level           = "ReadOnly"
-  package_file_uri     = "https://github.com/Azure/azure-managedapp-samples/raw/master/Managed Application Sample Packages/201-managed-storage-account/managedstorage.zip"
-  display_name         = "TestManagedApplicationDefinition"
-  description          = "Test Managed Application Definition"
+  name                = "example-managedapplicationdefinition"
+  location            = "${azurerm_resource_group.example.location}"
+  resource_group_name = "${azurerm_resource_group.example.name}"
+  lock_level          = "ReadOnly"
+  package_file_uri    = "https://github.com/Azure/azure-managedapp-samples/raw/master/Managed Application Sample Packages/201-managed-storage-account/managedstorage.zip"
+  display_name        = "TestManagedApplicationDefinition"
+  description         = "Test Managed Application Definition"
   authorization {
     service_principal_id = "a1ac7e8c-14d3-432d-8c9b-0f780f99ef1e"
     role_definition_id   = "a094b430-dad3-424d-ae58-13f72fd72591"
