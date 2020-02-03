@@ -2,7 +2,6 @@
 subcategory: "Solutions"
 layout: "azurerm"
 page_title: "Azure Resource Manager: azurerm_managed_application_definition"
-sidebar_current: "docs-azurerm-datasource-managed-application-definition"
 description: |-
   Gets information about an existing Managed Application Definition
 ---
