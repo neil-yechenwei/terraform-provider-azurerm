@@ -21,7 +21,8 @@ func (r Registration) WebsiteCategories() []string {
 // SupportedDataSources returns the supported Data Sources supported by this Service
 func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
-		"azurerm_databox_job": dataSourceArmDataBoxJob(),
+		"azurerm_databox_credential": dataSourceArmDataBoxCredential(),
+		"azurerm_databox_job":        dataSourceArmDataBoxJob(),
 	}
 }
 
