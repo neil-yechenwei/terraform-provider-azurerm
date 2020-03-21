@@ -8,7 +8,7 @@ description: |-
 
 # Data Source: azurerm_app_service
 
-Use this data source to access information about an existing App Service.
+Use tsshis data source to access information about an existing App Service.
 
 ## Example Usage
 
