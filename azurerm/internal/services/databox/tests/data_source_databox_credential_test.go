@@ -16,23 +16,25 @@ func TestAccDataSourceAzureRMDataBoxCredential_basic(t *testing.T) {
 		Providers: acceptance.SupportedProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceDataBoxCredential_basic(data),
+				Config: testAccDataSourceDataBoxCredential_basic(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet(data.ResourceName, "name"),
+					resource.TestCheckResourceAttrSet(data.ResourceName, "databox_job_name"),
 				),
 			},
 		},
 	})
 }
 
-func testAccDataSourceDataBoxCredential_basic(data acceptance.TestData) string {
-	config := testAccAzureRMDataBoxJob_complete(data)
+func testAccDataSourceDataBoxCredential_basic() string {
 	return fmt.Sprintf(`
-%s
+locals {
+  databox_job_name    = "TJ-636646322037905056"
+  resource_group_name = "bvttoolrg6"
+}
 
 data "azurerm_databox_credential" "test" {
-  databox_job_name    = azurerm_databox_job.test.name
-  resource_group_name = azurerm_databox_job.test.resource_group_name
+  databox_job_name    = local.databox_job_name
+  resource_group_name = local.resource_group_name
 }
-`, config)
+`)
 }
