@@ -173,6 +173,37 @@ func testAccAzureRMKubernetesClusterNodePool_multiplePools(t *testing.T) {
 	})
 }
 
+func TestAccAzureRMKubernetesClusterNodePool_upgradeKubernetesVersion(t *testing.T) {
+	checkIfShouldRunTestsIndividually(t)
+	testAccAzureRMKubernetesClusterNodePool_upgradeKubernetesVersion(t)
+}
+
+func testAccAzureRMKubernetesClusterNodePool_upgradeKubernetesVersion(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_kubernetes_cluster_node_pool", "test")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
+		CheckDestroy: testCheckAzureRMKubernetesClusterNodePoolDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAzureRMKubernetesClusterNodePool_upgradeKubernetesVersionConfig(data, olderKubernetesVersion),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMKubernetesNodePoolExists(data.ResourceName),
+				),
+			},
+			data.ImportStep(),
+			{
+				Config: testAccAzureRMKubernetesClusterNodePool_upgradeKubernetesVersionConfig(data, currentKubernetesVersion),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMKubernetesNodePoolExists(data.ResourceName),
+				),
+			},
+			data.ImportStep(),
+		},
+	})
+}
+
 func TestAccAzureRMKubernetesClusterNodePool_manualScale(t *testing.T) {
 	checkIfShouldRunTestsIndividually(t)
 	testAccAzureRMKubernetesClusterNodePool_manualScale(t)
@@ -1091,6 +1122,27 @@ resource "azurerm_kubernetes_cluster_node_pool" "manual" {
 `, template, numberOfAgents)
 }
 
+func testAccAzureRMKubernetesClusterNodePool_upgradeKubernetesVersionConfig(data acceptance.TestData, kubernetesVersion string) string {
+	template := testAccAzureRMKubernetesClusterNodePool_templateWithKubernetesVersionConfig(data, kubernetesVersion)
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+%s
+
+resource "azurerm_kubernetes_cluster_node_pool" "test" {
+  name                  = "aksnodepool"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.test.id
+  vm_size               = "Standard_DS2_v2"
+  enable_auto_scaling   = true
+  min_count             = 1
+  max_count             = 3
+  kubernetes_version    = "%s"
+}
+`, template, kubernetesVersion)
+}
+
 func testAccAzureRMKubernetesClusterNodePool_nodeLabelsConfig(data acceptance.TestData, labels map[string]string) string {
 	template := testAccAzureRMKubernetesClusterNodePool_templateConfig(data)
 	labelsSlice := make([]string, 0, len(labels))
@@ -1303,6 +1355,33 @@ resource "azurerm_kubernetes_cluster" "test" {
   }
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger)
+}
+
+func testAccAzureRMKubernetesClusterNodePool_templateWithKubernetesVersionConfig(data acceptance.TestData, kubernetesVerson string) string {
+	return fmt.Sprintf(`
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-aks-%d"
+  location = "%s"
+}
+
+resource "azurerm_kubernetes_cluster" "test" {
+  name                = "acctestaks%d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+  dns_prefix          = "acctestaks%d"
+  kubernetes_version  = "%s"
+
+  default_node_pool {
+    name       = "default"
+    node_count = 1
+    vm_size    = "Standard_DS2_v2"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, kubernetesVerson)
 }
 
 func testAccAzureRMKubernetesClusterNodePool_templateVirtualNetworkConfig(data acceptance.TestData) string {

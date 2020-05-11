@@ -381,6 +381,68 @@ func testAccAzureRMKubernetesCluster_privateClusterOff(t *testing.T) {
 	})
 }
 
+func TestAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithAvailabilitySet(t *testing.T) {
+	checkIfShouldRunTestsIndividually(t)
+	testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithAvailabilitySet(t)
+}
+
+func testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithAvailabilitySet(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_kubernetes_cluster", "test")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
+		CheckDestroy: testCheckAzureRMKubernetesClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data, olderKubernetesVersion, "AvailabilitySet"),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMKubernetesClusterExists(data.ResourceName),
+				),
+			},
+			data.ImportStep(),
+			{
+				Config: testAccAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data, currentKubernetesVersion, "AvailabilitySet"),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMKubernetesClusterExists(data.ResourceName),
+				),
+			},
+			data.ImportStep(),
+		},
+	})
+}
+
+func TestAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineScaleSets(t *testing.T) {
+	checkIfShouldRunTestsIndividually(t)
+	testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineScaleSets(t)
+}
+
+func testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineScaleSets(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_kubernetes_cluster", "test")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
+		CheckDestroy: testCheckAzureRMKubernetesClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data, olderKubernetesVersion, "VirtualMachineScaleSets"),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMKubernetesClusterExists(data.ResourceName),
+				),
+			},
+			data.ImportStep(),
+			{
+				Config: testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineScaleSetsConfig(data, currentKubernetesVersion, "VirtualMachineScaleSets"),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMKubernetesClusterExists(data.ResourceName),
+				),
+			},
+			data.ImportStep(),
+		},
+	})
+}
+
 func TestAccAzureRMKubernetesCluster_standardLoadBalancer(t *testing.T) {
 	checkIfShouldRunTestsIndividually(t)
 	testAccAzureRMKubernetesCluster_standardLoadBalancer(t)
@@ -1116,6 +1178,83 @@ resource "azurerm_kubernetes_cluster" "test" {
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, enablePrivateCluster, data.RandomInteger)
 }
 
+func testAccAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data acceptance.TestData, kubernetesVersion string, nodePoolType string) string {
+	template := testAccAzureRMKubernetesCluster_template(data)
+	return fmt.Sprintf(`
+%[1]s
+
+resource "azurerm_kubernetes_cluster" "test" {
+  name                = "acctestaks%[2]d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+  dns_prefix          = "acctestaks%[2]d"
+  kubernetes_version  = "%[3]s"
+
+  linux_profile {
+    admin_username = "acctestuser%[2]d"
+
+    ssh_key {
+      key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqaZoyiz1qbdOQ8xEf6uEu1cCwYowo5FHtsBhqLoDnnp7KUTEBN+L2NxRIfQ781rxV6Iq5jSav6b2Q8z5KiseOlvKA/RF2wqU0UPYqQviQhLmW6THTpmrv/YkUCuzxDpsH7DUDhZcwySLKVVe0Qm3+5N2Ta6UYH3lsDf9R9wTP2K/+vAnflKebuypNlmocIvakFWoZda18FOmsOoIVXQ8HWFNCuw9ZCunMSN62QGamCe3dL5cXlkgHYv7ekJE15IA9aOJcM7e90oeTqo+7HTcWfdu0qQqPWY5ujyMw/llas8tsXY85LFqRnr3gJ02bAscjc477+X+j/gkpFoN1QEmt terraform@demo.tld"
+    }
+  }
+
+  default_node_pool {
+    name       = "default"
+    node_count = 1
+    type       = "%[4]s"
+    vm_size    = "Standard_DS2_v2"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+`, template, data.RandomInteger, kubernetesVersion, nodePoolType)
+}
+
+func testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineScaleSetsConfig(data acceptance.TestData, kubernetesVersion string, nodePoolType string) string {
+	template := testAccAzureRMKubernetesCluster_template(data)
+	return fmt.Sprintf(`
+%[1]s
+
+resource "azurerm_kubernetes_cluster" "test" {
+  name                = "acctestaks%[2]d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+  dns_prefix          = "acctestaks%[2]d"
+  kubernetes_version  = "%[3]s"
+
+  linux_profile {
+    admin_username = "acctestuser%[2]d"
+
+    ssh_key {
+      key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqaZoyiz1qbdOQ8xEf6uEu1cCwYowo5FHtsBhqLoDnnp7KUTEBN+L2NxRIfQ781rxV6Iq5jSav6b2Q8z5KiseOlvKA/RF2wqU0UPYqQviQhLmW6THTpmrv/YkUCuzxDpsH7DUDhZcwySLKVVe0Qm3+5N2Ta6UYH3lsDf9R9wTP2K/+vAnflKebuypNlmocIvakFWoZda18FOmsOoIVXQ8HWFNCuw9ZCunMSN62QGamCe3dL5cXlkgHYv7ekJE15IA9aOJcM7e90oeTqo+7HTcWfdu0qQqPWY5ujyMw/llas8tsXY85LFqRnr3gJ02bAscjc477+X+j/gkpFoN1QEmt terraform@demo.tld"
+    }
+  }
+
+  default_node_pool {
+    name       = "default"
+    node_count = 1
+    type       = "%[4]s"
+    vm_size    = "Standard_DS2_v2"
+    kubernetes_version = "%[3]s"
+  }
+
+  default_node_pool {
+    name       = "default"
+    node_count = 1
+    type       = "%[4]s"
+    vm_size    = "Standard_DS2_v2"
+    kubernetes_version = "%[5]s"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+`, template, data.RandomInteger, kubernetesVersion, nodePoolType, olderKubernetesVersion)
+}
+
 func testAccAzureRMKubernetesCluster_standardLoadBalancerConfig(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 provider "azurerm" {
@@ -1732,4 +1871,17 @@ resource "azurerm_kubernetes_cluster" "test" {
   }
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, currentKubernetesVersion, data.RandomInteger)
+}
+
+func testAccAzureRMKubernetesCluster_template(data acceptance.TestData) string {
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-aks-%d"
+  location = "%s"
+}
+`, data.RandomInteger, data.Locations.Primary)
 }

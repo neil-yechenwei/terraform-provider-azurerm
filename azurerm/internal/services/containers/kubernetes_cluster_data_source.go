@@ -121,6 +121,11 @@ func dataSourceArmKubernetesCluster() *schema.Resource {
 							Computed: true,
 						},
 
+						"kubernetes_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+
 						"max_count": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -724,6 +729,10 @@ func flattenKubernetesClusterDataSourceAgentPoolProfiles(input *[]containerservi
 
 		if profile.Count != nil {
 			agentPoolProfile["count"] = int(*profile.Count)
+		}
+
+		if profile.OrchestratorVersion != nil {
+			agentPoolProfile["kubernetes_version"] = *profile.OrchestratorVersion
 		}
 
 		if profile.MinCount != nil {

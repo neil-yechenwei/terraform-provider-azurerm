@@ -100,6 +100,8 @@ A `agent_pool_profile` block exports the following:
 
 * `count` - The number of Agents (VM's) in the Pool.
 
+* `kubernetes_version` - The version of Kubernetes used on the managed Node Pool.
+
 * `max_pods` - The maximum number of pods that can run on each agent.
 
 * `availability_zones` - The availability zones used for the nodes.

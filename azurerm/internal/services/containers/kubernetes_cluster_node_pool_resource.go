@@ -89,6 +89,13 @@ func resourceArmKubernetesClusterNodePool() *schema.Resource {
 				Optional: true,
 			},
 
+			"kubernetes_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
+			},
+
 			"max_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -253,6 +260,10 @@ func resourceArmKubernetesClusterNodePoolCreate(d *schema.ResourceData, meta int
 		profile.VnetSubnetID = utils.String(vnetSubnetID)
 	}
 
+	if kubernetesVersion := d.Get("kubernetes_version").(string); kubernetesVersion != "" {
+		profile.OrchestratorVersion = utils.String(kubernetesVersion)
+	}
+
 	maxCount := d.Get("max_count").(int)
 	minCount := d.Get("min_count").(int)
 
@@ -358,6 +369,10 @@ func resourceArmKubernetesClusterNodePoolUpdate(d *schema.ResourceData, meta int
 
 	if d.HasChange("enable_node_public_ip") {
 		props.EnableNodePublicIP = utils.Bool(d.Get("enable_node_public_ip").(bool))
+	}
+
+	if d.HasChange("kubernetes_version") {
+		props.OrchestratorVersion = utils.String(d.Get("kubernetes_version").(string))
 	}
 
 	if d.HasChange("max_count") {
@@ -473,6 +488,12 @@ func resourceArmKubernetesClusterNodePoolRead(d *schema.ResourceData, meta inter
 
 		d.Set("enable_auto_scaling", props.EnableAutoScaling)
 		d.Set("enable_node_public_ip", props.EnableNodePublicIP)
+
+		kubernetesVersion := ""
+		if props.OrchestratorVersion != nil {
+			kubernetesVersion = *props.OrchestratorVersion
+		}
+		d.Set("kubernetes_version", kubernetesVersion)
 
 		maxCount := 0
 		if props.MaxCount != nil {

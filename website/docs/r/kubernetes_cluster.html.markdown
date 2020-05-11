@@ -197,6 +197,8 @@ A `default_node_pool` block supports the following:
 
 * `enable_node_public_ip` - (Optional) Should nodes in this Node Pool have a Public IP Address? Defaults to `false`.
 
+* `kubernetes_version` - (Optional) Specifies the version of Kubernetes used on the managed Node Pool.
+
 * `max_pods` - (Optional) The maximum number of pods that can run on each agent. Changing this forces a new resource to be created.
 
 * `node_labels` - (Optional) A map of Kubernetes labels which should be applied to nodes in the Default Node Pool.

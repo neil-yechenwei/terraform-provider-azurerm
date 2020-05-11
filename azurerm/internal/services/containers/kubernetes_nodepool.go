@@ -65,6 +65,13 @@ func SchemaDefaultNodePool() *schema.Schema {
 					ForceNew: true,
 				},
 
+				"kubernetes_version": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Computed:     true,
+					ValidateFunc: validation.StringIsNotEmpty,
+				},
+
 				"max_count": {
 					Type:     schema.TypeInt,
 					Optional: true,
@@ -183,7 +190,6 @@ func ExpandDefaultNodePool(d *schema.ResourceData) (*[]containerservice.ManagedC
 		OsType: containerservice.Linux,
 
 		// // TODO: support these in time
-		// OrchestratorVersion:    nil,
 		// ScaleSetEvictionPolicy: "",
 		// ScaleSetPriority:       "",
 	}
@@ -194,6 +200,10 @@ func ExpandDefaultNodePool(d *schema.ResourceData) (*[]containerservice.ManagedC
 	// otherwise: Standard Load Balancer is required for availability zone.
 	if len(*availabilityZones) > 0 {
 		profile.AvailabilityZones = availabilityZones
+	}
+
+	if kubernetesVersion := raw["kubernetes_version"].(string); kubernetesVersion != "" {
+		profile.OrchestratorVersion = utils.String(kubernetesVersion)
 	}
 
 	if maxPods := int32(raw["max_pods"].(int)); maxPods > 0 {
@@ -290,6 +300,11 @@ func FlattenDefaultNodePool(input *[]containerservice.ManagedClusterAgentPoolPro
 		enableNodePublicIP = *agentPool.EnableNodePublicIP
 	}
 
+	kubernetesVersion := ""
+	if agentPool.OrchestratorVersion != nil {
+		kubernetesVersion = *agentPool.OrchestratorVersion
+	}
+
 	maxCount := 0
 	if agentPool.MaxCount != nil {
 		maxCount = int(*agentPool.MaxCount)
@@ -346,6 +361,7 @@ func FlattenDefaultNodePool(input *[]containerservice.ManagedClusterAgentPoolPro
 			"node_labels":           nodeLabels,
 			"node_taints":           nodeTaints,
 			"os_disk_size_gb":       osDiskSizeGB,
+			"kubernetes_version":    kubernetesVersion,
 			"tags":                  tags.Flatten(agentPool.Tags),
 			"type":                  string(agentPool.Type),
 			"vm_size":               string(agentPool.VMSize),

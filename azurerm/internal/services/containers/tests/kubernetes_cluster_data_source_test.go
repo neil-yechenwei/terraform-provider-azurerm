@@ -42,6 +42,29 @@ func testAccDataSourceAzureRMKubernetesCluster_basic(t *testing.T) {
 	})
 }
 
+func TestAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersion(t *testing.T) {
+	checkIfShouldRunTestsIndividually(t)
+	testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersion(t)
+}
+
+func testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersion(t *testing.T) {
+	data := acceptance.BuildTestData(t, "data.azurerm_kubernetes_cluster", "test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
+		CheckDestroy: testCheckAzureRMKubernetesClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data, currentKubernetesVersion, "VirtualMachineScaleSets"),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMKubernetesClusterExists(data.ResourceName),
+				),
+			},
+		},
+	})
+}
+
 func TestAccDataSourceAzureRMKubernetesCluster_privateCluster(t *testing.T) {
 	checkIfShouldRunTestsIndividually(t)
 	testAccDataSourceAzureRMKubernetesCluster_privateCluster(t)
@@ -632,6 +655,18 @@ func testAccDataSourceAzureRMKubernetesCluster_enableNodePublicIP(t *testing.T) 
 
 func testAccDataSourceAzureRMKubernetesCluster_basicConfig(data acceptance.TestData) string {
 	r := testAccAzureRMKubernetesCluster_basicVMSSConfig(data)
+	return fmt.Sprintf(`
+%s
+
+data "azurerm_kubernetes_cluster" "test" {
+  name                = azurerm_kubernetes_cluster.test.name
+  resource_group_name = azurerm_kubernetes_cluster.test.resource_group_name
+}
+`, r)
+}
+
+func testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data acceptance.TestData, kubernetesVerion string, nodePoolType string) string {
+	r := testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineScaleSetsConfig(data, kubernetesVerion, nodePoolType)
 	return fmt.Sprintf(`
 %s
 
