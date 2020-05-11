@@ -1359,29 +1359,108 @@ resource "azurerm_kubernetes_cluster" "test" {
 
 func testAccAzureRMKubernetesClusterNodePool_templateWithKubernetesVersionConfig(data acceptance.TestData, kubernetesVerson string) string {
 	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-aks-%d"
-  location = "%s"
+  name     = "acctestRG-aks-%[1]d"
+  location = "%[2]s"
+}
+
+resource "azurerm_virtual_network" "test" {
+  name                = "acctestvnet%[1]d"
+  address_space       = ["172.0.0.0/16"]
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+}
+
+resource "azurerm_subnet" "test" {
+  name                 = "acctestsubnet%[1]d"
+  resource_group_name  = azurerm_resource_group.test.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefix       = "172.0.2.0/24"
+}
+
+resource "azurerm_subnet" "test-aci" {
+  name                 = "acctestsubnet-aci%[1]d"
+  resource_group_name  = azurerm_resource_group.test.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefix       = "172.0.3.0/24"
+
+  delegation {
+    name = "aciDelegation"
+
+    service_delegation {
+      name    = "Microsoft.ContainerInstance/containerGroups"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
+    }
+  }
 }
 
 resource "azurerm_kubernetes_cluster" "test" {
-  name                = "acctestaks%d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-  dns_prefix          = "acctestaks%d"
-  kubernetes_version  = "%s"
+  name                       = "akscluster%[1]d"
+  dns_prefix                 = "akscluster%[1]d"
+  resource_group_name        = azurerm_resource_group.test.name
+  location                   = azurerm_resource_group.test.location
+  enable_pod_security_policy = false
+  kubernetes_version         = "%[3]s"
 
   default_node_pool {
-    name       = "default"
-    node_count = 1
-    vm_size    = "Standard_DS2_v2"
+    name                          = "default"
+    type                          = "VirtualMachineScaleSets"
+    node_count                    = 2
+    enable_node_public_ip         = false
+    vm_size                       = "Standard_DS2_v2"
+    os_disk_size_gb               = 100
+    vnet_subnet_id                = azurerm_subnet.test.id
+    kubernetes_version            = "%[3]s"
   }
 
-  identity {
-    type = "SystemAssigned"
+  network_profile {
+    load_balancer_sku = "basic"
+    network_plugin    = "azure"
+    service_cidr      = "10.128.0.0/16"
+    dns_service_ip     = "10.128.0.10"
+    docker_bridge_cidr = "172.17.0.1/16"
+  }
+
+  linux_profile {
+    admin_username = "acctestuser%[1]d"
+
+    ssh_key {
+      key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqaZoyiz1qbdOQ8xEf6uEu1cCwYowo5FHtsBhqLoDnnp7KUTEBN+L2NxRIfQ781rxV6Iq5jSav6b2Q8z5KiseOlvKA/RF2wqU0UPYqQviQhLmW6THTpmrv/YkUCuzxDpsH7DUDhZcwySLKVVe0Qm3+5N2Ta6UYH3lsDf9R9wTP2K/+vAnflKebuypNlmocIvakFWoZda18FOmsOoIVXQ8HWFNCuw9ZCunMSN62QGamCe3dL5cXlkgHYv7ekJE15IA9aOJcM7e90oeTqo+7HTcWfdu0qQqPWY5ujyMw/llas8tsXY85LFqRnr3gJ02bAscjc477+X+j/gkpFoN1QEmt terraform@demo.tld"
+    }
+  }
+
+  windows_profile {
+    admin_username = "azureuser"
+    admin_password = "#Bugsfor2020"
+  }
+
+  service_principal {
+    client_id     = data.azurerm_client_config.current.client_id
+    client_secret = data.azurerm_client_config.current.client_secret
+  }
+
+  role_based_access_control {
+    enabled = false
+  }
+
+  addon_profile {
+    aci_connector_linux {
+      enabled     = false
+      subnet_name = azurerm_subnet.test-aci.name
+    }
+	
+    kube_dashboard {
+      enabled = false
+    }
   }
 }
-`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, kubernetesVerson)
+`, data.RandomInteger, data.Locations.Primary, kubernetesVerson)
 }
 
 func testAccAzureRMKubernetesClusterNodePool_templateVirtualNetworkConfig(data acceptance.TestData) string {

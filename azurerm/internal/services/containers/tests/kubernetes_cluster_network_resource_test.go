@@ -1184,11 +1184,30 @@ func testAccAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data accepta
 %[1]s
 
 resource "azurerm_kubernetes_cluster" "test" {
-  name                = "acctestaks%[2]d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-  dns_prefix          = "acctestaks%[2]d"
-  kubernetes_version  = "%[3]s"
+  name                       = "akscluster%[2]d"
+  dns_prefix                 = "akscluster%[2]d"
+  resource_group_name        = azurerm_resource_group.test.name
+  location                   = azurerm_resource_group.test.location
+  enable_pod_security_policy = false
+  kubernetes_version         = "%[3]s"
+
+  default_node_pool {
+    name                          = "default"
+    type                          = "%[4]s"
+    node_count                    = 2
+    enable_node_public_ip         = false
+    vm_size                       = "Standard_DS2_v2"
+    os_disk_size_gb               = 100
+    vnet_subnet_id                = azurerm_subnet.test.id
+  }
+
+  network_profile {
+    load_balancer_sku = "basic"
+    network_plugin    = "azure"
+    service_cidr      = "10.128.0.0/16"
+    dns_service_ip     = "10.128.0.10"
+    docker_bridge_cidr = "172.17.0.1/16"
+  }
 
   linux_profile {
     admin_username = "acctestuser%[2]d"
@@ -1198,15 +1217,29 @@ resource "azurerm_kubernetes_cluster" "test" {
     }
   }
 
-  default_node_pool {
-    name       = "default"
-    node_count = 1
-    type       = "%[4]s"
-    vm_size    = "Standard_DS2_v2"
+  windows_profile {
+    admin_username = "azureuser"
+    admin_password = "#Bugsfor2020"
   }
 
-  identity {
-    type = "SystemAssigned"
+  service_principal {
+    client_id     = data.azurerm_client_config.current.client_id
+    client_secret = data.azurerm_client_config.current.client_secret
+  }
+
+  role_based_access_control {
+    enabled = false
+  }
+
+  addon_profile {
+    aci_connector_linux {
+      enabled     = false
+      subnet_name = azurerm_subnet.test-aci.name
+    }
+	
+    kube_dashboard {
+      enabled = false
+    }
   }
 }
 `, template, data.RandomInteger, kubernetesVersion, nodePoolType)
@@ -1218,11 +1251,31 @@ func testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineS
 %[1]s
 
 resource "azurerm_kubernetes_cluster" "test" {
-  name                = "acctestaks%[2]d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-  dns_prefix          = "acctestaks%[2]d"
-  kubernetes_version  = "%[3]s"
+  name                       = "akscluster%[2]d"
+  dns_prefix                 = "akscluster%[2]d"
+  resource_group_name        = azurerm_resource_group.test.name
+  location                   = azurerm_resource_group.test.location
+  enable_pod_security_policy = false
+  kubernetes_version         = "%[3]s"
+
+  default_node_pool {
+    name                          = "default"
+    type                          = "%[4]s"
+    node_count                    = 2
+    enable_node_public_ip         = false
+    vm_size                       = "Standard_DS2_v2"
+    os_disk_size_gb               = 100
+    vnet_subnet_id                = azurerm_subnet.test.id
+    kubernetes_version            = "%[3]s"
+  }
+
+  network_profile {
+    load_balancer_sku = "basic"
+    network_plugin    = "azure"
+    service_cidr      = "10.128.0.0/16"
+    dns_service_ip     = "10.128.0.10"
+    docker_bridge_cidr = "172.17.0.1/16"
+  }
 
   linux_profile {
     admin_username = "acctestuser%[2]d"
@@ -1232,27 +1285,32 @@ resource "azurerm_kubernetes_cluster" "test" {
     }
   }
 
-  default_node_pool {
-    name       = "default"
-    node_count = 1
-    type       = "%[4]s"
-    vm_size    = "Standard_DS2_v2"
-    kubernetes_version = "%[3]s"
+  windows_profile {
+    admin_username = "azureuser"
+    admin_password = "#Bugsfor2020"
   }
 
-  default_node_pool {
-    name       = "default"
-    node_count = 1
-    type       = "%[4]s"
-    vm_size    = "Standard_DS2_v2"
-    kubernetes_version = "%[5]s"
+  service_principal {
+    client_id     = data.azurerm_client_config.current.client_id
+    client_secret = data.azurerm_client_config.current.client_secret
   }
 
-  identity {
-    type = "SystemAssigned"
+  role_based_access_control {
+    enabled = false
+  }
+
+  addon_profile {
+    aci_connector_linux {
+      enabled     = false
+      subnet_name = azurerm_subnet.test-aci.name
+    }
+	
+    kube_dashboard {
+      enabled = false
+    }
   }
 }
-`, template, data.RandomInteger, kubernetesVersion, nodePoolType, olderKubernetesVersion)
+`, template, data.RandomInteger, kubernetesVersion, nodePoolType)
 }
 
 func testAccAzureRMKubernetesCluster_standardLoadBalancerConfig(data acceptance.TestData) string {
@@ -1879,9 +1937,41 @@ provider "azurerm" {
   features {}
 }
 
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-aks-%d"
-  location = "%s"
+  name     = "acctestRG-aks-%[1]d"
+  location = "%[2]s"
+}
+
+resource "azurerm_virtual_network" "test" {
+  name                = "acctestvnet%[1]d"
+  address_space       = ["172.0.0.0/16"]
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+}
+
+resource "azurerm_subnet" "test" {
+  name                 = "acctestsubnet%[1]d"
+  resource_group_name  = azurerm_resource_group.test.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefix       = "172.0.2.0/24"
+}
+
+resource "azurerm_subnet" "test-aci" {
+  name                 = "acctestsubnet-aci%[1]d"
+  resource_group_name  = azurerm_resource_group.test.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefix       = "172.0.3.0/24"
+
+  delegation {
+    name = "aciDelegation"
+
+    service_delegation {
+      name    = "Microsoft.ContainerInstance/containerGroups"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
+    }
+  }
 }
 `, data.RandomInteger, data.Locations.Primary)
 }

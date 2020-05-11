@@ -42,29 +42,6 @@ func testAccDataSourceAzureRMKubernetesCluster_basic(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersion(t *testing.T) {
-	checkIfShouldRunTestsIndividually(t)
-	testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersion(t)
-}
-
-func testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersion(t *testing.T) {
-	data := acceptance.BuildTestData(t, "data.azurerm_kubernetes_cluster", "test")
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acceptance.PreCheck(t) },
-		Providers:    acceptance.SupportedProviders,
-		CheckDestroy: testCheckAzureRMKubernetesClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data, currentKubernetesVersion, "VirtualMachineScaleSets"),
-				Check: resource.ComposeTestCheckFunc(
-					testCheckAzureRMKubernetesClusterExists(data.ResourceName),
-				),
-			},
-		},
-	})
-}
-
 func TestAccDataSourceAzureRMKubernetesCluster_privateCluster(t *testing.T) {
 	checkIfShouldRunTestsIndividually(t)
 	testAccDataSourceAzureRMKubernetesCluster_privateCluster(t)
@@ -567,13 +544,14 @@ func testAccDataSourceAzureRMKubernetesCluster_autoscalingWithAvailabilityZones(
 				Config: testAccDataSourceAzureRMKubernetesCluster_autoScalingWithAvailabilityZonesConfig(data),
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureRMKubernetesClusterExists(data.ResourceName),
-					resource.TestCheckResourceAttr(data.ResourceName, "agent_pool_profile.0.min_count", "1"),
-					resource.TestCheckResourceAttr(data.ResourceName, "agent_pool_profile.0.max_count", "2"),
-					resource.TestCheckResourceAttr(data.ResourceName, "agent_pool_profile.0.type", "VirtualMachineScaleSets"),
-					resource.TestCheckResourceAttr(data.ResourceName, "agent_pool_profile.0.enable_auto_scaling", "true"),
-					resource.TestCheckResourceAttr(data.ResourceName, "agent_pool_profile.0.availability_zones.#", "2"),
-					resource.TestCheckResourceAttr(data.ResourceName, "agent_pool_profile.0.availability_zones.0", "1"),
-					resource.TestCheckResourceAttr(data.ResourceName, "agent_pool_profile.0.availability_zones.1", "2"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.min_count", "1"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.max_count", "2"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.type", "VirtualMachineScaleSets"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.enable_auto_scaling", "true"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.availability_zones.#", "2"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.availability_zones.0", "1"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.availability_zones.1", "2"),
+					resource.TestCheckResourceAttr(data.ResourceName, "default_node_pool.0.kubernetes_version", olderKubernetesVersion),
 				),
 			},
 		},
@@ -655,18 +633,6 @@ func testAccDataSourceAzureRMKubernetesCluster_enableNodePublicIP(t *testing.T) 
 
 func testAccDataSourceAzureRMKubernetesCluster_basicConfig(data acceptance.TestData) string {
 	r := testAccAzureRMKubernetesCluster_basicVMSSConfig(data)
-	return fmt.Sprintf(`
-%s
-
-data "azurerm_kubernetes_cluster" "test" {
-  name                = azurerm_kubernetes_cluster.test.name
-  resource_group_name = azurerm_kubernetes_cluster.test.resource_group_name
-}
-`, r)
-}
-
-func testAccDataSourceAzureRMKubernetesCluster_upgradeKubernetesVersionConfig(data acceptance.TestData, kubernetesVerion string, nodePoolType string) string {
-	r := testAccAzureRMKubernetesCluster_upgradeKubernetesVersionWithVirtualMachineScaleSetsConfig(data, kubernetesVerion, nodePoolType)
 	return fmt.Sprintf(`
 %s
 
