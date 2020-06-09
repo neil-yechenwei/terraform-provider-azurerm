@@ -414,25 +414,16 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-eventhub-%d"
-  location = "%s"
+  name     = "acctestRG-ehc"
+  location = "South Central US"
 }
 
-resource "azurerm_eventhub_namespace" "test" {
-  name                = "acctesteventhubnamespace-%d"
+resource "azurerm_eventhub_cluster" "test" {
+  name                = "ehctest"
+  resource_group_name = azurerm_resource_group.test.name
   location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-  sku                 = "Basic"
 }
-
-resource "azurerm_eventhub" "test" {
-  name                = "acctesteventhub-%d"
-  namespace_name      = azurerm_eventhub_namespace.test.name
-  resource_group_name = azurerm_resource_group.test.name
-  partition_count     = %d
-  message_retention   = 1
-}
-`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, partitionCount)
+`)
 }
 
 func testAccAzureRMEventHub_requiresImport(data acceptance.TestData) string {
