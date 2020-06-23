@@ -57,6 +57,8 @@ output "contributor_role_definition_id" {
 * `role_definition_id` - (Optional) Specifies the ID of the Role Definition as a UUID/GUID.
 * `scope` - (Optional) Specifies the Scope at which the Custom Role Definition exists.
 
+~> **Note:** `scope` is not required for built-in roles.
+
 ~> **Note:** One of `name` or `role_definition_id` must be specified.
 
 ## Attributes Reference
