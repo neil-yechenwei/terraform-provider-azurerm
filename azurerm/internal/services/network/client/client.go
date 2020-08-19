@@ -1,6 +1,7 @@
 package client
 
 import (
+	networkOlder "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	networkLegacy "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-03-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/common"
@@ -11,7 +12,7 @@ type Client struct {
 	ApplicationSecurityGroupsClient      *network.ApplicationSecurityGroupsClient
 	AzureFirewallsClient                 *network.AzureFirewallsClient
 	BastionHostsClient                   *network.BastionHostsClient
-	ConnectionMonitorsClient             *network.ConnectionMonitorsClient
+	ConnectionMonitorsClient             *networkOlder.ConnectionMonitorsClient
 	DDOSProtectionPlansClient            *network.DdosProtectionPlansClient
 	ExpressRouteAuthsClient              *network.ExpressRouteCircuitAuthorizationsClient
 	ExpressRouteCircuitsClient           *network.ExpressRouteCircuitsClient
@@ -63,7 +64,7 @@ func NewClient(o *common.ClientOptions) *Client {
 	BastionHostsClient := network.NewBastionHostsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&BastionHostsClient.Client, o.ResourceManagerAuthorizer)
 
-	ConnectionMonitorsClient := network.NewConnectionMonitorsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	ConnectionMonitorsClient := networkOlder.NewConnectionMonitorsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&ConnectionMonitorsClient.Client, o.ResourceManagerAuthorizer)
 
 	DDOSProtectionPlansClient := network.NewDdosProtectionPlansClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
