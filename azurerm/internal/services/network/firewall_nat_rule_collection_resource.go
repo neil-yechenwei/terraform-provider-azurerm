@@ -84,11 +84,15 @@ func resourceArmFirewallNatRuleCollection() *schema.Resource {
 						},
 						"translated_address": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"translated_port": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+						"translated_fqdn": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"source_addresses": {
 							Type:     schema.TypeSet,
@@ -413,7 +417,6 @@ func expandArmFirewallNatRules(input *schema.Set) (*[]network.AzureFirewallNatRu
 			destinationPorts = append(destinationPorts, v.(string))
 		}
 
-		translatedAddress := rule["translated_address"].(string)
 		translatedPort := rule["translated_port"].(string)
 
 		ruleToAdd := network.AzureFirewallNatRule{
@@ -423,8 +426,19 @@ func expandArmFirewallNatRules(input *schema.Set) (*[]network.AzureFirewallNatRu
 			SourceIPGroups:       &sourceIpGroups,
 			DestinationAddresses: &destinationAddresses,
 			DestinationPorts:     &destinationPorts,
-			TranslatedAddress:    &translatedAddress,
 			TranslatedPort:       &translatedPort,
+		}
+
+		if v := rule["translated_address"].(string); v != "" {
+			ruleToAdd.TranslatedAddress = &v
+		}
+
+		if v := rule["translated_fqdn"].(string); v != "" {
+			ruleToAdd.TranslatedFqdn = &v
+		}
+
+		if ruleToAdd.TranslatedAddress != nil && ruleToAdd.TranslatedFqdn != nil {
+			return nil, fmt.Errorf("%q and %q cannot be specified together", "translated_address", "translated_fqdn")
 		}
 
 		nrProtocols := make([]network.AzureFirewallNetworkRuleProtocol, 0)
@@ -459,6 +473,9 @@ func flattenFirewallNatRuleCollectionRules(rules *[]network.AzureFirewallNatRule
 		}
 		if rule.TranslatedPort != nil {
 			output["translated_port"] = *rule.TranslatedPort
+		}
+		if rule.TranslatedFqdn != nil {
+			output["translated_fqdn"] = *rule.TranslatedFqdn
 		}
 		if rule.SourceAddresses != nil {
 			output["source_addresses"] = set.FromStringSlice(*rule.SourceAddresses)

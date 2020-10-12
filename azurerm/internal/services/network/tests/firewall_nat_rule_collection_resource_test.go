@@ -258,6 +258,25 @@ func TestAccAzureRMFirewallNatRuleCollection_noSource(t *testing.T) {
 	})
 }
 
+func TestAccAzureRMFirewallNatRuleCollection_withTranslatedFqdn(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_firewall_nat_rule_collection", "test")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
+		CheckDestroy: testCheckAzureRMFirewallDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAzureRMFirewallNatRuleCollection_withTranslatedFqdn(data),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAzureRMFirewallNatRuleCollectionExists(data.ResourceName),
+				),
+			},
+			data.ImportStep(),
+		},
+	})
+}
+
 func testCheckAzureRMFirewallNatRuleCollectionExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := acceptance.AzureProvider.Meta().(*clients.Client).Network.AzureFirewallsClient
@@ -791,6 +810,44 @@ resource "azurerm_firewall_nat_rule_collection" "test" {
 
     translated_port    = 53
     translated_address = "8.8.8.8"
+  }
+}
+`, template, data.RandomInteger)
+}
+
+func testAccAzureRMFirewallNatRuleCollection_withTranslatedFqdn(data acceptance.TestData) string {
+	template := testAccAzureRMFirewall_basic(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_firewall_nat_rule_collection" "test" {
+  name                = "acctestnrc-%d"
+  azure_firewall_name = azurerm_firewall.test.name
+  resource_group_name = azurerm_resource_group.test.name
+  priority            = 100
+  action              = "Dnat"
+
+  rule {
+    name = "rule1"
+
+    source_addresses = [
+      "10.0.0.0/16",
+    ]
+
+    destination_ports = [
+      "53",
+    ]
+
+    destination_addresses = [
+      azurerm_public_ip.test.ip_address,
+    ]
+
+    protocols = [
+      "Any",
+    ]
+
+    translated_port    = 53
+    translated_fqdn    = "terraform.io"
   }
 }
 `, template, data.RandomInteger)
