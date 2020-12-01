@@ -12,6 +12,7 @@ type Client struct {
 	AzureFirewallsClient                 *network.AzureFirewallsClient
 	BastionHostsClient                   *network.BastionHostsClient
 	ConnectionMonitorsClient             *network.ConnectionMonitorsClient
+	DDOSCustomPoliciesClient             *network.DdosCustomPoliciesClient
 	DDOSProtectionPlansClient            *network.DdosProtectionPlansClient
 	ExpressRouteAuthsClient              *network.ExpressRouteCircuitAuthorizationsClient
 	ExpressRouteCircuitsClient           *network.ExpressRouteCircuitsClient
@@ -76,6 +77,9 @@ func NewClient(o *common.ClientOptions) *Client {
 
 	ConnectionMonitorsClient := network.NewConnectionMonitorsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&ConnectionMonitorsClient.Client, o.ResourceManagerAuthorizer)
+
+	DDOSCustomPoliciesClient := network.NewDdosCustomPoliciesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&DDOSCustomPoliciesClient.Client, o.ResourceManagerAuthorizer)
 
 	DDOSProtectionPlansClient := network.NewDdosProtectionPlansClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&DDOSProtectionPlansClient.Client, o.ResourceManagerAuthorizer)
@@ -224,6 +228,7 @@ func NewClient(o *common.ClientOptions) *Client {
 		AzureFirewallsClient:                 &AzureFirewallsClient,
 		BastionHostsClient:                   &BastionHostsClient,
 		ConnectionMonitorsClient:             &ConnectionMonitorsClient,
+		DDOSCustomPoliciesClient:             &DDOSCustomPoliciesClient,
 		DDOSProtectionPlansClient:            &DDOSProtectionPlansClient,
 		ExpressRouteAuthsClient:              &ExpressRouteAuthsClient,
 		ExpressRouteCircuitsClient:           &ExpressRouteCircuitsClient,

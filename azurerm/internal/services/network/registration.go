@@ -81,6 +81,7 @@ func (r Registration) SupportedResources() map[string]*schema.Resource {
 		"azurerm_lb":                                    resourceArmLoadBalancer(),
 		"azurerm_nat_gateway":                           resourceArmNatGateway(),
 		"azurerm_network_connection_monitor":            resourceArmNetworkConnectionMonitor(),
+		"azurerm_network_ddos_custom_policy":            resourceArmNetworkDDoSCustomPolicy(),
 		"azurerm_network_ddos_protection_plan":          resourceArmNetworkDDoSProtectionPlan(),
 		"azurerm_network_interface":                     resourceArmNetworkInterface(),
 		"azurerm_network_interface_application_gateway_backend_address_pool_association": resourceArmNetworkInterfaceApplicationGatewayBackendAddressPoolAssociation(),
