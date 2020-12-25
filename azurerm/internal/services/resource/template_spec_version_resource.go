@@ -7,7 +7,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/resources/mgmt/2019-06-01-preview/templatespecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
@@ -52,6 +51,13 @@ func resourceArmTemplateSpecVersion() *schema.Resource {
 
 			"location": azure.SchemaLocation(),
 
+			"template_content": {
+				Type:      schema.TypeString,
+				Required:  true,
+				ForceNew:  true,
+				StateFunc: utils.NormalizeJson,
+			},
+
 			"template_spec_name": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -60,11 +66,25 @@ func resourceArmTemplateSpecVersion() *schema.Resource {
 			},
 
 			"artifact": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"path": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.StringIsNotEmpty,
+						},
+
+						"template_content": {
+							Type:      schema.TypeString,
+							Required:  true,
+							ForceNew:  true,
+							StateFunc: utils.NormalizeJson,
+						},
+
 						"kind": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -72,21 +92,6 @@ func resourceArmTemplateSpecVersion() *schema.Resource {
 							ValidateFunc: validation.StringInSlice([]string{
 								string(templatespecs.KindTemplate),
 							}, false),
-						},
-
-						"path": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ForceNew:     true,
-							ValidateFunc: validation.StringIsNotEmpty,
-						},
-
-						"template_content": {
-							Type:             schema.TypeString,
-							Optional:         true,
-							ForceNew:         true,
-							ValidateFunc:     validation.StringIsJSON,
-							DiffSuppressFunc: structure.SuppressJsonDiff,
 						},
 					},
 				},
@@ -97,14 +102,6 @@ func resourceArmTemplateSpecVersion() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validate.TemplateSpecVersionDescription,
-			},
-
-			"template_content": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ForceNew:         true,
-				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: structure.SuppressJsonDiff,
 			},
 
 			"tags": tags.Schema(),
@@ -135,19 +132,29 @@ func resourceArmTemplateSpecVersionCreate(d *schema.ResourceData, meta interface
 		return tf.ImportAsExistsError("azurerm_template_spec_version", id.ID())
 	}
 
-	template, err := structure.ExpandJsonFromString(d.Get("template_content").(string))
+	template, err := expandTemplateDeploymentBody(d.Get("template_content").(string))
 	if err != nil {
-		return fmt.Errorf("failed to parse JSON from `template`: %+v", err)
+		return fmt.Errorf("expanding `template_content`: %+v", err)
 	}
 
 	templateSpecVersion := templatespecs.VersionTemplatespecs{
 		Location: utils.String(location.Normalize(d.Get("location").(string))),
 		VersionProperties: &templatespecs.VersionProperties{
-			Artifacts:   expandTemplateSpecVersionTemplateArtifacts(d.Get("artifact").(*schema.Set).List()),
-			Description: utils.String(d.Get("description").(string)),
-			Template:    template,
+			Template: template,
 		},
 		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
+	}
+
+	if v, ok := d.GetOk("artifact"); ok {
+		artifacts, err := expandTemplateSpecVersionTemplateArtifacts(v.([]interface{}))
+		if err != nil {
+			return fmt.Errorf("expanding `artifact`: %+v", err)
+		}
+		templateSpecVersion.VersionProperties.Artifacts = artifacts
+	}
+
+	if v, ok := d.GetOk("description"); ok {
+		templateSpecVersion.VersionProperties.Description = utils.String(v.(string))
 	}
 
 	if _, err := client.CreateOrUpdate(ctx, resourceGroup, templateSpecName, name, templateSpecVersion); err != nil {
@@ -186,17 +193,23 @@ func resourceArmTemplateSpecVersionRead(d *schema.ResourceData, meta interface{}
 	d.Set("location", location.NormalizeNilable(resp.Location))
 
 	if props := resp.VersionProperties; props != nil {
-		d.Set("description", props.Description)
-
-		if err := d.Set("artifact", flattenTemplateSpecVersionTemplateArtifacts(props.Artifacts)); err != nil {
-			return fmt.Errorf("setting `artifact`: %+v", err)
+		if props.Description != nil {
+			d.Set("description", props.Description)
 		}
 
-		if props.Template != nil {
-			tValue := props.Template.(map[string]interface{})
-			tStr, _ := structure.FlattenJsonToString(tValue)
-			d.Set("template_content", tStr)
+		if props.Artifacts != nil {
+			artifacts, err := flattenTemplateSpecVersionTemplateArtifacts(props.Artifacts)
+			if err != nil {
+				return fmt.Errorf("setting `artifact`: %+v", err)
+			}
+			d.Set("artifact", artifacts)
 		}
+
+		template, err := flattenTemplateDeploymentBody(props.Template)
+		if err != nil {
+			return fmt.Errorf("flattening `template_content`: %+v", err)
+		}
+		d.Set("template_content", template)
 	}
 
 	return tags.FlattenAndSet(d, resp.Tags)
@@ -242,12 +255,16 @@ func resourceArmTemplateSpecVersionDelete(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func expandTemplateSpecVersionTemplateArtifacts(input []interface{}) *[]templatespecs.BasicArtifact {
+func expandTemplateSpecVersionTemplateArtifacts(input []interface{}) (*[]templatespecs.BasicArtifact, error) {
 	results := make([]templatespecs.BasicArtifact, 0)
 
 	for _, item := range input {
 		v := item.(map[string]interface{})
-		template, _ := structure.ExpandJsonFromString(v["template_content"].(string))
+
+		template, err := expandTemplateDeploymentBody(v["template_content"].(string))
+		if err != nil {
+			return nil, fmt.Errorf("expanding `template_content`: %+v", err)
+		}
 
 		results = append(results, templatespecs.TemplateArtifact{
 			Path:     utils.String(v["path"].(string)),
@@ -256,13 +273,13 @@ func expandTemplateSpecVersionTemplateArtifacts(input []interface{}) *[]template
 		})
 	}
 
-	return &results
+	return &results, nil
 }
 
-func flattenTemplateSpecVersionTemplateArtifacts(input *[]templatespecs.BasicArtifact) []interface{} {
+func flattenTemplateSpecVersionTemplateArtifacts(input *[]templatespecs.BasicArtifact) ([]interface{}, error) {
 	results := make([]interface{}, 0)
 	if input == nil {
-		return results
+		return results, nil
 	}
 
 	for _, item := range *input {
@@ -273,22 +290,22 @@ func flattenTemplateSpecVersionTemplateArtifacts(input *[]templatespecs.BasicArt
 			kind = artifact.Kind
 		}
 
-		var p string
+		var path string
 		if artifact.Path != nil {
-			p = *artifact.Path
+			path = *artifact.Path
 		}
 
-		var t string
-		if artifact.Template != nil {
-			t, _ = structure.FlattenJsonToString(artifact.Template.(map[string]interface{}))
+		template, err := flattenTemplateDeploymentBody(artifact.Template)
+		if err != nil {
+			return nil, fmt.Errorf("flattening `template_content`: %+v", err)
 		}
 
 		results = append(results, map[string]interface{}{
 			"kind":             kind,
-			"path":             p,
-			"template_content": t,
+			"path":             path,
+			"template_content": template,
 		})
 	}
 
-	return results
+	return results, nil
 }
