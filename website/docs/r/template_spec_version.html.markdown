@@ -67,7 +67,7 @@ The following arguments are supported:
 
 An `artifact` block exports the following:
 
-* `path` - (Required) The relative path of the template artifact. Changing this forces a new Template Spec Version to be created.
+* `path` - (Required) The safe relative path of the template artifact in File System. Changing this forces a new Template Spec Version to be created.
 
 * `template_content` - (Required) The content of the linked template which is associated with main template. Changing this forces a new Template Spec Version to be created.
 
