@@ -23,7 +23,7 @@ func TemplateSpecName(i interface{}, k string) (warnings []string, errors []erro
 	}
 
 	if !regexp.MustCompile(`^[-\w\._\(\)]+$`).MatchString(v) {
-		errors = append(errors, fmt.Errorf("expected value of %s not match regular expression, got %v", k, v))
+		errors = append(errors, fmt.Errorf("%q only contains alpha-numeric characters, parenthesis, underscores, dashes and periods", k))
 		return
 	}
 
