@@ -6,13 +6,14 @@ import (
 )
 
 type Client struct {
-	ContactsClient                 *security.ContactsClient
-	PricingClient                  *security.PricingsClient
-	WorkspaceClient                *security.WorkspaceSettingsClient
-	AdvancedThreatProtectionClient *security.AdvancedThreatProtectionClient
-	AutoProvisioningClient         *security.AutoProvisioningSettingsClient
-	SettingClient                  *security.SettingsClient
-	AutomationsClient              *security.AutomationsClient
+	ContactsClient                      *security.ContactsClient
+	PricingClient                       *security.PricingsClient
+	WorkspaceClient                     *security.WorkspaceSettingsClient
+	AdvancedThreatProtectionClient      *security.AdvancedThreatProtectionClient
+	AutoProvisioningClient              *security.AutoProvisioningSettingsClient
+	ServerVulnerabilityAssessmentClient *security.ServerVulnerabilityAssessmentClient
+	SettingClient                       *security.SettingsClient
+	AutomationsClient                   *security.AutomationsClient
 }
 
 func NewClient(o *common.ClientOptions) *Client {
@@ -33,6 +34,9 @@ func NewClient(o *common.ClientOptions) *Client {
 	AutoProvisioningClient := security.NewAutoProvisioningSettingsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId, ascLocation)
 	o.ConfigureClient(&AutoProvisioningClient.Client, o.ResourceManagerAuthorizer)
 
+	serverVulnerabilityAssessmentClient := security.NewServerVulnerabilityAssessmentClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId, ascLocation)
+	o.ConfigureClient(&serverVulnerabilityAssessmentClient.Client, o.ResourceManagerAuthorizer)
+
 	SettingClient := security.NewSettingsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId, ascLocation)
 	o.ConfigureClient(&SettingClient.Client, o.ResourceManagerAuthorizer)
 
@@ -40,12 +44,13 @@ func NewClient(o *common.ClientOptions) *Client {
 	o.ConfigureClient(&AutomationsClient.Client, o.ResourceManagerAuthorizer)
 
 	return &Client{
-		ContactsClient:                 &ContactsClient,
-		PricingClient:                  &PricingClient,
-		WorkspaceClient:                &WorkspaceClient,
-		AdvancedThreatProtectionClient: &AdvancedThreatProtectionClient,
-		AutoProvisioningClient:         &AutoProvisioningClient,
-		SettingClient:                  &SettingClient,
-		AutomationsClient:              &AutomationsClient,
+		ContactsClient:                      &ContactsClient,
+		PricingClient:                       &PricingClient,
+		WorkspaceClient:                     &WorkspaceClient,
+		AdvancedThreatProtectionClient:      &AdvancedThreatProtectionClient,
+		AutoProvisioningClient:              &AutoProvisioningClient,
+		ServerVulnerabilityAssessmentClient: &serverVulnerabilityAssessmentClient,
+		SettingClient:                       &SettingClient,
+		AutomationsClient:                   &AutomationsClient,
 	}
 }

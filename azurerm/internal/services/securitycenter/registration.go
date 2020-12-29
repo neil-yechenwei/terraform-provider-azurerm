@@ -26,12 +26,13 @@ func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 // SupportedResources returns the supported Resources supported by this Service
 func (r Registration) SupportedResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
-		"azurerm_advanced_threat_protection":           resourceAdvancedThreatProtection(),
-		"azurerm_security_center_contact":              resourceSecurityCenterContact(),
-		"azurerm_security_center_setting":              resourceSecurityCenterSetting(),
-		"azurerm_security_center_subscription_pricing": resourceSecurityCenterSubscriptionPricing(),
-		"azurerm_security_center_workspace":            resourceSecurityCenterWorkspace(),
-		"azurerm_security_center_automation":           resourceSecurityCenterAutomation(),
-		"azurerm_security_center_auto_provisioning":    resourceSecurityCenterAutoProvisioning(),
+		"azurerm_advanced_threat_protection":                      resourceAdvancedThreatProtection(),
+		"azurerm_security_center_contact":                         resourceSecurityCenterContact(),
+		"azurerm_security_center_setting":                         resourceSecurityCenterSetting(),
+		"azurerm_security_center_subscription_pricing":            resourceSecurityCenterSubscriptionPricing(),
+		"azurerm_security_center_workspace":                       resourceSecurityCenterWorkspace(),
+		"azurerm_security_center_automation":                      resourceSecurityCenterAutomation(),
+		"azurerm_security_center_auto_provisioning":               resourceSecurityCenterAutoProvisioning(),
+		"azurerm_security_center_server_vulnerability_assessment": resourceSecurityCenterServerVulnerabilityAssessment(),
 	}
 }
