@@ -108,9 +108,9 @@ func (r TemplateSpecVersionResource) basic(data acceptance.TestData) string {
 
 resource "azurerm_template_spec_version" "test" {
   name                = "acctest-TemplateSpecVersion-%d"
-  resource_group_name = data.azurerm_resource_group.test.name
-  location            = data.azurerm_resource_group.test.location
-  template_spec_name  = "acctest-TemplateSpec-test01"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+  template_spec_name  = azurerm_template_spec.test.name
 
   template_content = <<DEPLOY
 {
@@ -121,11 +121,10 @@ resource "azurerm_template_spec_version" "test" {
 }
 DEPLOY
 }
-`, r.template(), data.RandomInteger)
+`, r.template(data), data.RandomInteger)
 }
 
 func (r TemplateSpecVersionResource) requiresImport(data acceptance.TestData) string {
-	config := r.basic(data)
 	return fmt.Sprintf(`
 %s
 
@@ -136,7 +135,7 @@ resource "azurerm_template_spec_version" "import" {
   template_spec_name  = azurerm_template_spec_version.test.template_spec_name
   template_content    = azurerm_template_spec_version.test.template_content
 }
-`, config)
+`, r.basic(data))
 }
 
 func (r TemplateSpecVersionResource) complete(data acceptance.TestData) string {
@@ -145,9 +144,9 @@ func (r TemplateSpecVersionResource) complete(data acceptance.TestData) string {
 
 resource "azurerm_template_spec_version" "test" {
   name                = "acctest-TemplateSpecVersion-%d"
-  resource_group_name = data.azurerm_resource_group.test.name
-  location            = data.azurerm_resource_group.test.location
-  template_spec_name  = "acctest-TemplateSpec-test01"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+  template_spec_name  = azurerm_template_spec.test.name
   description         = "Test Description"
 
   artifact {
@@ -267,7 +266,7 @@ DEPLOY
     ENV = "Test"
   }
 }
-`, r.template(), data.RandomInteger)
+`, r.template(data), data.RandomInteger)
 }
 
 func (r TemplateSpecVersionResource) update(data acceptance.TestData) string {
@@ -276,9 +275,9 @@ func (r TemplateSpecVersionResource) update(data acceptance.TestData) string {
 
 resource "azurerm_template_spec_version" "test" {
   name                = "acctest-TemplateSpecVersion-%d"
-  resource_group_name = data.azurerm_resource_group.test.name
-  location            = data.azurerm_resource_group.test.location
-  template_spec_name  = "acctest-TemplateSpec-test01"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+  template_spec_name  = azurerm_template_spec.test.name
   description         = "Test Description"
 
   artifact {
@@ -398,17 +397,24 @@ DEPLOY
     ENV = "Test2"
   }
 }
-`, r.template(), data.RandomInteger)
+`, r.template(data), data.RandomInteger)
 }
 
-func (r TemplateSpecVersionResource) template() string {
+func (r TemplateSpecVersionResource) template(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 provider "azurerm" {
   features {}
 }
 
-data "azurerm_resource_group" "test" {
-  name = "acctestRG-templatespec-test01"
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-templatespec-%d"
+  location = "%s"
 }
-`)
+
+resource "azurerm_template_spec" "test" {
+  name                = "acctestTS-%d"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+}
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger)
 }
