@@ -20,12 +20,12 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
-func resourceArmTemplateSpecVersion() *schema.Resource {
+func resourceTemplateSpecVersion() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceArmTemplateSpecVersionCreate,
-		Read:   resourceArmTemplateSpecVersionRead,
-		Update: resourceArmTemplateSpecVersionUpdate,
-		Delete: resourceArmTemplateSpecVersionDelete,
+		Create: resourceTemplateSpecVersionCreate,
+		Read:   resourceTemplateSpecVersionRead,
+		Update: resourceTemplateSpecVersionUpdate,
+		Delete: resourceTemplateSpecVersionDelete,
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
@@ -84,15 +84,6 @@ func resourceArmTemplateSpecVersion() *schema.Resource {
 							ForceNew:  true,
 							StateFunc: utils.NormalizeJson,
 						},
-
-						"kind": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  templatespecs.KindTemplate,
-							ValidateFunc: validation.StringInSlice([]string{
-								string(templatespecs.KindTemplate),
-							}, false),
-						},
 					},
 				},
 			},
@@ -109,7 +100,7 @@ func resourceArmTemplateSpecVersion() *schema.Resource {
 	}
 }
 
-func resourceArmTemplateSpecVersionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateSpecVersionCreate(d *schema.ResourceData, meta interface{}) error {
 	subscriptionId := meta.(*clients.Client).Account.SubscriptionId
 	client := meta.(*clients.Client).Resource.TemplateSpecVersionsClient
 	ctx, cancel := timeouts.ForCreate(meta.(*clients.Client).StopContext, d)
@@ -163,10 +154,10 @@ func resourceArmTemplateSpecVersionCreate(d *schema.ResourceData, meta interface
 
 	d.SetId(id.ID())
 
-	return resourceArmTemplateSpecVersionRead(d, meta)
+	return resourceTemplateSpecVersionRead(d, meta)
 }
 
-func resourceArmTemplateSpecVersionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateSpecVersionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.Client).Resource.TemplateSpecVersionsClient
 	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
 	defer cancel()
@@ -215,7 +206,7 @@ func resourceArmTemplateSpecVersionRead(d *schema.ResourceData, meta interface{}
 	return tags.FlattenAndSet(d, resp.Tags)
 }
 
-func resourceArmTemplateSpecVersionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateSpecVersionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.Client).Resource.TemplateSpecVersionsClient
 	ctx, cancel := timeouts.ForUpdate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
@@ -235,10 +226,10 @@ func resourceArmTemplateSpecVersionUpdate(d *schema.ResourceData, meta interface
 		return fmt.Errorf("updating Template Spec Version %q (Resource Group %q / Template Spec %q): %+v", id.VersionName, id.ResourceGroup, id.TemplateSpecName, err)
 	}
 
-	return resourceArmTemplateSpecVersionRead(d, meta)
+	return resourceTemplateSpecVersionRead(d, meta)
 }
 
-func resourceArmTemplateSpecVersionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateSpecVersionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.Client).Resource.TemplateSpecVersionsClient
 	ctx, cancel := timeouts.ForDelete(meta.(*clients.Client).StopContext, d)
 	defer cancel()
@@ -268,7 +259,6 @@ func expandTemplateSpecVersionTemplateArtifacts(input []interface{}) (*[]templat
 
 		results = append(results, templatespecs.TemplateArtifact{
 			Path:     utils.String(v["path"].(string)),
-			Kind:     templatespecs.Kind(v["kind"].(string)),
 			Template: template,
 		})
 	}
@@ -285,11 +275,6 @@ func flattenTemplateSpecVersionTemplateArtifacts(input *[]templatespecs.BasicArt
 	for _, item := range *input {
 		artifact := item.(templatespecs.TemplateArtifact)
 
-		var kind templatespecs.Kind
-		if artifact.Kind != "" {
-			kind = artifact.Kind
-		}
-
 		var path string
 		if artifact.Path != nil {
 			path = *artifact.Path
@@ -301,7 +286,6 @@ func flattenTemplateSpecVersionTemplateArtifacts(input *[]templatespecs.BasicArt
 		}
 
 		results = append(results, map[string]interface{}{
-			"kind":             kind,
 			"path":             path,
 			"template_content": template,
 		})

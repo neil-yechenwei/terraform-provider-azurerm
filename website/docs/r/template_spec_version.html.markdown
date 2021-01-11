@@ -71,8 +71,6 @@ An `artifact` block exports the following:
 
 * `template_content` - (Required) The content of the linked template which is associated with main template. Changing this forces a new Template Spec Version to be created.
 
-* `kind` - (Optional) The kind of the template artifact. Possible value is `template`.
-
 ## Attributes Reference
 
 In addition to the Arguments listed above - the following Attributes are exported: 

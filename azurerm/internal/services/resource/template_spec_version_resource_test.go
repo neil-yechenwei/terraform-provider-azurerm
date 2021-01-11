@@ -150,7 +150,6 @@ resource "azurerm_template_spec_version" "test" {
   description         = "Test Description"
 
   artifact {
-    kind             = "template"
     path             = "artifacts\\linkedTemplate.json"
     template_content = <<ARTIFACT
     {
@@ -281,7 +280,6 @@ resource "azurerm_template_spec_version" "test" {
   description         = "Test Description"
 
   artifact {
-    kind             = "template"
     path             = "artifacts\\linkedTemplate.json"
     template_content = <<ARTIFACT
     {
