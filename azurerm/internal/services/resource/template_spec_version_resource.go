@@ -22,9 +22,9 @@ import (
 
 func resourceTemplateSpecVersion() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceTemplateSpecVersionCreate,
+		Create: resourceTemplateSpecVersionCreateUpdate,
 		Read:   resourceTemplateSpecVersionRead,
-		Update: resourceTemplateSpecVersionUpdate,
+		Update: resourceTemplateSpecVersionCreateUpdate,
 		Delete: resourceTemplateSpecVersionDelete,
 
 		Timeouts: &schema.ResourceTimeout{
@@ -51,13 +51,6 @@ func resourceTemplateSpecVersion() *schema.Resource {
 
 			"location": azure.SchemaLocation(),
 
-			"template_content": {
-				Type:      schema.TypeString,
-				Required:  true,
-				ForceNew:  true,
-				StateFunc: utils.NormalizeJson,
-			},
-
 			"template_spec_name": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -65,23 +58,26 @@ func resourceTemplateSpecVersion() *schema.Resource {
 				ValidateFunc: validate.TemplateSpecName,
 			},
 
+			"template_content": {
+				Type:      schema.TypeString,
+				Required:  true,
+				StateFunc: utils.NormalizeJson,
+			},
+
 			"artifact": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"path": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ForceNew:     true,
 							ValidateFunc: validation.StringIsNotEmpty,
 						},
 
 						"template_content": {
 							Type:      schema.TypeString,
 							Required:  true,
-							ForceNew:  true,
 							StateFunc: utils.NormalizeJson,
 						},
 					},
@@ -91,7 +87,6 @@ func resourceTemplateSpecVersion() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validate.TemplateSpecVersionDescription,
 			},
 
@@ -100,7 +95,7 @@ func resourceTemplateSpecVersion() *schema.Resource {
 	}
 }
 
-func resourceTemplateSpecVersionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateSpecVersionCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	subscriptionId := meta.(*clients.Client).Account.SubscriptionId
 	client := meta.(*clients.Client).Resource.TemplateSpecVersionsClient
 	ctx, cancel := timeouts.ForCreate(meta.(*clients.Client).StopContext, d)
@@ -112,15 +107,17 @@ func resourceTemplateSpecVersionCreate(d *schema.ResourceData, meta interface{})
 
 	id := parse.NewTemplateSpecVersionID(subscriptionId, resourceGroup, templateSpecName, name)
 
-	existing, err := client.Get(ctx, resourceGroup, templateSpecName, name)
-	if err != nil {
-		if !utils.ResponseWasNotFound(existing.Response) {
-			return fmt.Errorf("checking for present of existing Template Spec Version %q (Resource Group %q / Template Spec %q): %+v", name, resourceGroup, templateSpecName, err)
+	if d.IsNewResource() {
+		existing, err := client.Get(ctx, resourceGroup, templateSpecName, name)
+		if err != nil {
+			if !utils.ResponseWasNotFound(existing.Response) {
+				return fmt.Errorf("checking for present of existing Template Spec Version %q (Resource Group %q / Template Spec %q): %+v", name, resourceGroup, templateSpecName, err)
+			}
 		}
-	}
 
-	if existing.ID != nil && *existing.ID != "" {
-		return tf.ImportAsExistsError("azurerm_template_spec_version", id.ID())
+		if existing.ID != nil && *existing.ID != "" {
+			return tf.ImportAsExistsError("azurerm_template_spec_version", id.ID())
+		}
 	}
 
 	template, err := expandTemplateDeploymentBody(d.Get("template_content").(string))
@@ -204,29 +201,6 @@ func resourceTemplateSpecVersionRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	return tags.FlattenAndSet(d, resp.Tags)
-}
-
-func resourceTemplateSpecVersionUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*clients.Client).Resource.TemplateSpecVersionsClient
-	ctx, cancel := timeouts.ForUpdate(meta.(*clients.Client).StopContext, d)
-	defer cancel()
-
-	id, err := parse.TemplateSpecVersionID(d.Id())
-	if err != nil {
-		return err
-	}
-
-	templateSpecVersionUpdateModel := templatespecs.VersionUpdateModel{}
-
-	if d.HasChange("tags") {
-		templateSpecVersionUpdateModel.Tags = tags.Expand(d.Get("tags").(map[string]interface{}))
-	}
-
-	if _, err := client.Update(ctx, id.ResourceGroup, id.TemplateSpecName, id.VersionName, &templateSpecVersionUpdateModel); err != nil {
-		return fmt.Errorf("updating Template Spec Version %q (Resource Group %q / Template Spec %q): %+v", id.VersionName, id.ResourceGroup, id.TemplateSpecName, err)
-	}
-
-	return resourceTemplateSpecVersionRead(d, meta)
 }
 
 func resourceTemplateSpecVersionDelete(d *schema.ResourceData, meta interface{}) error {

@@ -51,15 +51,15 @@ The following arguments are supported:
 
 * `location` - (Required) The Azure Region where the Template Spec Version should exist. Changing this forces a new Template Spec Version to be created.
 
-* `template_content` - (Optional) The content of the main ARM template. Changing this forces a new Template Spec Version to be created.
-
 * `template_spec_name` - (Required) The name of the Template Spec. Changing this forces a new Template Spec Version to be created.
+
+* `template_content` - (Required) The content of the main ARM template.
 
 ---
 
-* `artifact` - (Optional)  An `artifact` block as defined below. Changing this forces a new Template Spec Version to be created.
+* `artifact` - (Optional)  An `artifact` block as defined below.
 
-* `description` - (Optional) The description of the Template Spec Version. Changing this forces a new Template Spec Version to be created.
+* `description` - (Optional) The description of the Template Spec Version.
 
 * `tags` - (Optional) A mapping of tags which should be assigned to the Template Spec Version.
 
@@ -67,9 +67,9 @@ The following arguments are supported:
 
 An `artifact` block exports the following:
 
-* `path` - (Required) The safe relative path of the template artifact in File System. Changing this forces a new Template Spec Version to be created.
+* `path` - (Required) The safe relative path of the template artifact in File System.
 
-* `template_content` - (Required) The content of the linked template which is associated with main template. Changing this forces a new Template Spec Version to be created.
+* `template_content` - (Required) The content of the linked template which is associated with main template.
 
 ## Attributes Reference
 

@@ -277,10 +277,10 @@ resource "azurerm_template_spec_version" "test" {
   resource_group_name = azurerm_resource_group.test.name
   location            = azurerm_resource_group.test.location
   template_spec_name  = azurerm_template_spec.test.name
-  description         = "Test Description"
+  description         = "Updated Test Description"
 
   artifact {
-    path             = "artifacts\\linkedTemplate.json"
+    path             = "artifacts\\updatedLinkedTemplate.json"
     template_content = <<ARTIFACT
     {
       "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -296,7 +296,7 @@ resource "azurerm_template_spec_version" "test" {
             "Premium_LRS"
           ],
           "metadata": {
-            "description": "Storage Account type"
+            "description": "Updated Storage Account type"
           }
         },
         "location": {
