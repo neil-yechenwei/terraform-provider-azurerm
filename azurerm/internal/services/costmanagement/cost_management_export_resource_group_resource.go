@@ -133,6 +133,20 @@ func resourceCostManagementExportResourceGroup() *schema.Resource {
 								string(costmanagement.MonthToDate),
 							}, false),
 						},
+
+						"time_period_start": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							RequiredWith: []string{"query.0.time_period_end"},
+							ValidateFunc: validation.IsRFC3339Time,
+						},
+
+						"time_period_end": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							RequiredWith: []string{"query.0.time_period_start"},
+							ValidateFunc: validation.IsRFC3339Time,
+						},
 					},
 				},
 			},
@@ -181,6 +195,17 @@ func resourceCostManagementExportResourceGroupCreateUpdate(d *schema.ResourceDat
 		DeliveryInfo: expandExportDeliveryInfo(d.Get("delivery_info").([]interface{})),
 		Format:       costmanagement.Csv,
 		Definition:   expandExportQuery(d.Get("query").([]interface{})),
+	}
+
+	if properties.Definition.TimePeriod != nil && properties.Definition.Timeframe != costmanagement.Custom {
+		return fmt.Errorf("`time_period_start` and `time_period_end` only can be set when `time_frame` is `Custom`")
+	}
+
+	if properties.Definition.TimePeriod != nil {
+		timePeriodTo, _ := time.Parse(time.RFC3339, properties.Definition.TimePeriod.To.String())
+		if properties.Definition.TimePeriod.From.AddDate(0, 3, 0).Before(timePeriodTo) {
+			return fmt.Errorf("the maximum date range between `time_period_start` and `time_period_end` is 3 months")
+		}
 	}
 
 	account := costmanagement.Export{
@@ -325,6 +350,16 @@ func expandExportQuery(input []interface{}) *costmanagement.QueryDefinition {
 		Timeframe: costmanagement.TimeframeType(attrs["time_frame"].(string)),
 	}
 
+	if attrs["time_period_start"].(string) != "" {
+		from, _ := time.Parse(time.RFC3339, attrs["time_period_start"].(string))
+		to, _ := time.Parse(time.RFC3339, attrs["time_period_end"].(string))
+
+		definitionInfo.TimePeriod = &costmanagement.QueryTimePeriod{
+			From: &date.Time{Time: from},
+			To:   &date.Time{Time: to},
+		}
+	}
+
 	return definitionInfo
 }
 
@@ -338,6 +373,11 @@ func flattenExportQuery(input *costmanagement.QueryDefinition) []interface{} {
 		attrs["type"] = *queryType
 	}
 	attrs["time_frame"] = string(input.Timeframe)
+
+	if timePeriod := input.TimePeriod; timePeriod != nil {
+		attrs["time_period_start"] = timePeriod.From.Format(time.RFC3339)
+		attrs["time_period_end"] = timePeriod.To.Format(time.RFC3339)
+	}
 
 	return []interface{}{attrs}
 }

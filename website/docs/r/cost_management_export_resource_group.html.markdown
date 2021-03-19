@@ -85,6 +85,13 @@ A `query` block supports the following:
 
 * `time_frame` - (Required) The time frame for pulling data for the query. If custom, then a specific time period must be provided. Possible values include: `WeekToDate`, `MonthToDate`, `YearToDate`, `TheLastWeek`, `TheLastMonth`, `TheLastYear`, `Custom`.
 
+* `time_period_start` - (Optional) The date the export will start pulling data.
+
+* `time_period_end` - (Optional) The date the export will stop pulling data.
+
+~> **Note:** `time_period_start` and `time_period_end` can only be set when `time_frame` is `Custom`.
+~> **Note:** The maximum date range is 3 months.
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -62,6 +62,21 @@ func TestAccCostManagementExportResourceGroup_update(t *testing.T) {
 	})
 }
 
+func TestAccCostManagementExportResourceGroup_queryTimePeriod(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_cost_management_export_resource_group", "test")
+	r := CostManagementExportResourceGroupResource{}
+
+	data.ResourceTest(t, r, []resource.TestStep{
+		{
+			Config: r.queryTimePeriod(data),
+			Check: resource.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+	})
+}
+
 func (t CostManagementExportResourceGroupResource) Exists(ctx context.Context, clients *clients.Client, state *terraform.InstanceState) (*bool, error) {
 	id, err := parse.CostManagementExportResourceGroupID(state.ID)
 	if err != nil {
@@ -77,8 +92,8 @@ func (t CostManagementExportResourceGroupResource) Exists(ctx context.Context, c
 }
 
 func (CostManagementExportResourceGroupResource) basic(data acceptance.TestData) string {
-	start := time.Now().AddDate(0, 1, 0).Format("2006-02")
-	end := time.Now().AddDate(0, 2, 0).Format("2006-02")
+	start := time.Now().AddDate(0, 1, 0).Format("2006-01-02")
+	end := time.Now().AddDate(0, 2, 0).Format("2006-01-02")
 
 	return fmt.Sprintf(`
 provider "azurerm" {
@@ -103,8 +118,8 @@ resource "azurerm_cost_management_export_resource_group" "test" {
   name                    = "accrg%d"
   resource_group_id       = azurerm_resource_group.test.id
   recurrence_type         = "Monthly"
-  recurrence_period_start = "%s-18T00:00:00Z"
-  recurrence_period_end   = "%s-18T00:00:00Z"
+  recurrence_period_start = "%sT00:00:00Z"
+  recurrence_period_end   = "%sT00:00:00Z"
 
   delivery_info {
     storage_account_id = azurerm_storage_account.test.id
@@ -121,8 +136,8 @@ resource "azurerm_cost_management_export_resource_group" "test" {
 }
 
 func (CostManagementExportResourceGroupResource) update(data acceptance.TestData) string {
-	start := time.Now().AddDate(0, 3, 0).Format("2006-02")
-	end := time.Now().AddDate(0, 4, 0).Format("2006-02")
+	start := time.Now().AddDate(0, 3, 0).Format("2006-01-02")
+	end := time.Now().AddDate(0, 4, 0).Format("2006-01-02")
 
 	return fmt.Sprintf(`
 provider "azurerm" {
@@ -147,8 +162,8 @@ resource "azurerm_cost_management_export_resource_group" "test" {
   name                    = "accrg%d"
   resource_group_id       = azurerm_resource_group.test.id
   recurrence_type         = "Monthly"
-  recurrence_period_start = "%s-18T00:00:00Z"
-  recurrence_period_end   = "%s-18T00:00:00Z"
+  recurrence_period_start = "%sT00:00:00Z"
+  recurrence_period_end   = "%sT00:00:00Z"
 
   delivery_info {
     storage_account_id = azurerm_storage_account.test.id
@@ -162,4 +177,53 @@ resource "azurerm_cost_management_export_resource_group" "test" {
   }
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomString, data.RandomInteger, start, end)
+}
+
+func (CostManagementExportResourceGroupResource) queryTimePeriod(data acceptance.TestData) string {
+	recurrencePeriodStart := time.Now().AddDate(0, 1, 0).Format("2006-01-02")
+	recurrencePeriodEnd := time.Now().AddDate(0, 2, 0).Format("2006-01-02")
+	timePeriodStart := time.Now().AddDate(0, -2, 0).Format("2006-01-02")
+	timePeriodEnd := time.Now().AddDate(0, -1, 0).Format("2006-01-02")
+
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-cm-%d"
+  location = "%s"
+}
+
+resource "azurerm_storage_account" "test" {
+  name                = "acctestsa%s"
+  resource_group_name = azurerm_resource_group.test.name
+
+  location                 = azurerm_resource_group.test.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_cost_management_export_resource_group" "test" {
+  name                    = "acctestCM%s"
+  resource_group_id       = azurerm_resource_group.test.id
+  recurrence_type         = "Monthly"
+  recurrence_period_start = "%sT00:00:00Z"
+  recurrence_period_end   = "%sT00:00:00Z"
+  active                  = false
+
+  delivery_info {
+    storage_account_id = azurerm_storage_account.test.id
+    container_name     = "acctestcontainer"
+    root_folder_path   = "/root"
+  }
+
+  query {
+    type              = "Usage"
+    time_frame        = "Custom"
+    time_period_start = "%sT00:00:00Z"
+    time_period_end   = "%sT00:00:00Z"
+  }
+}
+`, data.RandomInteger, data.Locations.Primary, data.RandomString, data.RandomString, recurrencePeriodStart, recurrencePeriodEnd, timePeriodStart, timePeriodEnd)
 }
