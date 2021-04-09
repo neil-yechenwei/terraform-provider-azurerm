@@ -21,9 +21,9 @@ import (
 
 func resourceConnectedKubernetesCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceConnectedKubernetesClusterCreateUpdate,
+		Create: resourceConnectedKubernetesClusterCreate,
 		Read:   resourceConnectedKubernetesClusterRead,
-		Update: resourceConnectedKubernetesClusterCreateUpdate,
+		Update: resourceConnectedKubernetesClusterUpdate,
 		Delete: resourceConnectedKubernetesClusterDelete,
 
 		Timeouts: &schema.ResourceTimeout{
@@ -53,22 +53,14 @@ func resourceConnectedKubernetesCluster() *schema.Resource {
 			"agent_public_key_certificate": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringIsNotEmpty,
-			},
-
-			"identity_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(hybridkubernetes.None),
-					string(hybridkubernetes.SystemAssigned),
-				}, false),
-				Default: hybridkubernetes.SystemAssigned,
 			},
 
 			"distribution": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"aks",
 					"aks_engine",
@@ -90,6 +82,7 @@ func resourceConnectedKubernetesCluster() *schema.Resource {
 			"infrastructure": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"auto",
 					"aws",
@@ -108,7 +101,7 @@ func resourceConnectedKubernetesCluster() *schema.Resource {
 	}
 }
 
-func resourceConnectedKubernetesClusterCreateUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceConnectedKubernetesClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	subscriptionId := meta.(*clients.Client).Account.SubscriptionId
 	client := meta.(*clients.Client).Containers.ConnectedKubernetesClustersClient
 	ctx, cancel := timeouts.ForCreate(meta.(*clients.Client).StopContext, d)
@@ -134,7 +127,7 @@ func resourceConnectedKubernetesClusterCreateUpdate(d *schema.ResourceData, meta
 	parameters := hybridkubernetes.ConnectedCluster{
 		Location: utils.String(location.Normalize(d.Get("location").(string))),
 		Identity: &hybridkubernetes.ConnectedClusterIdentity{
-			Type: hybridkubernetes.ResourceIdentityType(d.Get("identity_type").(string)),
+			Type: hybridkubernetes.SystemAssigned,
 		},
 		ConnectedClusterProperties: &hybridkubernetes.ConnectedClusterProperties{
 			AgentPublicKeyCertificate: utils.String(d.Get("agent_public_key_certificate").(string)),
@@ -187,7 +180,6 @@ func resourceConnectedKubernetesClusterRead(d *schema.ResourceData, meta interfa
 	d.Set("name", id.Name)
 	d.Set("resource_group_name", id.ResourceGroup)
 	d.Set("location", location.NormalizeNilable(resp.Location))
-	d.Set("identity_type", resp.Identity.Type)
 
 	if props := resp.ConnectedClusterProperties; props != nil {
 		d.Set("agent_public_key_certificate", props.AgentPublicKeyCertificate)
@@ -196,6 +188,29 @@ func resourceConnectedKubernetesClusterRead(d *schema.ResourceData, meta interfa
 	}
 
 	return tags.FlattenAndSet(d, resp.Tags)
+}
+
+func resourceConnectedKubernetesClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*clients.Client).Containers.ConnectedKubernetesClustersClient
+	ctx, cancel := timeouts.ForUpdate(meta.(*clients.Client).StopContext, d)
+	defer cancel()
+
+	id, err := parse.ConnectedClusterID(d.Id())
+	if err != nil {
+		return err
+	}
+
+	parameters := hybridkubernetes.ConnectedClusterPatch{}
+
+	if d.HasChange("tags") {
+		parameters.Tags = tags.Expand(d.Get("tags").(map[string]interface{}))
+	}
+
+	if _, err := client.Update(ctx, id.ResourceGroup, id.Name, parameters); err != nil {
+		return fmt.Errorf("updating %s: %+v", id, err)
+	}
+
+	return resourceConnectedKubernetesClusterRead(d, meta)
 }
 
 func resourceConnectedKubernetesClusterDelete(d *schema.ResourceData, meta interface{}) error {

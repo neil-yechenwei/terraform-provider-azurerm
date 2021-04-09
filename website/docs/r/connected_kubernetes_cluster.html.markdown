@@ -36,15 +36,13 @@ The following arguments are supported:
 
 * `location` - (Required) The Azure Region where the Connected Kubernetes Cluster should exist. Changing this forces a new Connected Kubernetes Cluster to be created.
 
-* `agent_public_key_certificate` - (Required) The base64 encoded Public Certificate used by the agent to do the initial handshake to the backend services in Azure.
+* `agent_public_key_certificate` - (Required) The base64 encoded Public Certificate used by the agent to do the initial handshake to the backend services in Azure. Changing this forces a new Connected Kubernetes Cluster to be created.
 
 ---
 
-* `identity_type` - (Optional) The type of identity used for the Connected Kubernetes Cluster. Possible values are `None` and `SystemAssigned`. Defaults to `SystemAssigned`.
+* `distribution` - (Optional) The Kubernetes distribution which will be running on this Connected Kubernetes Cluster. Possible values are `aks`, `aks_engine`, `aks_hci`, `auto`, `capz`, `eks`, `generic`, `gke`, `k3s`, `kind`, `minikube`, `openshift`, `rancher_rke` and `tkg`. Changing this forces a new Connected Kubernetes Cluster to be created.
 
-* `distribution` - (Optional) The Kubernetes distribution which will be running on this Connected Kubernetes Cluster. Possible values are `aks`, `aks_engine`, `aks_hci`, `auto`, `capz`, `eks`, `generic`, `gke`, `k3s`, `kind`, `minikube`, `openshift`, `rancher_rke` and `tkg`.
-
-* `infrastructure` - (Optional) The infrastructure on which the Kubernetes cluster represented by this Connected Kubernetes Cluster will be running on. Possible values are `auto`, `aws`, `azure`, `azure_stack_edge`, `azure_stack_hci`, `azure_stack_hub`, `gcp`, `generic` and `vsphere`.
+* `infrastructure` - (Optional) The infrastructure on which the Kubernetes cluster represented by this Connected Kubernetes Cluster will be running on. Possible values are `auto`, `aws`, `azure`, `azure_stack_edge`, `azure_stack_hci`, `azure_stack_hub`, `gcp`, `generic` and `vsphere`. Changing this forces a new Connected Kubernetes Cluster to be created.
 
 * `tags` - (Optional) A mapping of tags which should be assigned to the Communication Service.
 
