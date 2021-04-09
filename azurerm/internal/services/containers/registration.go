@@ -31,6 +31,7 @@ func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 // SupportedResources returns the supported Resources supported by this Service
 func (r Registration) SupportedResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
+		"azurerm_connected_kubernetes_cluster": resourceConnectedKubernetesCluster(),
 		"azurerm_container_group":              resourceContainerGroup(),
 		"azurerm_container_registry_webhook":   resourceContainerRegistryWebhook(),
 		"azurerm_container_registry":           resourceContainerRegistry(),

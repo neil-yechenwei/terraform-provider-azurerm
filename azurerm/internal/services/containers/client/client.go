@@ -4,19 +4,21 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerinstance/mgmt/2019-12-01/containerinstance"
 	legacy "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-08-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-12-01/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/hybridkubernetes/mgmt/2021-03-01/hybridkubernetes"
 	"github.com/Azure/azure-sdk-for-go/services/preview/containerregistry/mgmt/2020-11-01-preview/containerregistry"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/common"
 )
 
 type Client struct {
-	AgentPoolsClient         *containerservice.AgentPoolsClient
-	GroupsClient             *containerinstance.ContainerGroupsClient
-	KubernetesClustersClient *containerservice.ManagedClustersClient
-	RegistriesClient         *containerregistry.RegistriesClient
-	ReplicationsClient       *containerregistry.ReplicationsClient
-	ServicesClient           *legacy.ContainerServicesClient
-	WebhooksClient           *containerregistry.WebhooksClient
+	AgentPoolsClient                  *containerservice.AgentPoolsClient
+	ConnectedKubernetesClustersClient *hybridkubernetes.ConnectedClusterClient
+	GroupsClient                      *containerinstance.ContainerGroupsClient
+	KubernetesClustersClient          *containerservice.ManagedClustersClient
+	RegistriesClient                  *containerregistry.RegistriesClient
+	ReplicationsClient                *containerregistry.ReplicationsClient
+	ServicesClient                    *legacy.ContainerServicesClient
+	WebhooksClient                    *containerregistry.WebhooksClient
 
 	Environment azure.Environment
 }
@@ -41,17 +43,21 @@ func NewClient(o *common.ClientOptions) *Client {
 	agentPoolsClient := containerservice.NewAgentPoolsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&agentPoolsClient.Client, o.ResourceManagerAuthorizer)
 
+	connectedKubernetesClustersClient := hybridkubernetes.NewConnectedClusterClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&connectedKubernetesClustersClient.Client, o.ResourceManagerAuthorizer)
+
 	servicesClient := legacy.NewContainerServicesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&servicesClient.Client, o.ResourceManagerAuthorizer)
 
 	return &Client{
-		AgentPoolsClient:         &agentPoolsClient,
-		KubernetesClustersClient: &kubernetesClustersClient,
-		GroupsClient:             &groupsClient,
-		RegistriesClient:         &registriesClient,
-		WebhooksClient:           &webhooksClient,
-		ReplicationsClient:       &replicationsClient,
-		ServicesClient:           &servicesClient,
-		Environment:              o.Environment,
+		AgentPoolsClient:                  &agentPoolsClient,
+		ConnectedKubernetesClustersClient: &connectedKubernetesClustersClient,
+		KubernetesClustersClient:          &kubernetesClustersClient,
+		GroupsClient:                      &groupsClient,
+		RegistriesClient:                  &registriesClient,
+		WebhooksClient:                    &webhooksClient,
+		ReplicationsClient:                &replicationsClient,
+		ServicesClient:                    &servicesClient,
+		Environment:                       o.Environment,
 	}
 }
