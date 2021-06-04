@@ -34,12 +34,13 @@ func (r Registration) SupportedDataSources() map[string]*pluginsdk.Resource {
 // SupportedResources returns the supported Resources supported by this Service
 func (r Registration) SupportedResources() map[string]*pluginsdk.Resource {
 	return map[string]*pluginsdk.Resource{
-		"azurerm_eventhub_authorization_rule":                 resourceEventHubAuthorizationRule(),
-		"azurerm_eventhub_cluster":                            resourceEventHubCluster(),
-		"azurerm_eventhub_namespace_authorization_rule":       resourceEventHubNamespaceAuthorizationRule(),
-		"azurerm_eventhub_namespace_disaster_recovery_config": resourceEventHubNamespaceDisasterRecoveryConfig(),
-		"azurerm_eventhub_namespace":                          resourceEventHubNamespace(),
-		"azurerm_eventhub":                                    resourceEventHub(),
+		"azurerm_eventhub_authorization_rule":                    resourceEventHubAuthorizationRule(),
+		"azurerm_eventhub_cluster":                               resourceEventHubCluster(),
+		"azurerm_eventhub_namespace_authorization_rule":          resourceEventHubNamespaceAuthorizationRule(),
+		"azurerm_eventhub_namespace_disaster_recovery_config":    resourceEventHubNamespaceDisasterRecoveryConfig(),
+		"azurerm_eventhub_namespace":                             resourceEventHubNamespace(),
+		"azurerm_eventhub_namespace_private_endpoint_connection": resourceEventHubNamespacePrivateEndpointConnection(),
+		"azurerm_eventhub":                                       resourceEventHub(),
 	}
 }
 

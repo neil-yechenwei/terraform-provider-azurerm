@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/Azure/azure-sdk-for-go/services/preview/eventhub/mgmt/2018-01-01-preview/eventhub"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/common"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/eventhub/sdk/authorizationruleseventhubs"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/eventhub/sdk/authorizationrulesnamespaces"
@@ -23,6 +24,7 @@ type Client struct {
 	NamespacesClient                       *namespaces.NamespacesClient
 	NamespaceAuthorizationRulesClient      *authorizationrulesnamespaces.AuthorizationRulesNamespacesClient
 	NetworkRuleSetsClient                  *networkrulesets.NetworkRuleSetsClient
+	PrivateEndpointConnectionsClient       *eventhub.PrivateEndpointConnectionsClient
 }
 
 func NewClient(o *common.ClientOptions) *Client {
@@ -53,6 +55,9 @@ func NewClient(o *common.ClientOptions) *Client {
 	networkRuleSetsClient := networkrulesets.NewNetworkRuleSetsClientWithBaseURI(o.ResourceManagerEndpoint)
 	o.ConfigureClient(&networkRuleSetsClient.Client, o.ResourceManagerAuthorizer)
 
+	privateEndpointConnectionsClient := eventhub.NewPrivateEndpointConnectionsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&privateEndpointConnectionsClient.Client, o.ResourceManagerAuthorizer)
+
 	return &Client{
 		ClusterClient:                          &clustersClient,
 		ConsumerGroupClient:                    &consumerGroupsClient,
@@ -63,5 +68,6 @@ func NewClient(o *common.ClientOptions) *Client {
 		NamespacesClient:                       &namespacesClient,
 		NamespaceAuthorizationRulesClient:      &namespaceAuthorizationRulesClient,
 		NetworkRuleSetsClient:                  &networkRuleSetsClient,
+		PrivateEndpointConnectionsClient:       &privateEndpointConnectionsClient,
 	}
 }
