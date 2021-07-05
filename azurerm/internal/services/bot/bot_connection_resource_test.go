@@ -79,6 +79,10 @@ resource "azurerm_bot_connection" "test" {
   service_provider_name = "box"
   client_id             = "test"
   client_secret         = "secret"
+
+  parameters = {
+    loginUri = "www.example.com"
+  }
 }
 `, BotChannelsRegistrationResource{}.basicConfig(data), data.RandomInteger)
 }
@@ -96,6 +100,7 @@ resource "azurerm_bot_connection" "test" {
   client_id             = "test"
   client_secret         = "secret"
   scopes                = "testscope"
+  sku                   = "F0"
 
   parameters = {
     loginUri = "www.example.com"
@@ -117,6 +122,7 @@ resource "azurerm_bot_connection" "test" {
   client_id             = "test2"
   client_secret         = "secret2"
   scopes                = "testscope2"
+  sku                   = "S1"
 
   parameters = {
     loginUri = "www.example2.com"

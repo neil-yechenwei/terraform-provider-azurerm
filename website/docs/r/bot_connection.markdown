@@ -59,6 +59,8 @@ The following arguments are supported:
 
 * `scopes` - (Optional) The Scopes at which the connection should be applied.
 
+* `sku` - (Optional) The SKU of the Bot Connection. Possible values are `F0` and `S1`.
+
 * `parameters` - (Optional) A map of additional parameters to apply to the connection.
 
 * `tags` - (Optional) A mapping of tags to assign to the resource.

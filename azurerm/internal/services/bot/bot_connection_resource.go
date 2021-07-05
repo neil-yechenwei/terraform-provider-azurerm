@@ -83,6 +83,15 @@ func resourceArmBotConnection() *pluginsdk.Resource {
 				ValidateFunc: validation.StringIsNotEmpty,
 			},
 
+			"sku": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(botservice.F0),
+					string(botservice.S1),
+				}, false),
+			},
+
 			"parameters": {
 				Type:     pluginsdk.TypeMap,
 				Optional: true,
@@ -153,7 +162,10 @@ func resourceArmBotConnectionCreate(d *pluginsdk.ResourceData, meta interface{})
 		},
 		Kind:     botservice.KindBot,
 		Location: utils.String(d.Get("location").(string)),
-		Tags:     tags.Expand(d.Get("tags").(map[string]interface{})),
+		Sku: &botservice.Sku{
+			Name: botservice.SkuName(d.Get("sku").(string)),
+		},
+		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
 	}
 
 	if _, err := client.Create(ctx, resourceId.ResourceGroup, resourceId.BotServiceName, resourceId.ConnectionName, connection); err != nil {
@@ -190,6 +202,10 @@ func resourceArmBotConnectionRead(d *pluginsdk.ResourceData, meta interface{}) e
 	d.Set("resource_group_name", id.ResourceGroup)
 	d.Set("location", location.NormalizeNilable(resp.Location))
 
+	if sku := resp.Sku; sku != nil {
+		d.Set("sku", string(sku.Name))
+	}
+
 	if props := resp.Properties; props != nil {
 		d.Set("client_id", props.ClientID)
 		d.Set("scopes", props.Scopes)
@@ -221,7 +237,10 @@ func resourceArmBotConnectionUpdate(d *pluginsdk.ResourceData, meta interface{})
 		},
 		Kind:     botservice.KindBot,
 		Location: utils.String(d.Get("location").(string)),
-		Tags:     tags.Expand(d.Get("tags").(map[string]interface{})),
+		Sku: &botservice.Sku{
+			Name: botservice.SkuName(d.Get("sku").(string)),
+		},
+		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
 	}
 
 	if _, err := client.Update(ctx, id.ResourceGroup, id.BotServiceName, id.ConnectionName, connection); err != nil {
