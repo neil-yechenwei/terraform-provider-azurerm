@@ -14,6 +14,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/bot/parse"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/bot/validate"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tf/pluginsdk"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tf/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/timeouts"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
@@ -49,14 +50,11 @@ func resourceBotChannelTelegram() *pluginsdk.Resource {
 				ValidateFunc: validate.BotName,
 			},
 
-			"access_token": {
-				Type:     pluginsdk.TypeString,
-				Required: true,
-			},
-
-			"is_validated": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
+			"telegram_channel_access_token": {
+				Type:         pluginsdk.TypeString,
+				Required:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 		},
 	}
@@ -84,8 +82,8 @@ func resourceBotChannelTelegramCreate(d *pluginsdk.ResourceData, meta interface{
 	channel := botservice.BotChannel{
 		Properties: botservice.TelegramChannel{
 			Properties: &botservice.TelegramChannelProperties{
-				AccessToken: utils.String(d.Get("access_token").(string)),
-				IsValidated: utils.Bool(d.Get("is_validated").(bool)),
+				AccessToken: utils.String(d.Get("telegram_channel_access_token").(string)),
+				IsValidated: utils.Bool(true),
 				IsEnabled:   utils.Bool(true),
 			},
 			ChannelName: botservice.ChannelNameBasicChannelChannelNameTelegramChannel,
@@ -127,11 +125,15 @@ func resourceBotChannelTelegramRead(d *pluginsdk.ResourceData, meta interface{})
 	d.Set("resource_group_name", id.ResourceGroup)
 	d.Set("location", location.NormalizeNilable(resp.Location))
 
-	if props := resp.Properties; props != nil {
+	channelsResp, err := client.ListWithKeys(ctx, id.ResourceGroup, id.BotServiceName, botservice.ChannelNameTelegramChannel)
+	if err != nil {
+		return fmt.Errorf("listing keys for %s: %+v", *id, err)
+	}
+
+	if props := channelsResp.Properties; props != nil {
 		if channel, ok := props.AsTelegramChannel(); ok {
 			if channelProps := channel.Properties; channelProps != nil {
-				d.Set("access_token", channelProps.AccessToken)
-				d.Set("is_validated", channelProps.IsValidated)
+				d.Set("telegram_channel_access_token", channelProps.AccessToken)
 			}
 		}
 	}
@@ -152,8 +154,8 @@ func resourceBotChannelTelegramUpdate(d *pluginsdk.ResourceData, meta interface{
 	channel := botservice.BotChannel{
 		Properties: botservice.TelegramChannel{
 			Properties: &botservice.TelegramChannelProperties{
-				AccessToken: utils.String(d.Get("access_token").(string)),
-				IsValidated: utils.Bool(d.Get("is_validated").(bool)),
+				AccessToken: utils.String(d.Get("telegram_channel_access_token").(string)),
+				IsValidated: utils.Bool(true),
 				IsEnabled:   utils.Bool(true),
 			},
 			ChannelName: botservice.ChannelNameBasicChannelChannelNameTelegramChannel,
