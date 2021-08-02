@@ -8,13 +8,18 @@ import (
 
 type Client struct {
 	DomainServicesClient *aad.DomainServicesClient
+	OuContainerClient    *aad.OuContainerClient
 }
 
 func NewClient(o *common.ClientOptions) *Client {
 	domainServicesClient := aad.NewDomainServicesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&domainServicesClient.Client, o.ResourceManagerAuthorizer)
 
+	ouContainerClient := aad.NewOuContainerClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&ouContainerClient.Client, o.ResourceManagerAuthorizer)
+
 	return &Client{
 		DomainServicesClient: &domainServicesClient,
+		OuContainerClient:    &ouContainerClient,
 	}
 }

@@ -2,6 +2,8 @@ package hdinsight
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	msiValidate "github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/msi/validate"
 	"regexp"
 	"strings"
 
@@ -580,6 +582,65 @@ func SchemaHDInsightsGen2StorageAccounts() *pluginsdk.Schema {
 					Type:     pluginsdk.TypeBool,
 					Required: true,
 					ForceNew: true,
+				},
+			},
+		},
+	}
+}
+
+func SchemaHDInsightsSecurityProfile() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:     pluginsdk.TypeList,
+		Optional: true,
+		ForceNew: true,
+		MaxItems: 1,
+		Elem: &pluginsdk.Resource{
+			Schema: map[string]*pluginsdk.Schema{
+				"aadds_resource_id": {
+					Type:     pluginsdk.TypeString,
+					Required: true,
+					ForceNew: true,
+				},
+
+				"cluster_users_group_dns": {
+					Type:     pluginsdk.TypeSet,
+					Required: true,
+					ForceNew: true,
+					Elem: &pluginsdk.Schema{
+						Type:         pluginsdk.TypeString,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+
+				"domain_name": {
+					Type:         pluginsdk.TypeString,
+					Required:     true,
+					ForceNew:     true,
+					ValidateFunc: validation.StringIsNotEmpty,
+				},
+
+				"domain_username": {
+					Type:         pluginsdk.TypeString,
+					Required:     true,
+					ForceNew:     true,
+					ValidateFunc: validation.StringIsNotEmpty,
+				},
+
+				"ldaps_urls": {
+					Type:     pluginsdk.TypeSet,
+					Required: true,
+					ForceNew: true,
+					Elem: &pluginsdk.Schema{
+						Type:         pluginsdk.TypeString,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+
+				"msi_resource_id": {
+					Type:         pluginsdk.TypeString,
+					Required:     true,
+					ForceNew:     true,
+					ValidateFunc: msiValidate.UserAssignedIdentityID,
 				},
 			},
 		},
@@ -1208,6 +1269,61 @@ func FlattenHDInsightAutoscaleRecurrenceDefinition(input *hdinsight.AutoscaleRec
 		map[string]interface{}{
 			"timezone": input.TimeZone,
 			"schedule": &schedules,
+		},
+	}
+}
+
+func ExpandHDInsightSecurityProfile(input []interface{}) *hdinsight.SecurityProfile {
+	if len(input) == 0 {
+		return nil
+	}
+
+	v := input[0].(map[string]interface{})
+
+	return &hdinsight.SecurityProfile{
+		DirectoryType:        hdinsight.DirectoryTypeActiveDirectory,
+		Domain:               utils.String(v["domain_name"].(string)),
+		LdapsUrls:            utils.ExpandStringSlice(v["ldaps_urls"].(*schema.Set).List()),
+		DomainUsername:       utils.String(v["domain_username"].(string)),
+		ClusterUsersGroupDNS: utils.ExpandStringSlice(v["cluster_users_group_dns"].(*schema.Set).List()),
+		AaddsResourceID:      utils.String(v["aadds_resource_id"].(string)),
+		MsiResourceID:        utils.String(v["msi_resource_id"].(string)),
+	}
+}
+
+func flattenHDInsightSecurityProfile(input *hdinsight.SecurityProfile) []interface{} {
+	if input == nil {
+		return make([]interface{}, 0)
+	}
+
+	var aaddsResourceId string
+	if input.AaddsResourceID != nil {
+		aaddsResourceId = *input.AaddsResourceID
+	}
+
+	var domain string
+	if input.Domain != nil {
+		domain = *input.Domain
+	}
+
+	var domainUsername string
+	if input.DomainUsername != nil {
+		domainUsername = *input.DomainUsername
+	}
+
+	var msiResourceId string
+	if input.MsiResourceID != nil {
+		msiResourceId = *input.MsiResourceID
+	}
+
+	return []interface{}{
+		map[string]interface{}{
+			"aadds_resource_id":       aaddsResourceId,
+			"cluster_users_group_dns": utils.FlattenStringSlice(input.ClusterUsersGroupDNS),
+			"domain_name":             domain,
+			"domain_username":         domainUsername,
+			"ldaps_urls":              utils.FlattenStringSlice(input.LdapsUrls),
+			"msi_resource_id":         msiResourceId,
 		},
 	}
 }

@@ -24,8 +24,6 @@ func TestAccHDInsightHadoopCluster_basic(t *testing.T) {
 			Config: r.basic(data),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
-				check.That(data.ResourceName).Key("https_endpoint").Exists(),
-				check.That(data.ResourceName).Key("ssh_endpoint").Exists(),
 			),
 		},
 		data.ImportStep("roles.0.head_node.0.password",
@@ -610,15 +608,13 @@ func (t HDInsightHadoopClusterResource) Exists(ctx context.Context, clients *cli
 }
 
 func (r HDInsightHadoopClusterResource) basic(data acceptance.TestData) string {
-	return fmt.Sprintf(`
-%s
-
+	return `
 resource "azurerm_hdinsight_hadoop_cluster" "test" {
-  name                = "acctesthdi-%d"
-  resource_group_name = azurerm_resource_group.test.name
-  location            = azurerm_resource_group.test.location
+  name                = "acctesthdihc-test03"
+  resource_group_name = "acclongtestRG-aadds-test03"
+  location            = "eastus"
   cluster_version     = "4.0"
-  tier                = "Standard"
+  tier                = "Premium"
 
   component_version {
     hadoop = "3.1"
@@ -630,8 +626,8 @@ resource "azurerm_hdinsight_hadoop_cluster" "test" {
   }
 
   storage_account {
-    storage_container_id = azurerm_storage_container.test.id
-    storage_account_key  = azurerm_storage_account.test.primary_access_key
+    storage_container_id = "https://acctestsatest02.blob.core.windows.net/acctestsctest02"
+    storage_account_key  = "6jj9hpnW+2SQIe0U0oDWd0HnNYWuZusyhZCMFvFPPtymzRx5v/Pc6WnEEXNBjtmx2DnzZlRNhf1E1qBb783kDQ=="
     is_default           = true
   }
 
@@ -640,6 +636,8 @@ resource "azurerm_hdinsight_hadoop_cluster" "test" {
       vm_size  = "Standard_D3_v2"
       username = "acctestusrvm"
       password = "AccTestvdSC4daf986!"
+      subnet_id          = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02/subnets/acctestSubnet-aadds-test02"
+      virtual_network_id = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02"
     }
 
     worker_node {
@@ -647,16 +645,29 @@ resource "azurerm_hdinsight_hadoop_cluster" "test" {
       username              = "acctestusrvm"
       password              = "AccTestvdSC4daf986!"
       target_instance_count = 2
+      subnet_id          = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02/subnets/acctestSubnet-aadds-test02"
+      virtual_network_id = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02"
     }
 
     zookeeper_node {
       vm_size  = "Standard_D3_v2"
       username = "acctestusrvm"
       password = "AccTestvdSC4daf986!"
+      subnet_id          = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02/subnets/acctestSubnet-aadds-test02"
+      virtual_network_id = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02"
     }
   }
+
+  security_profile {
+    aadds_resource_id       = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.AAD/domainServices/acctest-ds-test02"
+    domain_name             = "never.gonna.shut.you.down"
+    cluster_users_group_dns = ["AAD DC Administrators Test"]
+    domain_username         = "acctestAADDSAdminUser-test02@AzureSDKTeam.onmicrosoft.com"
+    ldaps_urls              = ["ldaps://never.gonna.shut.you.down:636"]
+    msi_resource_id         = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourcegroups/acclongtestRG-aadds-test02/providers/Microsoft.ManagedIdentity/userAssignedIdentities/acctestuairetest"
+  }
 }
-`, r.template(data), data.RandomInteger)
+`
 }
 
 func (r HDInsightHadoopClusterResource) requiresImport(data acceptance.TestData) string {
