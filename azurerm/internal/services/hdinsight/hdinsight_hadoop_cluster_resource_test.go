@@ -626,8 +626,8 @@ resource "azurerm_hdinsight_hadoop_cluster" "test" {
   }
 
   storage_account {
-    storage_container_id = ""
-    storage_account_key  = ""
+    storage_container_id = "https://acctestsatest02.blob.core.windows.net/acctestsctest02"
+    storage_account_key  = "KhGStWw0rRMhaz7zm8aWW04c6XIkuBCn5VGeg4mz5lYFAyUym+HxNS/PwpmV4Ro0nY8nh+iP0hjoAi1gfgGJrA=="
     is_default           = true
   }
 
@@ -636,8 +636,8 @@ resource "azurerm_hdinsight_hadoop_cluster" "test" {
       vm_size  = "Standard_D3_v2"
       username = "acctestusrvm"
       password = "AccTestvdSC4daf986!"
-      subnet_id          = ""
-      virtual_network_id = ""
+      subnet_id          = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02/subnets/acctestSubnet-aadds-test02"
+      virtual_network_id = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02"
     }
 
     worker_node {
@@ -645,26 +645,26 @@ resource "azurerm_hdinsight_hadoop_cluster" "test" {
       username              = "acctestusrvm"
       password              = "AccTestvdSC4daf986!"
       target_instance_count = 2
-      subnet_id          = ""
-      virtual_network_id = ""
+      subnet_id          = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02/subnets/acctestSubnet-aadds-test02"
+      virtual_network_id = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02"
     }
 
     zookeeper_node {
       vm_size  = "Standard_D3_v2"
       username = "acctestusrvm"
       password = "AccTestvdSC4daf986!"
-      subnet_id          = ""
-      virtual_network_id = ""
+      subnet_id          = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02/subnets/acctestSubnet-aadds-test02"
+      virtual_network_id = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.Network/virtualNetworks/acctestVnet-aadds-test02"
     }
   }
 
   security_profile {
-    aadds_resource_id       = ""
+    aadds_resource_id       = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourceGroups/acclongtestRG-aadds-test02/providers/Microsoft.AAD/domainServices/acctest-ds-test02"
     domain_name             = "never.gonna.shut.you.down"
-    cluster_users_group_dns = [""]
-    domain_username         = ""
-    ldaps_urls              = [""]
-    msi_resource_id         = ""
+    cluster_users_group_dns = ["AAD DC Administrators Test"]
+    domain_username         = "acctestAADDSAdminUser-test02@AzureSDKTeam.onmicrosoft.com"
+    ldaps_urls              = ["ldaps://never.gonna.shut.you.down:636"]
+    msi_resource_id         = "/subscriptions/0b1f6471-1bf0-4dda-aec3-cb9272f09590/resourcegroups/acclongtestRG-aadds-test02/providers/Microsoft.ManagedIdentity/userAssignedIdentities/acctestuairetest"
   }
 }
 `

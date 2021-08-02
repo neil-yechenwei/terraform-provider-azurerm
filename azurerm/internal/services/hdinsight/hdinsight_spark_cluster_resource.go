@@ -93,6 +93,8 @@ func resourceHDInsightSparkCluster() *pluginsdk.Resource {
 				},
 			},
 
+			"security_profile": SchemaHDInsightsSecurityProfile(),
+
 			"gateway": SchemaHDInsightsGateway(),
 
 			"metastores": SchemaHDInsightsExternalMetastores(),
@@ -223,6 +225,11 @@ func resourceHDInsightSparkClusterCreate(d *pluginsdk.ResourceData, meta interfa
 		Tags:     tags.Expand(t),
 		Identity: identity,
 	}
+
+	if v, ok := d.GetOk("security_profile"); ok {
+		params.Properties.SecurityProfile = ExpandHDInsightSecurityProfile(v.([]interface{}))
+	}
+
 	future, err := client.Create(ctx, resourceGroup, name, params)
 	if err != nil {
 		return fmt.Errorf("creating HDInsight Spark Cluster %q (Resource Group %q): %+v", name, resourceGroup, err)
@@ -347,6 +354,10 @@ func resourceHDInsightSparkClusterRead(d *pluginsdk.ResourceData, meta interface
 		}
 
 		d.Set("monitor", flattenHDInsightMonitoring(monitor))
+
+		if err := d.Set("security_profile", flattenHDInsightSecurityProfile(props.SecurityProfile)); err != nil {
+			return fmt.Errorf("setting `security_profile`: %+v", err)
+		}
 	}
 
 	return tags.FlattenAndSet(d, resp.Tags)
