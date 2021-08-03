@@ -210,7 +210,7 @@ func resourceHDInsightHadoopClusterCreate(d *pluginsdk.ResourceData, meta interf
 
 	storageAccountsRaw := d.Get("storage_account").([]interface{})
 	storageAccountsGen2Raw := d.Get("storage_account_gen2").([]interface{})
-	storageAccounts, identity, err := ExpandHDInsightsStorageAccounts(storageAccountsRaw, storageAccountsGen2Raw)
+	storageAccounts, identity, err := ExpandHDInsightsStorageAccounts(storageAccountsRaw, storageAccountsGen2Raw, subscriptionId, resourceGroup, "Hadoop")
 	if err != nil {
 		return fmt.Errorf("expanding `storage_account`: %s", err)
 	}
@@ -263,6 +263,12 @@ func resourceHDInsightHadoopClusterCreate(d *pluginsdk.ResourceData, meta interf
 
 	if v, ok := d.GetOk("security_profile"); ok {
 		params.Properties.SecurityProfile = ExpandHDInsightSecurityProfile(v.([]interface{}))
+
+		params.Identity = &hdinsight.ClusterIdentity{
+			Type:                   hdinsight.ResourceIdentityTypeUserAssigned,
+			UserAssignedIdentities: make(map[string]*hdinsight.ClusterIdentityUserAssignedIdentitiesValue),
+		}
+		params.Identity.UserAssignedIdentities[*params.Properties.SecurityProfile.MsiResourceID] = &hdinsight.ClusterIdentityUserAssignedIdentitiesValue{}
 	}
 
 	future, err := client.Create(ctx, resourceGroup, name, params)

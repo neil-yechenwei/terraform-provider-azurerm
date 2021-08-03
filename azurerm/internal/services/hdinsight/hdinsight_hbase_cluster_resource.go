@@ -155,7 +155,7 @@ func resourceHDInsightHBaseClusterCreate(d *pluginsdk.ResourceData, meta interfa
 
 	storageAccountsRaw := d.Get("storage_account").([]interface{})
 	storageAccountsGen2Raw := d.Get("storage_account_gen2").([]interface{})
-	storageAccounts, identity, err := ExpandHDInsightsStorageAccounts(storageAccountsRaw, storageAccountsGen2Raw)
+	storageAccounts, identity, err := ExpandHDInsightsStorageAccounts(storageAccountsRaw, storageAccountsGen2Raw, subscriptionId, resourceGroup, "HBase")
 	if err != nil {
 		return fmt.Errorf("failure expanding `storage_account`: %s", err)
 	}
@@ -204,6 +204,17 @@ func resourceHDInsightHBaseClusterCreate(d *pluginsdk.ResourceData, meta interfa
 		Tags:     tags.Expand(t),
 		Identity: identity,
 	}
+
+	if v, ok := d.GetOk("security_profile"); ok {
+		params.Properties.SecurityProfile = ExpandHDInsightSecurityProfile(v.([]interface{}))
+
+		params.Identity = &hdinsight.ClusterIdentity{
+			Type:                   hdinsight.ResourceIdentityTypeUserAssigned,
+			UserAssignedIdentities: make(map[string]*hdinsight.ClusterIdentityUserAssignedIdentitiesValue),
+		}
+		params.Identity.UserAssignedIdentities[*params.Properties.SecurityProfile.MsiResourceID] = &hdinsight.ClusterIdentityUserAssignedIdentitiesValue{}
+	}
+
 	future, err := client.Create(ctx, resourceGroup, name, params)
 	if err != nil {
 		return fmt.Errorf("failure creating HDInsight HBase Cluster %q (Resource Group %q): %+v", name, resourceGroup, err)
