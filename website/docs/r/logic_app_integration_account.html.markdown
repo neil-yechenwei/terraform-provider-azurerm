@@ -43,6 +43,8 @@ The following arguments are supported:
 
 ---
 
+* `integration_service_environment_id` - (Optional) The ID of the Integration Service Environment for the Logic App Integration Account.
+
 * `tags` - (Optional) A mapping of tags which should be assigned to the Logic App Integration Account.
 
 ## Attributes Reference
