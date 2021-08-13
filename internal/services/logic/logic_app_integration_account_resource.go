@@ -59,10 +59,10 @@ func resourceLogicAppIntegrationAccount() *pluginsdk.Resource {
 				}, false),
 			},
 
-			"integration_service_environment_name": {
+			"integration_service_environment_id": {
 				Type:         pluginsdk.TypeString,
 				Optional:     true,
-				ValidateFunc: validate.IntegrationServiceEnvironmentName(),
+				ValidateFunc: validate.IntegrationServiceEnvironmentID,
 			},
 
 			"tags": tags.Schema(),
@@ -99,9 +99,9 @@ func resourceLogicAppIntegrationAccountCreateUpdate(d *pluginsdk.ResourceData, m
 		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
 	}
 
-	if v, ok := d.GetOk("integration_service_environment_name"); ok {
+	if v, ok := d.GetOk("integration_service_environment_id"); ok {
 		account.IntegrationAccountProperties.IntegrationServiceEnvironment = &logic.IntegrationServiceEnvironment{
-			Name: utils.String(v.(string)),
+			ID: utils.String(v.(string)),
 		}
 	}
 
@@ -143,8 +143,8 @@ func resourceLogicAppIntegrationAccountRead(d *pluginsdk.ResourceData, meta inte
 	d.Set("sku_name", string(resp.Sku.Name))
 
 	if props := resp.IntegrationServiceEnvironment; props != nil {
-		if iseName := props.Name; iseName != nil {
-			d.Set("integration_service_environment", iseName)
+		if iseId := props.ID; iseId != nil {
+			d.Set("integration_service_environment_id", iseId)
 		}
 	}
 
