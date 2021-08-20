@@ -6,12 +6,13 @@ import (
 )
 
 type Client struct {
-	IntegrationAccountClient            *logic.IntegrationAccountsClient
-	IntegrationAccountCertificateClient *logic.IntegrationAccountCertificatesClient
-	IntegrationAccountSessionClient     *logic.IntegrationAccountSessionsClient
-	IntegrationServiceEnvironmentClient *logic.IntegrationServiceEnvironmentsClient
-	WorkflowClient                      *logic.WorkflowsClient
-	TriggersClient                      *logic.WorkflowTriggersClient
+	IntegrationAccountClient                      *logic.IntegrationAccountsClient
+	IntegrationAccountCertificateClient           *logic.IntegrationAccountCertificatesClient
+	IntegrationAccountSessionClient               *logic.IntegrationAccountSessionsClient
+	IntegrationServiceEnvironmentClient           *logic.IntegrationServiceEnvironmentsClient
+	IntegrationServiceEnvironmentManagedApiClient *logic.IntegrationServiceEnvironmentManagedApisClient
+	WorkflowClient                                *logic.WorkflowsClient
+	TriggersClient                                *logic.WorkflowTriggersClient
 }
 
 func NewClient(o *common.ClientOptions) *Client {
@@ -27,6 +28,9 @@ func NewClient(o *common.ClientOptions) *Client {
 	integrationServiceEnvironmentClient := logic.NewIntegrationServiceEnvironmentsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&integrationServiceEnvironmentClient.Client, o.ResourceManagerAuthorizer)
 
+	integrationServiceEnvironmentManagedApiClient := logic.NewIntegrationServiceEnvironmentManagedApisClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&integrationServiceEnvironmentManagedApiClient.Client, o.ResourceManagerAuthorizer)
+
 	workflowClient := logic.NewWorkflowsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&workflowClient.Client, o.ResourceManagerAuthorizer)
 
@@ -34,11 +38,12 @@ func NewClient(o *common.ClientOptions) *Client {
 	o.ConfigureClient(&triggersClient.Client, o.ResourceManagerAuthorizer)
 
 	return &Client{
-		IntegrationAccountClient:            &integrationAccountClient,
-		IntegrationAccountCertificateClient: &integrationAccountCertificateClient,
-		IntegrationAccountSessionClient:     &integrationAccountSessionClient,
-		IntegrationServiceEnvironmentClient: &integrationServiceEnvironmentClient,
-		WorkflowClient:                      &workflowClient,
-		TriggersClient:                      &triggersClient,
+		IntegrationAccountClient:                      &integrationAccountClient,
+		IntegrationAccountCertificateClient:           &integrationAccountCertificateClient,
+		IntegrationAccountSessionClient:               &integrationAccountSessionClient,
+		IntegrationServiceEnvironmentClient:           &integrationServiceEnvironmentClient,
+		IntegrationServiceEnvironmentManagedApiClient: &integrationServiceEnvironmentManagedApiClient,
+		WorkflowClient:                                &workflowClient,
+		TriggersClient:                                &triggersClient,
 	}
 }
