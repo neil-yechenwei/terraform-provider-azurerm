@@ -74,14 +74,14 @@ resource "azurerm_virtual_network" "test" {
   name                = "acctest-vnet-%d"
   location            = azurerm_resource_group.test.location
   resource_group_name = azurerm_resource_group.test.name
-  address_space       = ["10.0.0.0/22"]
+  address_space       = ["172.16.0.0/16"]
 }
 
 resource "azurerm_subnet" "isesubnet1" {
   name                 = "isesubnet1"
   resource_group_name  = azurerm_resource_group.test.name
   virtual_network_name = azurerm_virtual_network.test.name
-  address_prefixes     = ["10.0.1.0/26"]
+  address_prefixes     = ["172.16.0.0/24"]
 
   delegation {
     name = "integrationServiceEnvironments"
@@ -96,28 +96,28 @@ resource "azurerm_subnet" "isesubnet2" {
   name                 = "isesubnet2"
   resource_group_name  = azurerm_resource_group.test.name
   virtual_network_name = azurerm_virtual_network.test.name
-  address_prefixes     = ["10.0.1.64/26"]
+  address_prefixes     = ["172.16.1.0/24"]
 }
 
 resource "azurerm_subnet" "isesubnet3" {
   name                 = "isesubnet3"
   resource_group_name  = azurerm_resource_group.test.name
   virtual_network_name = azurerm_virtual_network.test.name
-  address_prefixes     = ["10.0.1.128/26"]
+  address_prefixes     = ["172.16.2.0/24"]
 }
 
 resource "azurerm_subnet" "isesubnet4" {
   name                 = "isesubnet4"
   resource_group_name  = azurerm_resource_group.test.name
   virtual_network_name = azurerm_virtual_network.test.name
-  address_prefixes     = ["10.0.1.192/26"]
+  address_prefixes     = ["172.16.3.0/24"]
 }
 
 resource "azurerm_integration_service_environment" "test" {
   name                 = "acctest-ise-%d"
   location             = azurerm_resource_group.test.location
   resource_group_name  = azurerm_resource_group.test.name
-  sku_name             = "Premium_0"
+  sku_name             = "Developer_0"
   access_endpoint_type = "Internal"
 
   virtual_network_subnet_ids = [
