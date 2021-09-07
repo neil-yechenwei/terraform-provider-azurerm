@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/location"
+	keyVaultValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/validate"
 	networkParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/parse"
@@ -95,6 +96,33 @@ func resourceIntegrationServiceEnvironment() *pluginsdk.Resource {
 				},
 				MinItems: 4,
 				MaxItems: 4,
+			},
+
+			"encryption_configuration": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"key_vault_id": {
+							Type:         pluginsdk.TypeString,
+							Required:     true,
+							ValidateFunc: keyVaultValidate.VaultID,
+						},
+
+						"key_vault_key_name": {
+							Type:         pluginsdk.TypeString,
+							Required:     true,
+							ValidateFunc: keyVaultValidate.NestedItemName,
+						},
+
+						"key_vault_key_version": {
+							Type:         pluginsdk.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringIsNotEmpty,
+						},
+					},
+				},
 			},
 
 			"connector_endpoint_ip_addresses": {
@@ -183,6 +211,10 @@ func resourceIntegrationServiceEnvironmentCreateUpdate(d *pluginsdk.ResourceData
 		Tags: tags.Expand(t),
 	}
 
+	if v, ok := d.GetOk("encryption_configuration"); ok {
+		integrationServiceEnvironment.Properties.EncryptionConfiguration = expandIntegrationServiceEnvironmentEncryptionConfiguration(v.([]interface{}))
+	}
+
 	future, err := client.CreateOrUpdate(ctx, resourceGroup, name, integrationServiceEnvironment)
 	if err != nil {
 		return fmt.Errorf("creating/updating Integration Service Environment %q (Resource Group %q): %+v", name, resourceGroup, err)
@@ -259,6 +291,12 @@ func resourceIntegrationServiceEnvironmentRead(d *pluginsdk.ResourceData, meta i
 		} else {
 			d.Set("workflow_endpoint_ip_addresses", flattenIPAddresses(props.EndpointsConfiguration.Workflow.AccessEndpointIPAddresses))
 			d.Set("workflow_outbound_ip_addresses", flattenIPAddresses(props.EndpointsConfiguration.Workflow.OutgoingIPAddresses))
+		}
+
+		if props.EncryptionConfiguration != nil && props.EncryptionConfiguration.EncryptionKeyReference != nil {
+			if err := d.Set("encryption_configuration", flattenIntegrationServiceEnvironmentEncryptionConfiguration(props.EncryptionConfiguration.EncryptionKeyReference)); err != nil {
+				return fmt.Errorf("setting `encryption_configuration`: %+v", err)
+			}
 		}
 	}
 
@@ -498,4 +536,55 @@ func resourceNavigationLinkExists(ctx context.Context, client *network.ResourceN
 	}
 
 	return false, nil
+}
+
+func expandIntegrationServiceEnvironmentEncryptionConfiguration(input []interface{}) *logic.IntegrationServiceEnvironmenEncryptionConfiguration {
+	if len(input) == 0 {
+		return nil
+	}
+	v := input[0].(map[string]interface{})
+
+	result := logic.IntegrationServiceEnvironmenEncryptionConfiguration{
+		EncryptionKeyReference: &logic.IntegrationServiceEnvironmenEncryptionKeyReference{
+			KeyVault: &logic.ResourceReference{
+				ID: utils.String(v["key_vault_id"].(string)),
+			},
+			KeyName: utils.String(v["key_vault_key_name"].(string)),
+		},
+	}
+
+	if keyVersion := v["key_vault_key_version"]; keyVersion != "" {
+		result.EncryptionKeyReference.KeyVersion = utils.String(keyVersion.(string))
+	}
+
+	return &result
+}
+
+func flattenIntegrationServiceEnvironmentEncryptionConfiguration(input *logic.IntegrationServiceEnvironmenEncryptionKeyReference) []interface{} {
+	if input == nil {
+		return make([]interface{}, 0)
+	}
+
+	var keyVaultId string
+	if input.KeyVault != nil && input.KeyVault.ID != nil {
+		keyVaultId = *input.KeyVault.ID
+	}
+
+	var keyName string
+	if input.KeyName != nil {
+		keyName = *input.KeyName
+	}
+
+	var keyVersion string
+	if input.KeyVersion != nil {
+		keyVersion = *input.KeyVersion
+	}
+
+	return []interface{}{
+		map[string]interface{}{
+			"key_vault_id":          keyVaultId,
+			"key_vault_key_name":    keyName,
+			"key_vault_key_version": keyVersion,
+		},
+	}
 }
