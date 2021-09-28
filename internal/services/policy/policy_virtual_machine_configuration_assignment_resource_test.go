@@ -218,12 +218,14 @@ resource "azurerm_policy_virtual_machine_configuration_assignment" "test" {
   name               = "WhitelistedApplication"
   location           = azurerm_windows_virtual_machine.test.location
   virtual_machine_id = azurerm_windows_virtual_machine.test.id
+  context            = "Azure Policy"
 
   configuration {
     version         = "1.1.1.1"
     assignment_type = "ApplyAndAutoCorrect"
     content_hash    = "testcontenthash"
     content_uri     = "https://testcontenturi/package"
+    kind            = "DSC"
 
     parameter {
       name  = "[InstalledApplication]bwhitelistedapp;Name"

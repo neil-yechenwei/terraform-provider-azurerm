@@ -94,6 +94,14 @@ func resourcePolicyVirtualMachineConfigurationAssignment() *pluginsdk.Resource {
 							ValidateFunc: validation.IsURLWithScheme([]string{"http", "https"}),
 						},
 
+						"kind": {
+							Type:     pluginsdk.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(guestconfiguration.KindDSC),
+							}, false),
+						},
+
 						"parameter": {
 							Type:     pluginsdk.TypeSet,
 							Optional: true,
@@ -119,6 +127,12 @@ func resourcePolicyVirtualMachineConfigurationAssignment() *pluginsdk.Resource {
 						},
 					},
 				},
+			},
+
+			"context": {
+				Type:         pluginsdk.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 		},
 	}
@@ -169,6 +183,10 @@ func resourcePolicyVirtualMachineConfigurationAssignmentCreateUpdate(d *pluginsd
 		}
 	}
 
+	if context, ok := d.GetOk("context"); ok {
+		parameter.Properties.Context = utils.String(context.(string))
+	}
+
 	if _, err := client.CreateOrUpdate(ctx, id.GuestConfigurationAssignmentName, parameter, id.ResourceGroup, id.VirtualMachineName); err != nil {
 		return fmt.Errorf("creating/updating %s: %+v", id, err)
 	}
@@ -205,6 +223,8 @@ func resourcePolicyVirtualMachineConfigurationAssignmentRead(d *pluginsdk.Resour
 	d.Set("location", location.NormalizeNilable(resp.Location))
 
 	if props := resp.Properties; props != nil {
+		d.Set("context", props.Context)
+
 		if err := d.Set("configuration", flattenGuestConfigurationAssignment(props.GuestConfiguration)); err != nil {
 			return fmt.Errorf("setting `configuration`: %+v", err)
 		}
@@ -253,6 +273,10 @@ func expandGuestConfigurationAssignment(input []interface{}, name string) *guest
 		result.ContentURI = utils.String(v.(string))
 	}
 
+	if v, ok := v["kind"]; ok {
+		result.Kind = guestconfiguration.Kind(v.(string))
+	}
+
 	return &result
 }
 
@@ -289,6 +313,10 @@ func flattenGuestConfigurationAssignment(input *guestconfiguration.Navigation) [
 	if input.ContentURI != nil {
 		contentUri = *input.ContentURI
 	}
+	var kind guestconfiguration.Kind
+	if input.Kind != "" {
+		kind = input.Kind
+	}
 	return []interface{}{
 		map[string]interface{}{
 			"assignment_type": string(assignmentType),
@@ -296,6 +324,7 @@ func flattenGuestConfigurationAssignment(input *guestconfiguration.Navigation) [
 			"content_uri":     contentUri,
 			"parameter":       flattenGuestConfigurationAssignmentConfigurationParameters(input.ConfigurationParameter),
 			"version":         version,
+			"kind":            string(kind),
 		},
 	}
 }
