@@ -14,12 +14,16 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/location"
+	keyVaultValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/validate"
+	msiParser "github.com/hashicorp/terraform-provider-azurerm/internal/services/msi/parse"
+	msiValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/msi/validate"
 	networkParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/parse"
 	networkValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/suppress"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
@@ -95,6 +99,79 @@ func resourceIntegrationServiceEnvironment() *pluginsdk.Resource {
 				},
 				MinItems: 4,
 				MaxItems: 4,
+			},
+
+			"encryption_configuration": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				ForceNew: true,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"key_vault_id": {
+							Type:         pluginsdk.TypeString,
+							Required:     true,
+							ForceNew:     true,
+							ValidateFunc: keyVaultValidate.VaultID,
+						},
+
+						"key_vault_key_name": {
+							Type:         pluginsdk.TypeString,
+							Required:     true,
+							ForceNew:     true,
+							ValidateFunc: keyVaultValidate.NestedItemName,
+						},
+
+						"key_vault_key_version": {
+							Type:         pluginsdk.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.StringIsNotEmpty,
+						},
+					},
+				},
+			},
+
+			"identity": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				ForceNew: true,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"type": {
+							Type:     pluginsdk.TypeString,
+							Required: true,
+							ForceNew: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(logic.ManagedServiceIdentityTypeSystemAssigned),
+								string(logic.ManagedServiceIdentityTypeUserAssigned),
+							}, true),
+							DiffSuppressFunc: suppress.CaseDifference,
+						},
+
+						"identity_ids": {
+							Type:     pluginsdk.TypeList,
+							Optional: true,
+							MinItems: 1,
+							ForceNew: true,
+							Elem: &pluginsdk.Schema{
+								Type:         pluginsdk.TypeString,
+								ValidateFunc: msiValidate.UserAssignedIdentityID,
+							},
+						},
+
+						"principal_id": {
+							Type:     pluginsdk.TypeString,
+							Computed: true,
+						},
+
+						"tenant_id": {
+							Type:     pluginsdk.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 
 			"connector_endpoint_ip_addresses": {
@@ -183,6 +260,14 @@ func resourceIntegrationServiceEnvironmentCreateUpdate(d *pluginsdk.ResourceData
 		Tags: tags.Expand(t),
 	}
 
+	if v, ok := d.GetOk("encryption_configuration"); ok {
+		integrationServiceEnvironment.Properties.EncryptionConfiguration = expandIntegrationServiceEnvironmentEncryptionConfiguration(v.([]interface{}))
+	}
+
+	if _, ok := d.GetOk("identity"); ok {
+		integrationServiceEnvironment.Identity = expandIntegrationServiceEnvironmentIdentity(d.Get("identity").([]interface{}))
+	}
+
 	future, err := client.CreateOrUpdate(ctx, resourceGroup, name, integrationServiceEnvironment)
 	if err != nil {
 		return fmt.Errorf("creating/updating Integration Service Environment %q (Resource Group %q): %+v", name, resourceGroup, err)
@@ -236,6 +321,14 @@ func resourceIntegrationServiceEnvironmentRead(d *pluginsdk.ResourceData, meta i
 		return fmt.Errorf("setting `sku_name`: %+v", err)
 	}
 
+	if resp.Identity != nil {
+		identity, err := flattenIntegrationServiceEnvironmentIdentity(resp.Identity)
+		if err != nil {
+			return err
+		}
+		d.Set("identity", identity)
+	}
+
 	if props := resp.Properties; props != nil {
 		if netCfg := props.NetworkConfiguration; netCfg != nil {
 			if accessEndpoint := netCfg.AccessEndpoint; accessEndpoint != nil {
@@ -259,6 +352,12 @@ func resourceIntegrationServiceEnvironmentRead(d *pluginsdk.ResourceData, meta i
 		} else {
 			d.Set("workflow_endpoint_ip_addresses", flattenIPAddresses(props.EndpointsConfiguration.Workflow.AccessEndpointIPAddresses))
 			d.Set("workflow_outbound_ip_addresses", flattenIPAddresses(props.EndpointsConfiguration.Workflow.OutgoingIPAddresses))
+		}
+
+		if props.EncryptionConfiguration != nil && props.EncryptionConfiguration.EncryptionKeyReference != nil {
+			if err := d.Set("encryption_configuration", flattenIntegrationServiceEnvironmentEncryptionConfiguration(props.EncryptionConfiguration.EncryptionKeyReference)); err != nil {
+				return fmt.Errorf("setting `encryption_configuration`: %+v", err)
+			}
 		}
 	}
 
@@ -498,4 +597,114 @@ func resourceNavigationLinkExists(ctx context.Context, client *network.ResourceN
 	}
 
 	return false, nil
+}
+
+func expandIntegrationServiceEnvironmentEncryptionConfiguration(input []interface{}) *logic.IntegrationServiceEnvironmenEncryptionConfiguration {
+	if len(input) == 0 {
+		return nil
+	}
+	v := input[0].(map[string]interface{})
+
+	result := logic.IntegrationServiceEnvironmenEncryptionConfiguration{
+		EncryptionKeyReference: &logic.IntegrationServiceEnvironmenEncryptionKeyReference{
+			KeyVault: &logic.ResourceReference{
+				ID: utils.String(v["key_vault_id"].(string)),
+			},
+			KeyName: utils.String(v["key_vault_key_name"].(string)),
+		},
+	}
+
+	if keyVersion := v["key_vault_key_version"]; keyVersion != "" {
+		result.EncryptionKeyReference.KeyVersion = utils.String(keyVersion.(string))
+	}
+
+	return &result
+}
+
+func expandIntegrationServiceEnvironmentIdentity(input []interface{}) *logic.ManagedServiceIdentity {
+	if len(input) == 0 {
+		return nil
+	}
+
+	identity := input[0].(map[string]interface{})
+
+	managedServiceIdentity := logic.ManagedServiceIdentity{
+		Type: logic.ManagedServiceIdentityType(identity["type"].(string)),
+	}
+
+	if managedServiceIdentity.Type == logic.ManagedServiceIdentityTypeUserAssigned {
+		identityIds := make(map[string]*logic.UserAssignedIdentity)
+		for _, id := range identity["identity_ids"].([]interface{}) {
+			identityIds[id.(string)] = &logic.UserAssignedIdentity{}
+		}
+
+		managedServiceIdentity.UserAssignedIdentities = identityIds
+	}
+
+	return &managedServiceIdentity
+}
+
+func flattenIntegrationServiceEnvironmentEncryptionConfiguration(input *logic.IntegrationServiceEnvironmenEncryptionKeyReference) []interface{} {
+	if input == nil {
+		return make([]interface{}, 0)
+	}
+
+	var keyVaultId string
+	if input.KeyVault != nil && input.KeyVault.ID != nil {
+		keyVaultId = *input.KeyVault.ID
+	}
+
+	var keyName string
+	if input.KeyName != nil {
+		keyName = *input.KeyName
+	}
+
+	var keyVersion string
+	if input.KeyVersion != nil {
+		keyVersion = *input.KeyVersion
+	}
+
+	return []interface{}{
+		map[string]interface{}{
+			"key_vault_id":          keyVaultId,
+			"key_vault_key_name":    keyName,
+			"key_vault_key_version": keyVersion,
+		},
+	}
+}
+
+func flattenIntegrationServiceEnvironmentIdentity(input *logic.ManagedServiceIdentity) ([]interface{}, error) {
+	if input == nil {
+		return make([]interface{}, 0), nil
+	}
+
+	principalId := ""
+	if input.PrincipalID != nil {
+		principalId = input.PrincipalID.String()
+	}
+
+	tenantId := ""
+	if input.TenantID != nil {
+		tenantId = input.TenantID.String()
+	}
+
+	identityIds := make([]string, 0)
+	if input.UserAssignedIdentities != nil {
+		for key := range input.UserAssignedIdentities {
+			parsedId, err := msiParser.UserAssignedIdentityID(key)
+			if err != nil {
+				return nil, err
+			}
+			identityIds = append(identityIds, parsedId.ID())
+		}
+	}
+
+	return []interface{}{
+		map[string]interface{}{
+			"identity_ids": identityIds,
+			"principal_id": principalId,
+			"tenant_id":    tenantId,
+			"type":         string(input.Type),
+		},
+	}, nil
 }
