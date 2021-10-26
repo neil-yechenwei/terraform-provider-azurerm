@@ -82,10 +82,10 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApi() *pluginsdk.Resour
 				ValidateFunc: validate.IntegrationServiceEnvironmentID,
 			},
 
-			"deployment_content_link_definition_uri": {
+			"content_link_uri": {
 				Type:     pluginsdk.TypeString,
 				Optional: true,
-				//ValidateFunc: validation.IsURLWithHTTPorHTTPS,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 		},
 	}
@@ -129,7 +129,7 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate(d *plug
 		},
 	}
 
-	if v, ok := d.GetOk("deployment_content_link_definition_uri"); ok {
+	if v, ok := d.GetOk("content_link_uri"); ok {
 		parameters.IntegrationServiceEnvironmentManagedAPIProperties.DeploymentParameters = &logic.IntegrationServiceEnvironmentManagedAPIDeploymentParameters{
 			ContentLinkDefinition: &logic.ContentLink{
 				URI: utils.String(v.(string)),
@@ -181,7 +181,7 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiRead(d *pluginsdk.Re
 		}
 
 		if props.DeploymentParameters != nil && props.DeploymentParameters.ContentLinkDefinition != nil && props.DeploymentParameters.ContentLinkDefinition.URI != nil {
-			d.Set("deployment_content_link_definition_uri", props.DeploymentParameters.ContentLinkDefinition.URI)
+			d.Set("content_link_uri", props.DeploymentParameters.ContentLinkDefinition.URI)
 		}
 	}
 

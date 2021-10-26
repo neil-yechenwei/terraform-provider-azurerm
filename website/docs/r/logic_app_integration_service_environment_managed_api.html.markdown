@@ -96,7 +96,7 @@ The following arguments are supported:
 
 * `integration_service_environment_id` - (Required) The resource ID of the Logic App Integration Service Environment. Changing this forces a new resource to be created.
 
-* `deployment_content_link_definition_uri` - (Optional) The content link of deployment definition for the Logic App Integration Service Environment.
+* `content_link_uri` - (Optional) The content link of deployment definition for the Logic App Integration Service Environment.
 
 ## Attributes Reference
 
