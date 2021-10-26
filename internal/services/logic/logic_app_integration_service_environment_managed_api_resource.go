@@ -83,8 +83,8 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApi() *pluginsdk.Resour
 			},
 
 			"content_link_uri": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
+				Type:         pluginsdk.TypeString,
+				Optional:     true,
 				ValidateFunc: validation.StringIsNotEmpty,
 			},
 		},
