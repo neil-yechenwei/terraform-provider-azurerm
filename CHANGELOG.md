@@ -5,6 +5,7 @@ FEATURES:
 * **New Data Source:** `azurerm_eventgrid_system_topic` [GH-13851]
 * **New Resource:** `azurerm_stream_analytics_reference_input_mssql` [GH-13822]
 * **New Resource:** `sentinel_automation_rule` [GH-11502]
+* **New Resource:** `azurerm_stream_analytics_output_table` [GH-13854]
 
 IMPROVEMENTS:
 
@@ -15,6 +16,8 @@ IMPROVEMENTS:
 * `azurerm_servicebus_queue` - support for the `max_message_size_in_kilobytes` property [GH-13762]
 * `azurerm_servicebus_topic` - support for the `max_message_size_in_kilobytes` property [GH-13762]
 * `azurerm_servicebus_namespace_network_rule_set` - support for the `trusted_services_allowed` property [GH-13853]
+* `azurerm_windows_virtual_machine_scale_set` - added feature for `scale_to_zero_before_deletion`[GH-13635]
+* `azurerm_linux_virtual_machine_scale_set` - added feature for `scale_to_zero_before_deletion`[GH-13635]
 
 BUG FIXES:
 
