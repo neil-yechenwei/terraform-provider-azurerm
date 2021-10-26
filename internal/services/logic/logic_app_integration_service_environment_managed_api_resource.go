@@ -5,12 +5,16 @@ import (
 	"log"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/services/logic/mgmt/2019-05-01/logic"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/location"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/validate"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
@@ -19,11 +23,13 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApi() *pluginsdk.Resour
 	return &pluginsdk.Resource{
 		Create: resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate,
 		Read:   resourceLogicAppIntegrationServiceEnvironmentManagedApiRead,
+		Update: resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate,
 		Delete: resourceLogicAppIntegrationServiceEnvironmentManagedApiDelete,
 
 		Timeouts: &pluginsdk.ResourceTimeout{
 			Create: pluginsdk.DefaultTimeout(30 * time.Minute),
 			Read:   pluginsdk.DefaultTimeout(5 * time.Minute),
+			Update: pluginsdk.DefaultTimeout(30 * time.Minute),
 			Delete: pluginsdk.DefaultTimeout(30 * time.Minute),
 		},
 
@@ -34,19 +40,30 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApi() *pluginsdk.Resour
 
 		Schema: map[string]*pluginsdk.Schema{
 			"name": {
-				Type:     pluginsdk.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         pluginsdk.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
+
+			"location": azure.SchemaLocation(),
 
 			"resource_group_name": azure.SchemaResourceGroupName(),
 
-			"integration_service_environment_name": {
+			"integration_service_environment_id": {
 				Type:         pluginsdk.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validate.IntegrationServiceEnvironmentName(),
 			},
+
+			"deployment_content_link_definition_uri": {
+				Type:         pluginsdk.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.IsURLWithHTTPorHTTPS,
+			},
+
+			"tags": tags.Schema(),
 		},
 	}
 }
@@ -57,27 +74,54 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate(d *plug
 	ctx, cancel := timeouts.ForCreateUpdate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	id := parse.NewIntegrationServiceEnvironmentManagedApiID(subscriptionId, d.Get("resource_group_name").(string), d.Get("integration_service_environment_name").(string), d.Get("name").(string))
+	name := d.Get("name").(string)
+	resourceGroup := d.Get("resource_group").(string)
+
+	iseId, err := parse.IntegrationServiceEnvironmentID(d.Id())
+	if err != nil {
+		return err
+	}
+
+	id := parse.NewIntegrationServiceEnvironmentManagedApiID(subscriptionId, resourceGroup, iseId.Name, name)
 
 	if d.IsNewResource() {
-		existing, err := client.Get(ctx, id.ResourceGroup, id.IntegrationServiceEnvironmentName, id.ManagedApiName)
+		existing, err := client.Get(ctx, resourceGroup, iseId.Name, name)
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {
 				return fmt.Errorf("checking for presence of existing %s: %+v", id, err)
 			}
 		}
-		if !utils.ResponseWasNotFound(existing.Response) {
-			return tf.ImportAsExistsError("azurerm_logic_app_integration_service_environment_managed_api", id.ID())
+
+		if existing.ID != nil && *existing.ID != "" {
+			return tf.ImportAsExistsError("azurerm_logic_app_integration_service_environment_managed_api", *existing.ID)
 		}
 	}
 
-	future, err := client.Put(ctx, id.ResourceGroup, id.IntegrationServiceEnvironmentName, id.ManagedApiName)
+	parameters := logic.IntegrationServiceEnvironmentManagedAPI{
+		Location: utils.String(location.Normalize(d.Get("location").(string))),
+		IntegrationServiceEnvironmentManagedAPIProperties: &logic.IntegrationServiceEnvironmentManagedAPIProperties{
+			IntegrationServiceEnvironment: &logic.ResourceReference{
+				ID: utils.String(iseId.ID()),
+			},
+		},
+		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
+	}
+
+	if v, ok := d.GetOk("deployment_content_link_definition_uri"); ok {
+		parameters.IntegrationServiceEnvironmentManagedAPIProperties.DeploymentParameters = &logic.IntegrationServiceEnvironmentManagedAPIDeploymentParameters{
+			ContentLinkDefinition: &logic.ContentLink{
+				URI: utils.String(v.(string)),
+			},
+		}
+	}
+
+	future, err := client.Put(ctx, resourceGroup, iseId.Name, name, parameters)
 	if err != nil {
-		return fmt.Errorf("creating %s: %+v", id, err)
+		return fmt.Errorf("creating %q: %+v", id, err)
 	}
 
 	if err := future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for creation of %s: %+v", id, err)
+		return fmt.Errorf("waiting for creation of %q: %+v", id, err)
 	}
 
 	d.SetId(id.ID())
@@ -97,18 +141,29 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiRead(d *pluginsdk.Re
 	resp, err := client.Get(ctx, id.ResourceGroup, id.IntegrationServiceEnvironmentName, id.ManagedApiName)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
-			log.Printf("[INFO] %s does not exist - removing from state", *id)
+			log.Printf("[INFO] %s was not found - removing from state", *id)
 			d.SetId("")
 			return nil
 		}
+
 		return fmt.Errorf("retrieving %s: %+v", *id, err)
 	}
 
 	d.Set("name", id.ManagedApiName)
-	d.Set("integration_service_environment_name", id.IntegrationServiceEnvironmentName)
-	d.Set("resource_group_name", id.ResourceGroup)
+	d.Set("resource_group", id.ResourceGroup)
+	d.Set("location", location.NormalizeNilable(resp.Location))
 
-	return nil
+	if props := resp.IntegrationServiceEnvironmentManagedAPIProperties; props != nil {
+		if props.IntegrationServiceEnvironment != nil && props.IntegrationServiceEnvironment.ID != nil {
+			d.Set("integration_service_environment_id", props.IntegrationServiceEnvironment.ID)
+		}
+
+		if props.DeploymentParameters != nil && props.DeploymentParameters.ContentLinkDefinition != nil && props.DeploymentParameters.ContentLinkDefinition.URI != nil {
+			d.Set("deployment_content_link_definition_uri", props.DeploymentParameters.ContentLinkDefinition.URI)
+		}
+	}
+
+	return tags.FlattenAndSet(d, resp.Tags)
 }
 
 func resourceLogicAppIntegrationServiceEnvironmentManagedApiDelete(d *pluginsdk.ResourceData, meta interface{}) error {
@@ -123,11 +178,11 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiDelete(d *pluginsdk.
 
 	future, err := client.Delete(ctx, id.ResourceGroup, id.IntegrationServiceEnvironmentName, id.ManagedApiName)
 	if err != nil {
-		return fmt.Errorf("deleting %s: %+v", id, err)
+		return fmt.Errorf("deleting %s: %+v", *id, err)
 	}
 
 	if err := future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for deletion of %s: %+v", id, err)
+		return fmt.Errorf("waiting for deletion of %s: %+v", *id, err)
 	}
 
 	return nil

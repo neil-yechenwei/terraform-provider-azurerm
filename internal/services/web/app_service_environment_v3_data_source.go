@@ -162,7 +162,7 @@ func (r AppServiceEnvironmentV3DataSource) Attributes() map[string]*pluginsdk.Sc
 }
 
 func (r AppServiceEnvironmentV3DataSource) ModelObject() interface{} {
-	return AppServiceEnvironmentV3Model{}
+	return &AppServiceEnvironmentV3Model{}
 }
 
 func (r AppServiceEnvironmentV3DataSource) ResourceType() string {
@@ -219,6 +219,8 @@ func (r AppServiceEnvironmentV3DataSource) Read() sdk.ResourceFunc {
 			if props := existingNetwork.AseV3NetworkingConfigurationProperties; props != nil {
 				model.WindowsOutboundIPAddresses = *props.WindowsOutboundIPAddresses
 				model.LinuxOutboundIPAddresses = *props.LinuxOutboundIPAddresses
+				model.InternalInboundIPAddresses = *props.InternalInboundIPAddresses
+				model.ExternalInboundIPAddresses = *props.ExternalInboundIPAddresses
 				model.AllowNewPrivateEndpointConnections = *props.AllowNewPrivateEndpointConnections
 			}
 

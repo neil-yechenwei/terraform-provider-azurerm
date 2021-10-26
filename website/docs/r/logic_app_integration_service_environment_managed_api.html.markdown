@@ -77,9 +77,10 @@ resource "azurerm_integration_service_environment" "example" {
 }
 
 resource "azurerm_logic_app_integration_service_environment_managed_api" "example" {
-  name                                 = "servicebus"
-  resource_group_name                  = azurerm_resource_group.example.name
-  integration_service_environment_name = azurerm_integration_service_environment.example.name
+  name                               = "servicebus"
+  location                           = azurerm_resource_group.example.location
+  resource_group_name                = azurerm_resource_group.example.name
+  integration_service_environment_id = azurerm_integration_service_environment.example.id
 }
 ```
 
@@ -89,9 +90,15 @@ The following arguments are supported:
 
 * `name` - (Required) The name which should be used for this Logic App Integration Service Environment Managed Api. Changing this forces a new resource to be created.
 
+* `location` - (Required) Specifies the supported Azure location where the resource exists. Changing this forces a new resource to be created.
+
 * `resource_group_name` - (Required) The name of the Resource Group where the Logic App Integration Service Environment Managed Api should exist. Changing this forces a new resource to be created.
 
-* `integration_service_environment_name` - (Required) The name of the Logic App Integration Service Environment. Changing this forces a new resource to be created.
+* `integration_service_environment_id` - (Required) The resource ID of the Logic App Integration Service Environment. Changing this forces a new resource to be created.
+
+* `deployment_content_link_definition_uri` - (Optional) The content link of deployment definition for the Logic App Integration Service Environment.
+
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
@@ -104,6 +111,7 @@ In addition to the Arguments listed above - the following Attributes are exporte
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 30 minutes) Used when creating the Logic App Integration Service Environment Managed Api.
+* `update` - (Defaults to 30 minutes) Used when updating the Logic App Integration Service Environment Managed Api.
 * `read` - (Defaults to 5 minutes) Used when retrieving the Logic App Integration Service Environment Managed Api.
 * `delete` - (Defaults to 30 minutes) Used when deleting the Logic App Integration Service Environment Managed Api.
 

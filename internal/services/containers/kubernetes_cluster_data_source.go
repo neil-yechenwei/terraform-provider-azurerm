@@ -167,6 +167,19 @@ func dataSourceKubernetesCluster() *pluginsdk.Resource {
 								},
 							},
 						},
+
+						"open_service_mesh": {
+							Type:     pluginsdk.TypeList,
+							Computed: true,
+							Elem: &pluginsdk.Resource{
+								Schema: map[string]*pluginsdk.Schema{
+									"enabled": {
+										Type:     pluginsdk.TypeBool,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -691,8 +704,8 @@ func dataSourceKubernetesClusterRead(d *pluginsdk.ResourceData, meta interface{}
 			return fmt.Errorf("setting `service_principal`: %+v", err)
 		}
 
-		// adminProfile is only available for RBAC enabled clusters with AAD
-		if props.AadProfile != nil {
+		// adminProfile is only available for RBAC enabled clusters with AAD and without local accounts disabled
+		if props.AadProfile != nil && (props.DisableLocalAccounts == nil || !*props.DisableLocalAccounts) {
 			adminProfile, err := client.GetAccessProfile(ctx, resourceGroup, name, "clusterAdmin")
 			if err != nil {
 				return fmt.Errorf("retrieving Admin Access Profile for Managed Kubernetes Cluster %q (Resource Group %q): %+v", name, resourceGroup, err)
@@ -924,6 +937,20 @@ func flattenKubernetesClusterDataSourceAddonProfiles(profile map[string]*contain
 		ingressApplicationGateways = append(ingressApplicationGateways, output)
 	}
 	values["ingress_application_gateway"] = ingressApplicationGateways
+
+	openServiceMeshes := make([]interface{}, 0)
+	if openServiceMesh := kubernetesAddonProfileLocate(profile, openServiceMeshKey); openServiceMesh != nil {
+		enabled := false
+		if enabledVal := openServiceMesh.Enabled; enabledVal != nil {
+			enabled = *enabledVal
+		}
+
+		output := map[string]interface{}{
+			"enabled": enabled,
+		}
+		openServiceMeshes = append(openServiceMeshes, output)
+	}
+	values["open_service_mesh"] = openServiceMeshes
 
 	return []interface{}{values}
 }

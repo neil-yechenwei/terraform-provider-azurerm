@@ -113,6 +113,12 @@ The following arguments are supported:
 
 * `os_disk_type` - (Optional) The type of disk which should be used for the Operating System. Possible values are `Ephemeral` and `Managed`. Defaults to `Managed`. Changing this forces a new resource to be created.
 
+* `pod_subnet_id` - (Optional) The ID of the Subnet where the pods in the default Node Pool should exist. Changing this forces a new resource to be created.
+
+-> **NOTE:** This requires that the Preview Feature `Microsoft.ContainerService/PodSubnetPreview` is enabled and the Resource Provider is re-registered, see [the documentation](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#register-the-podsubnetpreview-preview-feature) for more information.
+
+* `os_sku` - (Optional) OsSKU to be used to specify Linux OSType. Not applicable to Windows OSType. Possible values include: `Ubuntu`, `CBLMariner`. Defaults to `Ubuntu`. Changing this forces a new resource to be created.
+
 * `os_type` - (Optional) The Operating System which should be used for this Node Pool. Changing this forces a new resource to be created. Possible values are `Linux` and `Windows`. Defaults to `Linux`.
 
 * `priority` - (Optional) The Priority for Virtual Machines within the Virtual Machine Scale Set that powers this Node Pool. Possible values are `Regular` and `Spot`. Defaults to `Regular`. Changing this forces a new resource to be created.
@@ -149,13 +155,13 @@ If `enable_auto_scaling` is set to `true`, then the following fields can also be
 
 * `min_count` - (Required) The minimum number of nodes which should exist within this Node Pool. Valid values are between `0` and `1000` and must be less than or equal to `max_count`.
 
-* `node_count` - (Optional) The initial number of nodes which should exist within this Node Pool. Valid values are between `0` and `1000` and must be a value in the range `min_count` - `max_count`.
+* `node_count` - (Optional) The initial number of nodes which should exist within this Node Pool. Valid values are between `0` and `1000` (inclusive) for user pools and between `1` and `1000` (inclusive) for system pools and must be a value in the range `min_count` - `max_count`.
 
 -> **NOTE:** If you're specifying an initial number of nodes you may wish to use [Terraform's `ignore_changes` functionality](https://www.terraform.io/docs/configuration/resources.html#ignore_changes) to ignore changes to this field.
 
 If `enable_auto_scaling` is set to `false`, then the following fields can also be configured:
 
-* `node_count` - (Required) The number of nodes which should exist within this Node Pool. Valid values are between `0` and `1000`.
+* `node_count` - (Required) The number of nodes which should exist within this Node Pool. Valid values are between `0` and `1000` (inclusive) for user pools and between `1` and `1000` (inclusive) for system pools.
 
 ---
 

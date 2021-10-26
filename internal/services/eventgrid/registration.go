@@ -22,7 +22,9 @@ func (r Registration) WebsiteCategories() []string {
 func (r Registration) SupportedDataSources() map[string]*pluginsdk.Resource {
 	return map[string]*pluginsdk.Resource{
 		"azurerm_eventgrid_topic":        dataSourceEventGridTopic(),
+		"azurerm_eventgrid_domain":       dataSourceEventGridDomain(),
 		"azurerm_eventgrid_domain_topic": dataSourceEventGridDomainTopic(),
+		"azurerm_eventgrid_system_topic": dataSourceEventGridSystemTopic(),
 	}
 }
 

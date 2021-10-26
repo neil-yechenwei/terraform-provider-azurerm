@@ -52,9 +52,9 @@ The following attributes are exported:
 
 -> **NOTE:**  At this time Private Link is in Public Preview.
 
-* `kube_admin_config` - A `kube_admin_config` block as defined below. This is only available when Role Based Access Control with Azure Active Directory is enabled.
+* `kube_admin_config` - A `kube_admin_config` block as defined below. This is only available when Role Based Access Control with Azure Active Directory is enabled and local accounts are not disabled.
 
-* `kube_admin_config_raw` - Raw Kubernetes config for the admin account to be used by [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) and other compatible tools. This is only available when Role Based Access Control with Azure Active Directory is enabled.
+* `kube_admin_config_raw` - Raw Kubernetes config for the admin account to be used by [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) and other compatible tools. This is only available when Role Based Access Control with Azure Active Directory is enabled and local accounts are not disabled.
 
 * `kube_config` - A `kube_config` block as defined below.
 
@@ -99,6 +99,8 @@ A `addon_profile` block exports the following:
 * `azure_policy` - A `azure_policy` block.
 
 * `ingress_application_gateway` - An `ingress_application_gateway` block.
+
+* `open_service_mesh` - An `open_service_mesh` block.
 
 ---
 
@@ -290,6 +292,12 @@ The `ingress_application_gateway_identity` block exports the following:
 
 ---
 
+An `open_service_mesh` block supports the following:
+
+* `enabled` - Is Open Service Mesh enabled?
+
+---
+
 A `role_based_access_control` block exports the following:
 
 * `azure_active_directory` - A `azure_active_directory` block as documented above.
@@ -311,6 +319,8 @@ The `identity` block exports the following:
 * `principal_id` - The principal id of the system assigned identity which is used by primary components.
 
 * `tenant_id` - The tenant id of the system assigned identity which is used by primary components.
+
+* `user_assigned_identity_id` - The ID of the User Assigned Identity which is used by primary components. This value will be empty when using system assigned identity.
 
 ---
 

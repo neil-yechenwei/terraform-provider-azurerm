@@ -7,7 +7,13 @@ import (
 
 type Client struct {
 	IntegrationAccountClient                      *logic.IntegrationAccountsClient
+	IntegrationAccountAgreementClient             *logic.IntegrationAccountAgreementsClient
+	IntegrationAccountAssemblyClient              *logic.IntegrationAccountAssembliesClient
+	IntegrationAccountBatchConfigurationClient    *logic.IntegrationAccountBatchConfigurationsClient
 	IntegrationAccountCertificateClient           *logic.IntegrationAccountCertificatesClient
+	IntegrationAccountMapClient                   *logic.IntegrationAccountMapsClient
+	IntegrationAccountPartnerClient               *logic.IntegrationAccountPartnersClient
+	IntegrationAccountSchemaClient                *logic.IntegrationAccountSchemasClient
 	IntegrationAccountSessionClient               *logic.IntegrationAccountSessionsClient
 	IntegrationServiceEnvironmentClient           *logic.IntegrationServiceEnvironmentsClient
 	IntegrationServiceEnvironmentManagedApiClient *logic.IntegrationServiceEnvironmentManagedApisClient
@@ -19,8 +25,26 @@ func NewClient(o *common.ClientOptions) *Client {
 	integrationAccountClient := logic.NewIntegrationAccountsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&integrationAccountClient.Client, o.ResourceManagerAuthorizer)
 
+	integrationAccountAgreementClient := logic.NewIntegrationAccountAgreementsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&integrationAccountAgreementClient.Client, o.ResourceManagerAuthorizer)
+
+	integrationAccountAssemblyClient := logic.NewIntegrationAccountAssembliesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&integrationAccountAssemblyClient.Client, o.ResourceManagerAuthorizer)
+
+	integrationAccountBatchConfigurationClient := logic.NewIntegrationAccountBatchConfigurationsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&integrationAccountBatchConfigurationClient.Client, o.ResourceManagerAuthorizer)
+
 	integrationAccountCertificateClient := logic.NewIntegrationAccountCertificatesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&integrationAccountCertificateClient.Client, o.ResourceManagerAuthorizer)
+
+	integrationAccountMapClient := logic.NewIntegrationAccountMapsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&integrationAccountMapClient.Client, o.ResourceManagerAuthorizer)
+
+	integrationAccountPartnerClient := logic.NewIntegrationAccountPartnersClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&integrationAccountPartnerClient.Client, o.ResourceManagerAuthorizer)
+
+	integrationAccountSchemaClient := logic.NewIntegrationAccountSchemasClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	o.ConfigureClient(&integrationAccountSchemaClient.Client, o.ResourceManagerAuthorizer)
 
 	integrationAccountSessionClient := logic.NewIntegrationAccountSessionsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&integrationAccountSessionClient.Client, o.ResourceManagerAuthorizer)
@@ -39,7 +63,13 @@ func NewClient(o *common.ClientOptions) *Client {
 
 	return &Client{
 		IntegrationAccountClient:                      &integrationAccountClient,
+		IntegrationAccountAgreementClient:             &integrationAccountAgreementClient,
+		IntegrationAccountAssemblyClient:              &integrationAccountAssemblyClient,
+		IntegrationAccountBatchConfigurationClient:    &integrationAccountBatchConfigurationClient,
 		IntegrationAccountCertificateClient:           &integrationAccountCertificateClient,
+		IntegrationAccountMapClient:                   &integrationAccountMapClient,
+		IntegrationAccountPartnerClient:               &integrationAccountPartnerClient,
+		IntegrationAccountSchemaClient:                &integrationAccountSchemaClient,
 		IntegrationAccountSessionClient:               &integrationAccountSessionClient,
 		IntegrationServiceEnvironmentClient:           &integrationServiceEnvironmentClient,
 		IntegrationServiceEnvironmentManagedApiClient: &integrationServiceEnvironmentManagedApiClient,
