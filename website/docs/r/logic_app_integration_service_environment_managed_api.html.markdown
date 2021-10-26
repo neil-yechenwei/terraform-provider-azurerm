@@ -98,8 +98,6 @@ The following arguments are supported:
 
 * `deployment_content_link_definition_uri` - (Optional) The content link of deployment definition for the Logic App Integration Service Environment.
 
-* `tags` - (Optional) A mapping of tags to assign to the resource.
-
 ## Attributes Reference
 
 In addition to the Arguments listed above - the following Attributes are exported:

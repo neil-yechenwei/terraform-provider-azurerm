@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/location"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/logic/validate"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
@@ -40,10 +39,36 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApi() *pluginsdk.Resour
 
 		Schema: map[string]*pluginsdk.Schema{
 			"name": {
-				Type:         pluginsdk.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringIsNotEmpty,
+				Type:     pluginsdk.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"as2",
+					"azureautomation",
+					"azureblob",
+					"azureeventgrid",
+					"azureeventgridpublish",
+					"azurefile",
+					"azurequeues",
+					"azuretables",
+					"db2",
+					"documentdb",
+					"edifact",
+					"eventhubs",
+					"ftp",
+					"isefilesystem",
+					"keyvault",
+					"mq",
+					"sap",
+					"servicebus",
+					"sftp",
+					"sftpwithssh",
+					"si3270",
+					"smtp",
+					"sql",
+					"sqldw",
+					"x12",
+				}, false),
 			},
 
 			"location": azure.SchemaLocation(),
@@ -54,16 +79,14 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApi() *pluginsdk.Resour
 				Type:         pluginsdk.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validate.IntegrationServiceEnvironmentName(),
+				ValidateFunc: validate.IntegrationServiceEnvironmentID,
 			},
 
 			"deployment_content_link_definition_uri": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.IsURLWithHTTPorHTTPS,
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+				//ValidateFunc: validation.IsURLWithHTTPorHTTPS,
 			},
-
-			"tags": tags.Schema(),
 		},
 	}
 }
@@ -75,9 +98,9 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate(d *plug
 	defer cancel()
 
 	name := d.Get("name").(string)
-	resourceGroup := d.Get("resource_group").(string)
+	resourceGroup := d.Get("resource_group_name").(string)
 
-	iseId, err := parse.IntegrationServiceEnvironmentID(d.Id())
+	iseId, err := parse.IntegrationServiceEnvironmentID(d.Get("integration_service_environment_id").(string))
 	if err != nil {
 		return err
 	}
@@ -85,7 +108,7 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate(d *plug
 	id := parse.NewIntegrationServiceEnvironmentManagedApiID(subscriptionId, resourceGroup, iseId.Name, name)
 
 	if d.IsNewResource() {
-		existing, err := client.Get(ctx, resourceGroup, iseId.Name, name)
+		existing, err := client.Get(ctx, resourceGroup, id.IntegrationServiceEnvironmentName, name)
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {
 				return fmt.Errorf("checking for presence of existing %s: %+v", id, err)
@@ -104,7 +127,6 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate(d *plug
 				ID: utils.String(iseId.ID()),
 			},
 		},
-		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
 	}
 
 	if v, ok := d.GetOk("deployment_content_link_definition_uri"); ok {
@@ -115,7 +137,7 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiCreateUpdate(d *plug
 		}
 	}
 
-	future, err := client.Put(ctx, resourceGroup, iseId.Name, name, parameters)
+	future, err := client.Put(ctx, resourceGroup, id.IntegrationServiceEnvironmentName, name, parameters)
 	if err != nil {
 		return fmt.Errorf("creating %q: %+v", id, err)
 	}
@@ -150,7 +172,7 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiRead(d *pluginsdk.Re
 	}
 
 	d.Set("name", id.ManagedApiName)
-	d.Set("resource_group", id.ResourceGroup)
+	d.Set("resource_group_name", id.ResourceGroup)
 	d.Set("location", location.NormalizeNilable(resp.Location))
 
 	if props := resp.IntegrationServiceEnvironmentManagedAPIProperties; props != nil {
@@ -163,7 +185,7 @@ func resourceLogicAppIntegrationServiceEnvironmentManagedApiRead(d *pluginsdk.Re
 		}
 	}
 
-	return tags.FlattenAndSet(d, resp.Tags)
+	return nil
 }
 
 func resourceLogicAppIntegrationServiceEnvironmentManagedApiDelete(d *pluginsdk.ResourceData, meta interface{}) error {

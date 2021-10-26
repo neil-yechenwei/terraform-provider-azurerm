@@ -198,10 +198,6 @@ resource "azurerm_logic_app_integration_service_environment_managed_api" "test" 
   resource_group_name                    = azurerm_resource_group.test.name
   integration_service_environment_id     = azurerm_integration_service_environment.test.id
   deployment_content_link_definition_uri = "https://github.com/Azure/azure-quickstart-templates/blob/master/100-blank-template/azuredeploy.json"
-
-  tags = {
-    ENV = "Test"
-  }
 }
 `, r.template(data))
 }
@@ -216,10 +212,6 @@ resource "azurerm_logic_app_integration_service_environment_managed_api" "test" 
   resource_group_name                    = azurerm_resource_group.test.name
   integration_service_environment_id     = azurerm_integration_service_environment.test.id
   deployment_content_link_definition_uri = "https://github.com/Azure/azure-quickstart-templates/blob/master/modules/Microsoft.Storage/storageAccounts/0.9/azuredeploy.json"
-
-  tags = {
-    ENV = "Test2"
-  }
 }
 `, r.template(data))
 }
