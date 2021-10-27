@@ -90,9 +90,9 @@ The following arguments are supported:
 
 * `name` - (Required) The name which should be used for this Logic App Integration Service Environment Managed Api. Changing this forces a new resource to be created.
 
-* `location` - (Required) Specifies the supported Azure location where the resource exists. Changing this forces a new resource to be created.
+* `location` - (Required) Specifies the supported Azure location where the Logic App Integration Service Environment exists. Changing this forces a new resource to be created.
 
-* `resource_group_name` - (Required) The name of the Resource Group where the Logic App Integration Service Environment Managed Api should exist. Changing this forces a new resource to be created.
+* `resource_group_name` - (Required) The name of the Resource Group where the Logic App Integration Service Environment should exist. Changing this forces a new resource to be created.
 
 * `integration_service_environment_id` - (Required) The resource ID of the Logic App Integration Service Environment. Changing this forces a new resource to be created.
 
