@@ -88,7 +88,7 @@ resource "azurerm_logic_app_integration_service_environment_managed_api" "exampl
 
 The following arguments are supported:
 
-* `name` - (Required) The name which should be used for this Logic App Integration Service Environment Managed Api. Changing this forces a new resource to be created.
+* `name` - (Required) The name which should be used for this Logic App Integration Service Environment Managed Api. Possible values are `as2`, `azureautomation`, `azureblob`, `azureeventgrid`, `azureeventgridpublish`, `azurefile`, `azurequeues`, `azuretables`, `db2`, `documentdb`, `edifact`, `eventhubs`, `ftp`, `isefilesystem`, `keyvault`, `mq`, `sap`, `servicebus`, `sftp`, `sftpwithssh`, `si3270`, `smtp`, `sql`, `sqldw` and `x12`. Changing this forces a new resource to be created.
 
 * `location` - (Required) Specifies the supported Azure location where the Logic App Integration Service Environment exists. Changing this forces a new resource to be created.
 
