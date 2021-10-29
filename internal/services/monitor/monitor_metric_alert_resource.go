@@ -2,10 +2,8 @@ package monitor
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2021-07-01-preview/insights"
@@ -458,27 +456,6 @@ func resourceMonitorMetricAlertCreateUpdate(d *pluginsdk.ResourceData, meta inte
 
 	if _, err := client.CreateOrUpdate(ctx, id.ResourceGroup, id.Name, parameters); err != nil {
 		return fmt.Errorf("creating or updating Monitor %s: %+v", id, err)
-	}
-
-	// Monitor Metric Alert API would return 404 while creating multiple Monitor Metric Alerts and get each resource immediately once it's created successfully in parallel.
-	// Tracked by this issue: https://github.com/Azure/azure-rest-api-specs/issues/10973
-	log.Printf("[DEBUG] Waiting for Monitor Metric Alert %q (Resource Group %q) to be created", id.Name, id.ResourceGroup)
-	stateConf := &pluginsdk.StateChangeConf{
-		Pending:                   []string{"404"},
-		Target:                    []string{"200"},
-		Refresh:                   monitorMetricAlertStateRefreshFunc(ctx, client, id.ResourceGroup, id.Name),
-		MinTimeout:                15 * time.Second,
-		ContinuousTargetOccurence: 10,
-	}
-
-	if d.IsNewResource() {
-		stateConf.Timeout = d.Timeout(pluginsdk.TimeoutCreate)
-	} else {
-		stateConf.Timeout = d.Timeout(pluginsdk.TimeoutUpdate)
-	}
-
-	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
-		return fmt.Errorf("waiting for Monitor %s to finish provisioning: %s", id, err)
 	}
 
 	d.SetId(id.ID())
@@ -952,19 +929,4 @@ func resourceMonitorMetricAlertActionHash(input interface{}) int {
 		buf.WriteString(fmt.Sprintf("%s-", v["action_group_id"].(string)))
 	}
 	return pluginsdk.HashString(buf.String())
-}
-
-func monitorMetricAlertStateRefreshFunc(ctx context.Context, client *insights.MetricAlertsClient, resourceGroupName string, name string) pluginsdk.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		res, err := client.Get(ctx, resourceGroupName, name)
-		if err != nil {
-			if utils.ResponseWasNotFound(res.Response) {
-				return nil, "404", nil
-			}
-
-			return nil, "", fmt.Errorf("retrieving Monitor Metric Alert %q (Resource Group %q): %s", name, resourceGroupName, err)
-		}
-
-		return res, strconv.Itoa(res.StatusCode), nil
-	}
 }
