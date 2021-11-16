@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/network/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
@@ -78,6 +79,36 @@ func resourceVirtualNetworkPeering() *pluginsdk.Resource {
 				Computed: true,
 			},
 
+			"do_not_verify_remote_gateways": {
+				Type:     pluginsdk.TypeBool,
+				Optional: true,
+			},
+
+			"peering_sync_level": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+				Default:  string(network.VirtualNetworkPeeringLevelRemoteNotInSync),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(network.VirtualNetworkPeeringLevelFullyInSync),
+					string(network.VirtualNetworkPeeringLevelRemoteNotInSync),
+					string(network.VirtualNetworkPeeringLevelLocalNotInSync),
+					string(network.VirtualNetworkPeeringLevelLocalAndRemoteNotInSync),
+				}, false),
+			},
+
+			"remote_bgp_virtual_network_community": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+			},
+
+			"remote_virtual_network_address_prefixes": {
+				Type:     pluginsdk.TypeSet,
+				Optional: true,
+				Elem: &pluginsdk.Schema{
+					Type: pluginsdk.TypeString,
+				},
+			},
+
 			"use_remote_gateways": {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
@@ -114,6 +145,18 @@ func resourceVirtualNetworkPeeringCreateUpdate(d *pluginsdk.ResourceData, meta i
 	peer := network.VirtualNetworkPeering{
 		Name:                                  &name,
 		VirtualNetworkPeeringPropertiesFormat: getVirtualNetworkPeeringProperties(d),
+	}
+
+	if v, ok := d.GetOk("remote_virtual_network_address_prefixes"); ok {
+		peer.VirtualNetworkPeeringPropertiesFormat.RemoteVirtualNetworkAddressSpace = &network.AddressSpace{
+			AddressPrefixes: utils.ExpandStringSlice(v.(*pluginsdk.Set).List()),
+		}
+	}
+
+	if v, ok := d.GetOk("remote_bgp_virtual_network_community"); ok {
+		peer.VirtualNetworkPeeringPropertiesFormat.RemoteBgpCommunities = &network.VirtualNetworkBgpCommunities{
+			VirtualNetworkCommunity: utils.String(v.(string)),
+		}
 	}
 
 	peerMutex.Lock()
@@ -164,9 +207,19 @@ func resourceVirtualNetworkPeeringRead(d *pluginsdk.ResourceData, meta interface
 		d.Set("allow_virtual_network_access", peer.AllowVirtualNetworkAccess)
 		d.Set("allow_forwarded_traffic", peer.AllowForwardedTraffic)
 		d.Set("allow_gateway_transit", peer.AllowGatewayTransit)
+		d.Set("do_not_verify_remote_gateways", peer.DoNotVerifyRemoteGateways)
+		d.Set("peering_sync_level", peer.PeeringSyncLevel)
 		d.Set("use_remote_gateways", peer.UseRemoteGateways)
 		if network := peer.RemoteVirtualNetwork; network != nil {
 			d.Set("remote_virtual_network_id", network.ID)
+		}
+		if peer.RemoteBgpCommunities != nil && peer.RemoteBgpCommunities.VirtualNetworkCommunity != nil {
+			d.Set("remote_bgp_virtual_network_community", peer.RemoteBgpCommunities.VirtualNetworkCommunity)
+		}
+		if peer.RemoteVirtualNetworkAddressSpace != nil && peer.RemoteVirtualNetworkAddressSpace.AddressPrefixes != nil {
+			if err := d.Set("remote_virtual_network_address_prefixes", utils.FlattenStringSlice(peer.RemoteVirtualNetworkAddressSpace.AddressPrefixes)); err != nil {
+				return fmt.Errorf("setting `remote_virtual_network_address_prefixes`: %+v", err)
+			}
 		}
 	}
 
@@ -202,13 +255,17 @@ func getVirtualNetworkPeeringProperties(d *pluginsdk.ResourceData) *network.Virt
 	allowVirtualNetworkAccess := d.Get("allow_virtual_network_access").(bool)
 	allowForwardedTraffic := d.Get("allow_forwarded_traffic").(bool)
 	allowGatewayTransit := d.Get("allow_gateway_transit").(bool)
+	doNotVerifyRemoteGateways := d.Get("do_not_verify_remote_gateways").(bool)
 	useRemoteGateways := d.Get("use_remote_gateways").(bool)
 	remoteVirtualNetworkID := d.Get("remote_virtual_network_id").(string)
+	peeringSyncLevel := d.Get("peering_sync_level").(string)
 
 	return &network.VirtualNetworkPeeringPropertiesFormat{
 		AllowVirtualNetworkAccess: &allowVirtualNetworkAccess,
 		AllowForwardedTraffic:     &allowForwardedTraffic,
 		AllowGatewayTransit:       &allowGatewayTransit,
+		DoNotVerifyRemoteGateways: utils.Bool(doNotVerifyRemoteGateways),
+		PeeringSyncLevel:          network.VirtualNetworkPeeringLevel(peeringSyncLevel),
 		UseRemoteGateways:         &useRemoteGateways,
 		RemoteVirtualNetwork: &network.SubResource{
 			ID: &remoteVirtualNetworkID,
