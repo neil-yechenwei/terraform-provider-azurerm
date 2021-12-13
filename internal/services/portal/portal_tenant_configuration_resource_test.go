@@ -20,9 +20,9 @@ func TestAccPortalTenantConfiguration(t *testing.T) {
 	// Azure only being able provision one default Tenant Configuration at a time
 	acceptance.RunTestsInSequence(t, map[string]map[string]func(t *testing.T){
 		"resource": {
-			"basic":          testAccPortalTenantConfiguration_basic,
-			"update":         testAccPortalTenantConfiguration_update,
-			"requiresImport": testAccPortalTenantConfiguration_requiresImport,
+			"basic": testAccPortalTenantConfiguration_basic,
+			//"update":         testAccPortalTenantConfiguration_update,
+			//"requiresImport": testAccPortalTenantConfiguration_requiresImport,
 		},
 	})
 }

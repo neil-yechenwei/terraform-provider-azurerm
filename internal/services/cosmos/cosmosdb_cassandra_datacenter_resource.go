@@ -65,6 +65,26 @@ func resourceCassandraDatacenter() *pluginsdk.Resource {
 				ValidateFunc: networkValidate.SubnetID,
 			},
 
+			"backup_storage_customer_key_uri": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+			},
+
+			"base64_encoded_cassandra_yaml_fragment": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+			},
+
+			"disk_sku": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+			},
+
+			"managed_disk_customer_key_uri": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+			},
+
 			"node_count": {
 				Type:         pluginsdk.TypeInt,
 				Optional:     true,
@@ -119,6 +139,22 @@ func resourceCassandraDatacenterCreate(d *pluginsdk.ResourceData, meta interface
 		},
 	}
 
+	if v, ok := d.GetOk("backup_storage_customer_key_uri"); ok {
+		body.Properties.BackupStorageCustomerKeyURI = utils.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("base64_encoded_cassandra_yaml_fragment"); ok {
+		body.Properties.Base64EncodedCassandraYamlFragment = utils.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("disk_sku"); ok {
+		body.Properties.DiskSku = utils.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("managed_disk_customer_key_uri"); ok {
+		body.Properties.ManagedDiskCustomerKeyURI = utils.String(v.(string))
+	}
+
 	future, err := client.CreateUpdate(ctx, id.ResourceGroup, id.CassandraClusterName, id.DataCenterName, body)
 	if err != nil {
 		return fmt.Errorf("creating %q: %+v", id, err)
@@ -164,6 +200,10 @@ func resourceCassandraDatacenterRead(d *pluginsdk.ResourceData, meta interface{}
 			d.Set("disk_count", int(*props.DiskCapacity))
 			d.Set("sku_name", props.Sku)
 			d.Set("availability_zones_enabled", props.AvailabilityZone)
+			d.Set("backup_storage_customer_key_uri", props.BackupStorageCustomerKeyURI)
+			d.Set("base64_encoded_cassandra_yaml_fragment", props.Base64EncodedCassandraYamlFragment)
+			d.Set("disk_sku", props.DiskSku)
+			d.Set("managed_disk_customer_key_uri", props.ManagedDiskCustomerKeyURI)
 		}
 	}
 	return nil
@@ -185,6 +225,22 @@ func resourceCassandraDatacenterUpdate(d *pluginsdk.ResourceData, meta interface
 			NodeCount:          utils.Int32(int32(d.Get("node_count").(int))),
 			DataCenterLocation: utils.String(azure.NormalizeLocation(d.Get("location").(string))),
 		},
+	}
+
+	if v, ok := d.GetOk("backup_storage_customer_key_uri"); ok {
+		body.Properties.BackupStorageCustomerKeyURI = utils.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("base64_encoded_cassandra_yaml_fragment"); ok {
+		body.Properties.Base64EncodedCassandraYamlFragment = utils.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("disk_sku"); ok {
+		body.Properties.DiskSku = utils.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("managed_disk_customer_key_uri"); ok {
+		body.Properties.ManagedDiskCustomerKeyURI = utils.String(v.(string))
 	}
 
 	future, err := client.CreateUpdate(ctx, id.ResourceGroup, id.CassandraClusterName, id.DataCenterName, body)
