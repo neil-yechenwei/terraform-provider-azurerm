@@ -10,7 +10,7 @@ import (
 
 type ServicePlanDataSource struct{}
 
-func TestAccAppServicePlanDataSource_complete(t *testing.T) {
+func TestAccServicePlanDataSource_complete(t *testing.T) {
 	data := acceptance.BuildTestData(t, "data.azurerm_service_plan", "test")
 	d := ServicePlanDataSource{}
 
