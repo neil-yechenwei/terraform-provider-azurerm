@@ -428,7 +428,6 @@ func resourceNetAppVolumeCreateUpdate(d *pluginsdk.ResourceData, meta interface{
 			UsageThreshold: utils.Int64(storageQuotaInGB),
 			ExportPolicy:   exportPolicyRule,
 			VolumeType:     utils.String(volumeType),
-			SnapshotID:     utils.String(snapshotID),
 			DataProtection: &netapp.VolumePropertiesDataProtection{
 				Replication: dataProtectionReplication.Replication,
 				Snapshot:    dataProtectionSnapshotPolicy.Snapshot,
@@ -436,6 +435,10 @@ func resourceNetAppVolumeCreateUpdate(d *pluginsdk.ResourceData, meta interface{
 			SnapshotDirectoryVisible: utils.Bool(snapshotDirectoryVisible),
 		},
 		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
+	}
+
+	if snapshotID != "" {
+		parameters.VolumeProperties.SnapshotID = utils.String(snapshotID)
 	}
 
 	if throughputMibps, ok := d.GetOk("throughput_in_mibps"); ok {

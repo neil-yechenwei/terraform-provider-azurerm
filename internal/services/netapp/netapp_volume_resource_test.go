@@ -246,6 +246,42 @@ func TestAccNetAppVolume_updateExportPolicyRule(t *testing.T) {
 	})
 }
 
+func TestAccNetAppVolume_onlyUpdateTag(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_netapp_volume", "test")
+	r := NetAppVolumeResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.onlyUpdateTagWithCreateFromSnapshotResourceId(data, "Test1"),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+		{
+			Config: r.onlyUpdateTagWithCreateFromSnapshotResourceId(data, "Test2"),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+		{
+			Config: r.onlyUpdateTagWithoutCreateFromSnapshotResourceId(data, "Test3"),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+		{
+			Config: r.onlyUpdateTagWithoutCreateFromSnapshotResourceId(data, "Test4"),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+	})
+}
+
 func (t NetAppVolumeResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
 	id, err := parse.VolumeID(state.ID)
 	if err != nil {
@@ -674,6 +710,73 @@ resource "azurerm_netapp_pool" "test_secondary" {
   size_in_tb          = 4
 }
 `, r.template(data), data.RandomInteger, "germanywestcentral")
+}
+
+func (NetAppVolumeResource) onlyUpdateTagWithoutCreateFromSnapshotResourceId(data acceptance.TestData, tag string) string {
+	template := NetAppVolumeResource{}.template(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_netapp_volume" "test" {
+  name                = "acctest-NetAppVolume-%d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+  account_name        = azurerm_netapp_account.test.name
+  pool_name           = azurerm_netapp_pool.test.name
+  volume_path         = "my-unique-file-path-%d"
+  service_level       = "Standard"
+  subnet_id           = azurerm_subnet.test.id
+  storage_quota_in_gb = 100
+
+  tags = {
+    env = "%s"
+  }
+}
+`, template, data.RandomInteger, data.RandomInteger, tag)
+}
+
+func (NetAppVolumeResource) onlyUpdateTagWithCreateFromSnapshotResourceId(data acceptance.TestData, tag string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "azurerm_netapp_volume" "test" {
+  name                = "acctest-NetAppVolume-%[2]d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+  account_name        = azurerm_netapp_account.test.name
+  pool_name           = azurerm_netapp_pool.test.name
+  volume_path         = "my-unique-file-path-%[2]d"
+  service_level       = "Standard"
+  subnet_id           = azurerm_subnet.test.id
+  storage_quota_in_gb = 100
+}
+
+resource "azurerm_netapp_snapshot" "test" {
+  name                = "acctest-Snapshot-%[2]d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+  account_name        = azurerm_netapp_account.test.name
+  pool_name           = azurerm_netapp_pool.test.name
+  volume_name         = azurerm_netapp_volume.test.name
+}
+
+resource "azurerm_netapp_volume" "test_snapshot_vol" {
+  name                             = "acctest-NetAppVolume-NewFromSnapshot-%[2]d"
+  location                         = azurerm_resource_group.test.location
+  resource_group_name              = azurerm_resource_group.test.name
+  account_name                     = azurerm_netapp_account.test.name
+  pool_name                        = azurerm_netapp_pool.test.name
+  volume_path                      = "my-unique-file-path-snapshot-%[2]d"
+  service_level                    = "Standard"
+  subnet_id                        = azurerm_subnet.test.id
+  storage_quota_in_gb              = 200
+  create_from_snapshot_resource_id = azurerm_netapp_snapshot.test.id
+
+  tags = {
+    env = "%[3]s"
+  }
+}
+`, NetAppVolumeResource{}.template(data), data.RandomInteger, tag)
 }
 
 func (NetAppVolumeResource) template(data acceptance.TestData) string {
