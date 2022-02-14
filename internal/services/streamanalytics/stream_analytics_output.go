@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/streamanalytics/mgmt/2020-03-01-preview/streamanalytics"
+	"github.com/Azure/azure-sdk-for-go/services/streamanalytics/mgmt/2020-03-01/streamanalytics"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/streamanalytics/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
@@ -39,8 +39,6 @@ func importStreamAnalyticsOutput(expectType streamanalytics.TypeBasicOutputDataS
 			} else if datasource, ok := props.Datasource.AsAzureSynapseOutputDataSource(); ok {
 				actualType = datasource.Type
 			} else if datasource, ok := props.Datasource.AsDocumentDbOutputDataSource(); ok {
-				actualType = datasource.Type
-			} else if datasource, ok := props.Datasource.AsAzureFunctionOutputDataSource(); ok {
 				actualType = datasource.Type
 			} else if datasource, ok := props.Datasource.AsServiceBusQueueOutputDataSource(); ok {
 				actualType = datasource.Type
