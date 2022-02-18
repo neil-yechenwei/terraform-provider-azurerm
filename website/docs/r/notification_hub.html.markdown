@@ -56,6 +56,8 @@ The following arguments are supported:
 
 ~> **NOTE:** Removing the `gcm_credential` block will currently force a recreation of this resource [due to this bug in the Azure SDK for Go](https://github.com/Azure/azure-sdk-for-go/issues/2246) - we'll remove this limitation when the SDK bug is fixed.
 
+* `registration_ttl` - (Optional) The registration timespan to live of the Notification Hub as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).
+
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ---

@@ -103,7 +103,7 @@ resource "azurerm_notification_hub_namespace" "test" {
   name                = "acctestnhn-%d"
   resource_group_name = azurerm_resource_group.test.name
   location            = azurerm_resource_group.test.location
-  namespace_type      = "NotificationHub"
+  namespace_type      = "Messaging"
 
   sku_name = "Free"
 

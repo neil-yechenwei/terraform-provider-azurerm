@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/notificationhubs/mgmt/2017-04-01/notificationhubs"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
+	"github.com/hashicorp/terraform-provider-azurerm/helpers/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/location"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub/migration"
@@ -146,6 +147,13 @@ func resourceNotificationHub() *pluginsdk.Resource {
 				},
 			},
 
+			"registration_ttl": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: validate.ISO8601Duration,
+			},
+
 			"tags": tags.Schema(),
 		},
 	}
@@ -178,6 +186,10 @@ func resourceNotificationHubCreateUpdate(d *pluginsdk.ResourceData, meta interfa
 			GcmCredential:  expandNotificationHubsGCMCredentials(d.Get("gcm_credential").([]interface{})),
 		},
 		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
+	}
+
+	if v, ok := d.GetOk("registration_ttl"); ok {
+		parameters.Properties.RegistrationTTL = utils.String(v.(string))
 	}
 
 	if _, err := client.CreateOrUpdate(ctx, id.ResourceGroup, id.NamespaceName, id.Name, parameters); err != nil {
@@ -251,6 +263,10 @@ func resourceNotificationHubRead(d *pluginsdk.ResourceData, meta interface{}) er
 	d.Set("namespace_name", id.NamespaceName)
 	d.Set("resource_group_name", id.ResourceGroup)
 	d.Set("location", location.NormalizeNilable(resp.Location))
+
+	if props := resp.Properties; props != nil {
+		d.Set("registration_ttl", props.RegistrationTTL)
+	}
 
 	if props := credentials.PnsCredentialsProperties; props != nil {
 		apns := flattenNotificationHubsAPNSCredentials(props.ApnsCredential)

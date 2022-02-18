@@ -78,6 +78,28 @@ func TestAccNotificationHub_requiresImport(t *testing.T) {
 	})
 }
 
+func TestAccNotificationHub_updateRegistrationTtl(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_notification_hub", "test")
+	r := NotificationHubResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.updateRegistrationTtl(data, "PT1H"),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+		{
+			Config: r.updateRegistrationTtl(data, "PT2H"),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+	})
+}
+
 func (NotificationHubResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
 	id, err := parse.NotificationHubID(state.ID)
 	if err != nil {
@@ -164,4 +186,33 @@ resource "azurerm_notification_hub" "import" {
   location            = azurerm_notification_hub.test.location
 }
 `, template)
+}
+
+func (NotificationHubResource) updateRegistrationTtl(data acceptance.TestData, registrationTtl string) string {
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRGpol-%d"
+  location = "%s"
+}
+
+resource "azurerm_notification_hub_namespace" "test" {
+  name                = "acctestnhn-%d"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+  namespace_type      = "NotificationHub"
+  sku_name            = "Free"
+}
+
+resource "azurerm_notification_hub" "test" {
+  name                = "acctestnh-%d"
+  namespace_name      = azurerm_notification_hub_namespace.test.name
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+  registration_ttl    = "%s"
+}
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, registrationTtl)
 }
