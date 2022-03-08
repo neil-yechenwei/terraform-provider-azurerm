@@ -89,6 +89,24 @@ func resourceVirtualNetworkGatewayConnection() *pluginsdk.Resource {
 				ValidateFunc: azure.ValidateResourceIDOrEmpty,
 			},
 
+			"egress_nat_rule_ids": {
+				Type:     pluginsdk.TypeSet,
+				Optional: true,
+				Elem: &pluginsdk.Schema{
+					Type: pluginsdk.TypeString,
+					// Will add validation here
+				},
+			},
+
+			"ingress_nat_rule_ids": {
+				Type:     pluginsdk.TypeSet,
+				Optional: true,
+				Elem: &pluginsdk.Schema{
+					Type: pluginsdk.TypeString,
+					// Will add validation here
+				},
+			},
+
 			"peer_virtual_network_gateway_id": {
 				Type:         pluginsdk.TypeString,
 				Optional:     true,
@@ -468,6 +486,16 @@ func resourceVirtualNetworkGatewayConnectionRead(d *pluginsdk.ResourceData, meta
 		return fmt.Errorf("setting `traffic_selector_policy`: %+v", err)
 	}
 
+	egressNatRules := flattenVirtualNetworkGatewayConnectionNatRuleIds(conn.EgressNatRules)
+	if err := d.Set("egress_nat_rule_ids", egressNatRules); err != nil {
+		return fmt.Errorf("setting `egress_nat_rule_ids`: %+v", err)
+	}
+
+	ingressNatRules := flattenVirtualNetworkGatewayConnectionNatRuleIds(conn.IngressNatRules)
+	if err := d.Set("ingress_nat_rule_ids", ingressNatRules); err != nil {
+		return fmt.Errorf("setting `ingress_nat_rule_ids`: %+v", err)
+	}
+
 	return tags.FlattenAndSet(d, resp.Tags)
 }
 
@@ -503,6 +531,16 @@ func getVirtualNetworkGatewayConnectionProperties(d *pluginsdk.ResourceData) (*n
 		EnableBgp:                      utils.Bool(d.Get("enable_bgp").(bool)),
 		ExpressRouteGatewayBypass:      utils.Bool(d.Get("express_route_gateway_bypass").(bool)),
 		UsePolicyBasedTrafficSelectors: utils.Bool(d.Get("use_policy_based_traffic_selectors").(bool)),
+	}
+
+	if v, ok := d.GetOk("egress_nat_rule_ids"); ok {
+		egressNatRuleIds := v.(*pluginsdk.Set).List()
+		props.EgressNatRules = expandVirtualNetworkGatewayConnectionNatRuleIds(egressNatRuleIds)
+	}
+
+	if v, ok := d.GetOk("ingress_nat_rule_ids"); ok {
+		ingressNatRuleIds := v.(*pluginsdk.Set).List()
+		props.IngressNatRules = expandVirtualNetworkGatewayConnectionNatRuleIds(ingressNatRuleIds)
 	}
 
 	if v, ok := d.GetOk("virtual_network_gateway_id"); ok {
@@ -681,6 +719,18 @@ func expandVirtualNetworkGatewayConnectionTrafficSelectorPolicies(schemaTrafficS
 	return &trafficSelectorPolicies
 }
 
+func expandVirtualNetworkGatewayConnectionNatRuleIds(input []interface{}) *[]network.SubResource {
+	results := make([]network.SubResource, 0)
+
+	for _, item := range input {
+		results = append(results, network.SubResource{
+			ID: utils.String(item.(string)),
+		})
+	}
+
+	return &results
+}
+
 func flattenVirtualNetworkGatewayConnectionIpsecPolicies(ipsecPolicies *[]network.IpsecPolicy) []interface{} {
 	schemaIpsecPolicies := make([]interface{}, 0)
 
@@ -723,4 +773,22 @@ func flattenVirtualNetworkGatewayConnectionTrafficSelectorPolicies(trafficSelect
 	}
 
 	return schemaTrafficSelectorPolicies
+}
+
+func flattenVirtualNetworkGatewayConnectionNatRuleIds(input *[]network.SubResource) []interface{} {
+	results := make([]interface{}, 0)
+	if input == nil {
+		return results
+	}
+
+	for _, item := range *input {
+		var id string
+		if item.ID != nil {
+			id = *item.ID
+		}
+
+		results = append(results, id)
+	}
+
+	return results
 }
