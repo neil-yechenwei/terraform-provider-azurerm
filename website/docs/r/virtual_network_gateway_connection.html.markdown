@@ -232,6 +232,10 @@ The following arguments are supported:
     when creating an ExpressRoute connection (i.e. when `type` is `ExpressRoute`).
     The Express Route Circuit can be in the same or in a different subscription.
 
+* `egress_nat_rule_ids` - (Optional) A list of the egress Nat Rule Ids.
+
+* `ingress_nat_rule_ids` - (Optional) A list of the ingress Nat Rule Ids.
+
 * `peer_virtual_network_gateway_id` - (Optional) The ID of the peer virtual
     network gateway when creating a VNet-to-VNet connection (i.e. when `type`
     is `Vnet2Vnet`). The peer Virtual Network Gateway can be in the same or
