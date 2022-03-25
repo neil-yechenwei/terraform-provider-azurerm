@@ -112,6 +112,29 @@ func resourceVirtualNetworkSchema() map[string]*pluginsdk.Schema {
 
 		"edge_zone": commonschema.EdgeZoneOptionalForceNew(),
 
+		"encryption": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"enabled": {
+						Type:     pluginsdk.TypeBool,
+						Required: true,
+					},
+
+					"enforcement": {
+						Type:     pluginsdk.TypeString,
+						Optional: true,
+						ValidateFunc: validation.StringInSlice([]string{
+							string(network.VirtualNetworkEncryptionEnforcementAllowUnencrypted),
+							string(network.VirtualNetworkEncryptionEnforcementDropUnencrypted),
+						}, false),
+					},
+				},
+			},
+		},
+
 		"flow_timeout_in_minutes": {
 			Type:         pluginsdk.TypeInt,
 			Optional:     true,
@@ -309,6 +332,10 @@ func resourceVirtualNetworkRead(d *pluginsdk.ResourceData, meta interface{}) err
 			return fmt.Errorf("setting `bgp_community`: %+v", err)
 		}
 
+		if err := d.Set("encryption", flattenVirtualNetworkEncryption(props.Encryption)); err != nil {
+			return fmt.Errorf("setting `encryption`: %+v", err)
+		}
+
 		if !features.ThreePointOhBeta() {
 			d.Set("vm_protection_enabled", props.EnableVMProtection)
 		}
@@ -427,7 +454,28 @@ func expandVirtualNetworkProperties(ctx context.Context, d *pluginsdk.ResourceDa
 		properties.BgpCommunities = &network.VirtualNetworkBgpCommunities{VirtualNetworkCommunity: utils.String(v.(string))}
 	}
 
+	if v, ok := d.GetOk("encryption"); ok {
+		properties.Encryption = expandVirtualNetworkEncryption(v.([]interface{}))
+	}
+
 	return properties, nil
+}
+
+func expandVirtualNetworkEncryption(input []interface{}) *network.VirtualNetworkEncryption {
+	if len(input) == 0 || input[0] == nil {
+		return nil
+	}
+
+	v := input[0].(map[string]interface{})
+	result := &network.VirtualNetworkEncryption{
+		Enabled: utils.Bool(v["enabled"].(bool)),
+	}
+
+	if enforcement, ok := v["enforcement"].(string); ok && enforcement != "" {
+		result.Enforcement = network.VirtualNetworkEncryptionEnforcement(enforcement)
+	}
+
+	return result
 }
 
 func flattenVirtualNetworkDDoSProtectionPlan(input *network.VirtualNetworkPropertiesFormat) []interface{} {
@@ -493,6 +541,29 @@ func flattenVirtualNetworkDNSServers(input *network.DhcpOptions) []string {
 	}
 
 	return results
+}
+
+func flattenVirtualNetworkEncryption(input *network.VirtualNetworkEncryption) []interface{} {
+	if input == nil {
+		return make([]interface{}, 0)
+	}
+
+	enabled := false
+	if input.Enabled != nil {
+		enabled = *input.Enabled
+	}
+
+	enforcement := ""
+	if v := input.Enforcement; v != "" {
+		enforcement = string(v)
+	}
+
+	return []interface{}{
+		map[string]interface{}{
+			"enabled":     enabled,
+			"enforcement": enforcement,
+		},
+	}
 }
 
 func resourceAzureSubnetHash(v interface{}) int {

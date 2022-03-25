@@ -81,6 +81,8 @@ The following arguments are supported:
 
 * `edge_zone` - (Optional) Specifies the Edge Zone within the Azure Region where this Virtual Network should exist. Changing this forces a new Virtual Network to be created.
 
+* `encryption` - (Optional) A `encryption` block as documented below.
+
 * `flow_timeout_in_minutes` - (Optional) The flow timeout in minutes for the Virtual Network, which is used to enable connection tracking for intra-VM flows. Possible values are between `4` and `30` minutes.
 
 * `subnet` - (Optional) Can be specified multiple times to define multiple subnets. Each `subnet` block supports fields documented below.
@@ -96,6 +98,14 @@ A `ddos_protection_plan` block supports the following:
 * `id` - (Required) The ID of DDoS Protection Plan.
 
 * `enable` - (Required) Enable/disable DDoS Protection Plan on Virtual Network.
+
+---
+
+A `encryption` block supports the following:
+
+* `enabled` - (Required) Is encryption enabled on the Virtual Network?
+
+* `enforcement` - (Optional) The encrypted VNet allows the VM that does not support encryption. Possible values are `AllowUnencrypted` and `DropUnencrypted`.
 
 ---
 
