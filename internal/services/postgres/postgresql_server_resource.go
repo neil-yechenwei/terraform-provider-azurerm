@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
+	keyVaultValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/postgres/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/postgres/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
@@ -203,6 +204,12 @@ func resourcePostgreSQLServer() *pluginsdk.Resource {
 				ForceNew: true,
 			},
 
+			"key_vault_key_id": {
+				Type:         pluginsdk.TypeString,
+				Optional:     true,
+				ValidateFunc: keyVaultValidate.NestedItemId,
+			},
+
 			"public_network_access_enabled": {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
@@ -384,6 +391,9 @@ func resourcePostgreSQLServer() *pluginsdk.Resource {
 func resourcePostgreSQLServerCreate(d *pluginsdk.ResourceData, meta interface{}) error {
 	client := meta.(*clients.Client).Postgres.ServersClient
 	securityClient := meta.(*clients.Client).Postgres.ServerSecurityAlertPoliciesClient
+	resourcesClient := meta.(*clients.Client).Resource
+	keyVaultsClient := meta.(*clients.Client).KeyVault
+	keysClient := meta.(*clients.Client).Postgres.ServerKeysClient
 	subscriptionId := meta.(*clients.Client).Account.SubscriptionId
 	ctx, cancel := timeouts.ForCreate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
@@ -527,8 +537,8 @@ func resourcePostgreSQLServerCreate(d *pluginsdk.ResourceData, meta interface{})
 
 	log.Printf("[DEBUG] Waiting for %s to become available", id)
 	stateConf := &pluginsdk.StateChangeConf{
-		Pending:    []string{string(postgresql.ServerStateInaccessible)},
-		Target:     []string{string(postgresql.ServerStateReady)},
+		Pending:    []string{"NotFound", "Unknown"},
+		Target:     []string{string(postgresql.ServerStateReady), string(postgresql.ServerStateInaccessible)},
 		Refresh:    postgreSqlStateRefreshFunc(ctx, client, id),
 		MinTimeout: 15 * time.Second,
 		Timeout:    d.Timeout(pluginsdk.TimeoutCreate),
@@ -536,6 +546,42 @@ func resourcePostgreSQLServerCreate(d *pluginsdk.ResourceData, meta interface{})
 
 	if _, err = stateConf.WaitForStateContext(ctx); err != nil {
 		return fmt.Errorf("waiting for %s to become available: %+v", id, err)
+	}
+
+	if mode == postgresql.CreateModeReplica || mode == postgresql.CreateModeGeoRestore {
+		res, err := client.Get(ctx, id.ResourceGroup, id.Name)
+		if err != nil {
+			return err
+		}
+
+		if res.ServerProperties != nil && res.ServerProperties.UserVisibleState == postgresql.ServerStateInaccessible {
+			var keyVaultKeyURI string
+			if v, ok := d.GetOk("key_vault_key_id"); ok {
+				keyVaultKeyURI = v.(string)
+			} else {
+				return fmt.Errorf("`key_vault_key_id` should be set for revalidating key when the primary server enables data encryption")
+			}
+
+			name, err := getPostgreSQLServerKeyName(ctx, keyVaultsClient, resourcesClient, keyVaultKeyURI)
+			if err != nil {
+				return fmt.Errorf("cannot compose name for PostgreSQL Server Key (Resource Group %q / Server %q): %+v", id.ResourceGroup, id.Name, err)
+			}
+
+			param := postgresql.ServerKey{
+				ServerKeyProperties: &postgresql.ServerKeyProperties{
+					ServerKeyType: utils.String("AzureKeyVault"),
+					URI:           utils.String(keyVaultKeyURI),
+				},
+			}
+
+			keysFuture, err := keysClient.CreateOrUpdate(ctx, id.Name, *name, param, id.ResourceGroup)
+			if err != nil {
+				return fmt.Errorf("revalidating key %s: %+v", id, err)
+			}
+			if err := keysFuture.WaitForCompletionRef(ctx, keysClient.Client); err != nil {
+				return fmt.Errorf("waiting for revalidating key of %s: %+v", id, err)
+			}
+		}
 	}
 
 	d.SetId(id.ID())
@@ -599,8 +645,8 @@ func resourcePostgreSQLServerUpdate(d *pluginsdk.ResourceData, meta interface{})
 		// Wait for possible restarts triggered by scaling primary (and its replicas)
 		log.Printf("[DEBUG] Waiting for %s to become available", *id)
 		stateConf := &pluginsdk.StateChangeConf{
-			Pending:    []string{string(postgresql.ServerStateInaccessible), "Restarting"},
-			Target:     []string{string(postgresql.ServerStateReady)},
+			Pending:    []string{"NotFound", "Unknown", "Restarting"},
+			Target:     []string{string(postgresql.ServerStateReady), string(postgresql.ServerStateInaccessible)},
 			Refresh:    postgreSqlStateRefreshFunc(ctx, client, *id),
 			MinTimeout: 15 * time.Second,
 			Timeout:    d.Timeout(pluginsdk.TimeoutCreate),
@@ -1039,13 +1085,13 @@ func postgreSqlStateRefreshFunc(ctx context.Context, client *postgresql.ServersC
 		// This is an issue with the RP, there is a 10 to 15 second lag before the
 		// service will actually return the server
 		if utils.ResponseWasNotFound(res.Response) {
-			return res, string(postgresql.ServerStateInaccessible), nil
+			return res, "NotFound", nil
 		}
 
 		if res.ServerProperties != nil && res.ServerProperties.UserVisibleState != "" {
 			return res, string(res.ServerProperties.UserVisibleState), nil
 		}
 
-		return res, string(postgresql.ServerStateInaccessible), nil
+		return res, "Unknown", nil
 	}
 }
