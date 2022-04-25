@@ -172,6 +172,10 @@ func resourceLogicAppComponentRemove(d *pluginsdk.ResourceData, meta interface{}
 		Tags: read.Tags,
 	}
 
+	if read.WorkflowProperties.IntegrationAccount != nil {
+		properties.WorkflowProperties.IntegrationAccount = read.WorkflowProperties.IntegrationAccount
+	}
+
 	if _, err = client.CreateOrUpdate(ctx, resourceGroup, logicAppName, properties); err != nil {
 		return fmt.Errorf("removing %s %q from Logic App Workspace %q (Resource Group %q): %+v", kind, name, logicAppName, resourceGroup, err)
 	}
