@@ -2,6 +2,8 @@ package compute
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/sdk/2022-03-02/disks"
 	"log"
 	"time"
 
@@ -135,7 +137,7 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *pluginsdk.ResourceD
 		Lun:          utils.Int32(lun),
 		ManagedDisk: &compute.ManagedDiskParameters{
 			ID:                 utils.String(managedDiskId),
-			StorageAccountType: compute.StorageAccountTypes(string(managedDisk.Sku.Name)),
+			StorageAccountType: compute.StorageAccountTypes(string(*managedDisk.Sku.Name)),
 		},
 		WriteAcceleratorEnabled: utils.Bool(writeAcceleratorEnabled),
 	}
@@ -292,24 +294,24 @@ func resourceVirtualMachineDataDiskAttachmentDelete(d *pluginsdk.ResourceData, m
 	return nil
 }
 
-func retrieveDataDiskAttachmentManagedDisk(d *pluginsdk.ResourceData, meta interface{}, id string) (*compute.Disk, error) {
+func retrieveDataDiskAttachmentManagedDisk(d *pluginsdk.ResourceData, meta interface{}, id string) (*disks.Disk, error) {
 	client := meta.(*clients.Client).Compute.DisksClient
 	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	parsedId, err := parse.ManagedDiskID(id)
+	parsedId, err := disks.ParseDiskID(id)
 	if err != nil {
 		return nil, fmt.Errorf("parsing Managed Disk ID %q: %+v", id, err)
 	}
 
-	resp, err := client.Get(ctx, parsedId.ResourceGroup, parsedId.DiskName)
+	resp, err := client.Get(ctx, *parsedId)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.WasNotFound(resp.HttpResponse) {
 			return nil, fmt.Errorf("Managed Disk %q  was not found!", parsedId.String())
 		}
 
 		return nil, fmt.Errorf("making Read request on Azure Managed Disk %q : %+v", parsedId.String(), err)
 	}
 
-	return &resp, nil
+	return resp.Model, nil
 }

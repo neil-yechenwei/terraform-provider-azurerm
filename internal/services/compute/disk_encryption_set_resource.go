@@ -3,22 +3,22 @@ package compute
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/sdk/2022-03-02/diskencryptionsets"
 	"log"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/client"
 	keyVaultParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/parse"
 	keyVaultValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
 	resourcesClient "github.com/hashicorp/terraform-provider-azurerm/internal/services/resource/client"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
@@ -40,7 +40,7 @@ func resourceDiskEncryptionSet() *pluginsdk.Resource {
 		},
 
 		Importer: pluginsdk.ImporterValidatingResourceId(func(id string) error {
-			_, err := parse.DiskEncryptionSetID(id)
+			_, err := diskencryptionsets.ParseDiskEncryptionSetID(id)
 			return err
 		}),
 
@@ -71,11 +71,11 @@ func resourceDiskEncryptionSet() *pluginsdk.Resource {
 				Type:     pluginsdk.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  string(compute.DiskEncryptionSetTypeEncryptionAtRestWithCustomerKey),
+				Default:  string(diskencryptionsets.DiskEncryptionSetTypeEncryptionAtRestWithCustomerKey),
 				ValidateFunc: validation.StringInSlice([]string{
-					string(compute.DiskEncryptionSetTypeEncryptionAtRestWithCustomerKey),
-					string(compute.DiskEncryptionSetTypeEncryptionAtRestWithPlatformAndCustomerKeys),
-					string(compute.DiskEncryptionSetTypeConfidentialVMEncryptedWithCustomerKey),
+					string(diskencryptionsets.DiskEncryptionSetTypeEncryptionAtRestWithCustomerKey),
+					string(diskencryptionsets.DiskEncryptionSetTypeEncryptionAtRestWithPlatformAndCustomerKeys),
+					string(diskencryptionsets.DiskEncryptionSetTypeConfidentialVmEncryptedWithCustomerKey),
 				}, false),
 			},
 
@@ -84,7 +84,7 @@ func resourceDiskEncryptionSet() *pluginsdk.Resource {
 			// hence this is required
 			"identity": commonschema.SystemAssignedIdentityRequired(),
 
-			"tags": tags.Schema(),
+			"tags": commonschema.Tags(),
 		},
 	}
 }
@@ -97,15 +97,15 @@ func resourceDiskEncryptionSetCreate(d *pluginsdk.ResourceData, meta interface{}
 	ctx, cancel := timeouts.ForCreate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	id := parse.NewDiskEncryptionSetID(subscriptionId, d.Get("resource_group_name").(string), d.Get("name").(string))
+	id := diskencryptionsets.NewDiskEncryptionSetID(subscriptionId, d.Get("resource_group_name").(string), d.Get("name").(string))
 
-	existing, err := client.Get(ctx, id.ResourceGroup, id.Name)
+	existing, err := client.Get(ctx, id)
 	if err != nil {
-		if !utils.ResponseWasNotFound(existing.Response) {
+		if !response.WasNotFound(existing.HttpResponse) {
 			return fmt.Errorf("checking for present of existing %s: %+v", id, err)
 		}
 	}
-	if !utils.ResponseWasNotFound(existing.Response) {
+	if !response.WasNotFound(existing.HttpResponse) {
 		return tf.ImportAsExistsError("azurerm_disk_encryption_set", id.ID())
 	}
 
@@ -123,7 +123,6 @@ func resourceDiskEncryptionSetCreate(d *pluginsdk.ResourceData, meta interface{}
 
 	location := azure.NormalizeLocation(d.Get("location").(string))
 	rotationToLatestKeyVersionEnabled := d.Get("auto_key_rotation_enabled").(bool)
-	encryptionType := d.Get("encryption_type").(string)
 	t := d.Get("tags").(map[string]interface{})
 
 	expandedIdentity, err := expandDiskEncryptionSetIdentity(d.Get("identity").([]interface{}))
@@ -131,28 +130,25 @@ func resourceDiskEncryptionSetCreate(d *pluginsdk.ResourceData, meta interface{}
 		return fmt.Errorf("expanding `identity`: %+v", err)
 	}
 
-	params := compute.DiskEncryptionSet{
-		Location: utils.String(location),
-		EncryptionSetProperties: &compute.EncryptionSetProperties{
-			ActiveKey: &compute.KeyForDiskEncryptionSet{
-				KeyURL: utils.String(keyVaultKeyId),
-				SourceVault: &compute.SourceVault{
-					ID: utils.String(keyVaultDetails.keyVaultId),
+	encryptionType := diskencryptionsets.DiskEncryptionSetType(d.Get("encryption_type").(string))
+	params := diskencryptionsets.DiskEncryptionSet{
+		Location: location,
+		Properties: &diskencryptionsets.EncryptionSetProperties{
+			ActiveKey: &diskencryptionsets.KeyForDiskEncryptionSet{
+				KeyUrl: keyVaultKeyId,
+				SourceVault: &diskencryptionsets.SourceVault{
+					Id: utils.String(keyVaultDetails.keyVaultId),
 				},
 			},
 			RotationToLatestKeyVersionEnabled: utils.Bool(rotationToLatestKeyVersionEnabled),
-			EncryptionType:                    compute.DiskEncryptionSetType(encryptionType),
+			EncryptionType:                    &encryptionType,
 		},
 		Identity: expandedIdentity,
 		Tags:     tags.Expand(t),
 	}
 
-	future, err := client.CreateOrUpdate(ctx, id.ResourceGroup, id.Name, params)
-	if err != nil {
+	if err := client.CreateOrUpdateThenPoll(ctx, id, params); err != nil {
 		return fmt.Errorf("creating %s: %+v", id, err)
-	}
-	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for creation of %s: %+v", id, err)
 	}
 
 	d.SetId(id.ID())
@@ -165,47 +161,52 @@ func resourceDiskEncryptionSetRead(d *pluginsdk.ResourceData, meta interface{}) 
 	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	id, err := parse.DiskEncryptionSetID(d.Id())
+	id, err := diskencryptionsets.ParseDiskEncryptionSetID(d.Id())
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.Get(ctx, id.ResourceGroup, id.Name)
+	resp, err := client.Get(ctx, *id)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.WasNotFound(resp.HttpResponse) {
 			log.Printf("[INFO] Disk Encryption Set %q does not exist - removing from state", d.Id())
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("reading Disk Encryption Set %q (Resource Group %q): %+v", id.Name, id.ResourceGroup, err)
+		return fmt.Errorf("reading Disk Encryption Set %q (Resource Group %q): %+v", id.DiskEncryptionSetName, id.ResourceGroupName, err)
 	}
 
-	d.Set("name", id.Name)
-	d.Set("resource_group_name", id.ResourceGroup)
-	if location := resp.Location; location != nil {
-		d.Set("location", azure.NormalizeLocation(*location))
-	}
+	d.Set("name", id.DiskEncryptionSetName)
+	d.Set("resource_group_name", id.ResourceGroupName)
 
-	if props := resp.EncryptionSetProperties; props != nil {
-		keyVaultKeyId := ""
-		if props.ActiveKey != nil && props.ActiveKey.KeyURL != nil {
-			keyVaultKeyId = *props.ActiveKey.KeyURL
+	if model := resp.Model; model != nil {
+		d.Set("location", azure.NormalizeLocation(model.Location))
+
+		if props := model.Properties; props != nil {
+			keyVaultKeyId := ""
+			if props.ActiveKey != nil && props.ActiveKey.KeyUrl != "" {
+				keyVaultKeyId = props.ActiveKey.KeyUrl
+			}
+			d.Set("key_vault_key_id", keyVaultKeyId)
+			d.Set("auto_key_rotation_enabled", props.RotationToLatestKeyVersionEnabled)
+
+			encryptionType := string(diskencryptionsets.DiskEncryptionSetTypeEncryptionAtRestWithCustomerKey)
+			if props.EncryptionType != nil {
+				encryptionType = string(*props.EncryptionType)
+			}
+			d.Set("encryption_type", encryptionType)
 		}
-		d.Set("key_vault_key_id", keyVaultKeyId)
-		d.Set("auto_key_rotation_enabled", props.RotationToLatestKeyVersionEnabled)
 
-		encryptionType := string(compute.DiskEncryptionSetTypeEncryptionAtRestWithCustomerKey)
-		if props.EncryptionType != "" {
-			encryptionType = string(props.EncryptionType)
+		if err := d.Set("identity", flattenDiskEncryptionSetIdentity(model.Identity)); err != nil {
+			return fmt.Errorf("setting `identity`: %+v", err)
 		}
-		d.Set("encryption_type", encryptionType)
+
+		if err := tags.FlattenAndSet(d, model.Tags); err != nil {
+			return err
+		}
 	}
 
-	if err := d.Set("identity", flattenDiskEncryptionSetIdentity(resp.Identity)); err != nil {
-		return fmt.Errorf("setting `identity`: %+v", err)
-	}
-
-	return tags.FlattenAndSet(d, resp.Tags)
+	return nil
 }
 
 func resourceDiskEncryptionSetUpdate(d *pluginsdk.ResourceData, meta interface{}) error {
@@ -215,12 +216,12 @@ func resourceDiskEncryptionSetUpdate(d *pluginsdk.ResourceData, meta interface{}
 	ctx, cancel := timeouts.ForUpdate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	id, err := parse.DiskEncryptionSetID(d.Id())
+	id, err := diskencryptionsets.ParseDiskEncryptionSetID(d.Id())
 	if err != nil {
 		return err
 	}
 
-	update := compute.DiskEncryptionSetUpdate{}
+	update := diskencryptionsets.DiskEncryptionSetUpdate{}
 	if d.HasChange("tags") {
 		update.Tags = tags.Expand(d.Get("tags").(map[string]interface{}))
 	}
@@ -237,30 +238,26 @@ func resourceDiskEncryptionSetUpdate(d *pluginsdk.ResourceData, meta interface{}
 		if !keyVaultDetails.purgeProtectionEnabled {
 			return fmt.Errorf("validating Key Vault %q (Resource Group %q) for Disk Encryption Set: Purge Protection must be enabled but it isn't!", keyVaultDetails.keyVaultName, keyVaultDetails.resourceGroupName)
 		}
-		update.DiskEncryptionSetUpdateProperties = &compute.DiskEncryptionSetUpdateProperties{
-			ActiveKey: &compute.KeyForDiskEncryptionSet{
-				KeyURL: utils.String(keyVaultKeyId),
-				SourceVault: &compute.SourceVault{
-					ID: utils.String(keyVaultDetails.keyVaultId),
+		update.Properties = &diskencryptionsets.DiskEncryptionSetUpdateProperties{
+			ActiveKey: &diskencryptionsets.KeyForDiskEncryptionSet{
+				KeyUrl: keyVaultKeyId,
+				SourceVault: &diskencryptionsets.SourceVault{
+					Id: utils.String(keyVaultDetails.keyVaultId),
 				},
 			},
 		}
 	}
 
 	if d.HasChange("auto_key_rotation_enabled") {
-		if update.DiskEncryptionSetUpdateProperties == nil {
-			update.DiskEncryptionSetUpdateProperties = &compute.DiskEncryptionSetUpdateProperties{}
+		if update.Properties == nil {
+			update.Properties = &diskencryptionsets.DiskEncryptionSetUpdateProperties{}
 		}
 
-		update.DiskEncryptionSetUpdateProperties.RotationToLatestKeyVersionEnabled = utils.Bool(d.Get("auto_key_rotation_enabled").(bool))
+		update.Properties.RotationToLatestKeyVersionEnabled = utils.Bool(d.Get("auto_key_rotation_enabled").(bool))
 	}
 
-	future, err := client.Update(ctx, id.ResourceGroup, id.Name, update)
-	if err != nil {
-		return fmt.Errorf("updating Disk Encryption Set %q (Resource Group %q): %+v", id.Name, id.ResourceGroup, err)
-	}
-	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for update of Disk Encryption Set %q (Resource Group %q): %+v", id.Name, id.ResourceGroup, err)
+	if err := client.UpdateThenPoll(ctx, *id, update); err != nil {
+		return fmt.Errorf("updating Disk Encryption Set %q (Resource Group %q): %+v", id.DiskEncryptionSetName, id.ResourceGroupName, err)
 	}
 
 	return resourceDiskEncryptionSetRead(d, meta)
@@ -271,46 +268,41 @@ func resourceDiskEncryptionSetDelete(d *pluginsdk.ResourceData, meta interface{}
 	ctx, cancel := timeouts.ForDelete(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	id, err := parse.DiskEncryptionSetID(d.Id())
+	id, err := diskencryptionsets.ParseDiskEncryptionSetID(d.Id())
 	if err != nil {
 		return err
 	}
 
-	future, err := client.Delete(ctx, id.ResourceGroup, id.Name)
-	if err != nil {
-		return fmt.Errorf("deleting Disk Encryption Set %q (Resource Group %q): %+v", id.Name, id.ResourceGroup, err)
-	}
-
-	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for deleting Disk Encryption Set %q (Resource Group %q): %+v", id.Name, id.ResourceGroup, err)
+	if err := client.DeleteThenPoll(ctx, *id); err != nil {
+		return fmt.Errorf("deleting Disk Encryption Set %q (Resource Group %q): %+v", id.DiskEncryptionSetName, id.ResourceGroupName, err)
 	}
 
 	return nil
 }
 
-func expandDiskEncryptionSetIdentity(input []interface{}) (*compute.EncryptionSetIdentity, error) {
+func expandDiskEncryptionSetIdentity(input []interface{}) (*identity.SystemAndUserAssignedMap, error) {
 	expanded, err := identity.ExpandSystemAssigned(input)
 	if err != nil {
 		return nil, err
 	}
 
-	return &compute.EncryptionSetIdentity{
-		Type: compute.DiskEncryptionSetIdentityType(string(expanded.Type)),
+	return &identity.SystemAndUserAssignedMap{
+		Type: identity.Type(string(expanded.Type)),
 	}, nil
 }
 
-func flattenDiskEncryptionSetIdentity(input *compute.EncryptionSetIdentity) []interface{} {
+func flattenDiskEncryptionSetIdentity(input *identity.SystemAndUserAssignedMap) []interface{} {
 	var transform *identity.SystemAssigned
 
 	if input != nil {
 		transform = &identity.SystemAssigned{
 			Type: identity.Type(string(input.Type)),
 		}
-		if input.PrincipalID != nil {
-			transform.PrincipalId = *input.PrincipalID
+		if input.PrincipalId != "" {
+			transform.PrincipalId = input.PrincipalId
 		}
-		if input.TenantID != nil {
-			transform.TenantId = *input.TenantID
+		if input.TenantId != "" {
+			transform.TenantId = input.TenantId
 		}
 	}
 

@@ -3,12 +3,12 @@ package compute_test
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/sdk/2022-03-02/diskencryptionsets"
 	"testing"
 
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
@@ -120,17 +120,17 @@ func TestAccDiskEncryptionSet_withEncryptionType(t *testing.T) {
 }
 
 func (DiskEncryptionSetResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
-	id, err := parse.DiskEncryptionSetID(state.ID)
+	id, err := diskencryptionsets.ParseDiskEncryptionSetID(state.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := clients.Compute.DiskEncryptionSetsClient.Get(ctx, id.ResourceGroup, id.Name)
+	resp, err := clients.Compute.DiskEncryptionSetsClient.Get(ctx, *id)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving Compute Disk Encryption Set %q", id.String())
 	}
 
-	return utils.Bool(resp.ID != nil), nil
+	return utils.Bool(resp.Model != nil), nil
 }
 
 func (DiskEncryptionSetResource) dependencies(data acceptance.TestData) string {

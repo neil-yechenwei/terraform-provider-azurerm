@@ -4,6 +4,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/marketplaceordering/mgmt/2015-06-01/marketplaceordering"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/common"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/sdk/2022-03-02/diskencryptionsets"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/sdk/2022-03-02/disks"
 )
 
 type Client struct {
@@ -12,9 +14,9 @@ type Client struct {
 	CapacityReservationGroupsClient *compute.CapacityReservationGroupsClient
 	DedicatedHostsClient            *compute.DedicatedHostsClient
 	DedicatedHostGroupsClient       *compute.DedicatedHostGroupsClient
-	DisksClient                     *compute.DisksClient
+	DisksClient                     *disks.DisksClient
 	DiskAccessClient                *compute.DiskAccessesClient
-	DiskEncryptionSetsClient        *compute.DiskEncryptionSetsClient
+	DiskEncryptionSetsClient        *diskencryptionsets.DiskEncryptionSetsClient
 	GalleriesClient                 *compute.GalleriesClient
 	GalleryImagesClient             *compute.GalleryImagesClient
 	GalleryImageVersionsClient      *compute.GalleryImageVersionsClient
@@ -50,13 +52,13 @@ func NewClient(o *common.ClientOptions) *Client {
 	dedicatedHostGroupsClient := compute.NewDedicatedHostGroupsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&dedicatedHostGroupsClient.Client, o.ResourceManagerAuthorizer)
 
-	disksClient := compute.NewDisksClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	disksClient := disks.NewDisksClientWithBaseURI(o.ResourceManagerEndpoint)
 	o.ConfigureClient(&disksClient.Client, o.ResourceManagerAuthorizer)
 
 	diskAccessClient := compute.NewDiskAccessesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&diskAccessClient.Client, o.ResourceManagerAuthorizer)
 
-	diskEncryptionSetsClient := compute.NewDiskEncryptionSetsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
+	diskEncryptionSetsClient := diskencryptionsets.NewDiskEncryptionSetsClientWithBaseURI(o.ResourceManagerEndpoint)
 	o.ConfigureClient(&diskEncryptionSetsClient.Client, o.ResourceManagerAuthorizer)
 
 	galleriesClient := compute.NewGalleriesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
