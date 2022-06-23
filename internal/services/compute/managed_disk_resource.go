@@ -55,6 +55,8 @@ func resourceManagedDisk() *pluginsdk.Resource {
 
 			"resource_group_name": azure.SchemaResourceGroupName(),
 
+			// As `PremiumV2_LRS` is only supported by Track2, so it has to hard-code here.
+			// TODO: update `PremiumV2_LRS` once Pandora supports Compute RP
 			"storage_account_type": {
 				Type:     pluginsdk.TypeString,
 				Required: true,
@@ -65,6 +67,7 @@ func resourceManagedDisk() *pluginsdk.Resource {
 					string(compute.StorageAccountTypesPremiumZRS),
 					string(compute.StorageAccountTypesStandardSSDLRS),
 					string(compute.StorageAccountTypesUltraSSDLRS),
+					"PremiumV2_LRS",
 				}, false),
 				DiffSuppressFunc: suppress.CaseDifference,
 			},
