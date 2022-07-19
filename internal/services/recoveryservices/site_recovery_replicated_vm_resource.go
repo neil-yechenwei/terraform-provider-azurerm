@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/recoveryservices/mgmt/2018-07-10/siterecovery"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/legacysdk/compute"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/recoveryservices/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/recoveryservices/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
@@ -162,10 +162,10 @@ func resourceSiteRecoveryReplicatedVM() *pluginsdk.Resource {
 							Required: true,
 							ForceNew: true,
 							ValidateFunc: validation.StringInSlice([]string{
-								string(compute.DiskStorageAccountTypesStandardLRS),
-								string(compute.DiskStorageAccountTypesPremiumLRS),
-								string(compute.DiskStorageAccountTypesStandardSSDLRS),
-								string(compute.DiskStorageAccountTypesUltraSSDLRS),
+								string(compute.StandardLRS),
+								string(compute.PremiumLRS),
+								string(compute.StandardSSDLRS),
+								string(compute.UltraSSDLRS),
 							}, false),
 						},
 						"target_replica_disk_type": {
@@ -173,10 +173,10 @@ func resourceSiteRecoveryReplicatedVM() *pluginsdk.Resource {
 							Required: true,
 							ForceNew: true,
 							ValidateFunc: validation.StringInSlice([]string{
-								string(compute.DiskStorageAccountTypesStandardLRS),
-								string(compute.DiskStorageAccountTypesPremiumLRS),
-								string(compute.DiskStorageAccountTypesStandardSSDLRS),
-								string(compute.DiskStorageAccountTypesUltraSSDLRS),
+								string(compute.StandardLRS),
+								string(compute.PremiumLRS),
+								string(compute.StandardSSDLRS),
+								string(compute.UltraSSDLRS),
 							}, false),
 						},
 						"target_disk_encryption_set_id": {

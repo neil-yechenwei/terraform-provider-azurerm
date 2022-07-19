@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/legacysdk/compute"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
@@ -822,7 +822,7 @@ func (VirtualMachineScaleSetResource) hasLoadBalancer(ctx context.Context, clien
 	}
 
 	// Upgrading to the 2021-07-01 exposed a new expand parameter in the GET method
-	read, err := client.Legacy.VMScaleSetClient.Get(ctx, id.ResourceGroup, id.Name, compute.ExpandTypesForGetVMScaleSetsUserData)
+	read, err := client.Legacy.VMScaleSetClient.Get(ctx, id.ResourceGroup, id.Name, compute.UserData)
 	if err != nil {
 		return err
 	}
@@ -861,7 +861,7 @@ func (VirtualMachineScaleSetResource) hasApplicationGateway(ctx context.Context,
 	}
 
 	// Upgrading to the 2021-07-01 exposed a new expand parameter in the GET method
-	read, err := client.Legacy.VMScaleSetClient.Get(ctx, id.ResourceGroup, id.Name, compute.ExpandTypesForGetVMScaleSetsUserData)
+	read, err := client.Legacy.VMScaleSetClient.Get(ctx, id.ResourceGroup, id.Name, compute.UserData)
 	if err != nil {
 		return err
 	}
@@ -900,7 +900,7 @@ func (t VirtualMachineScaleSetResource) Exists(ctx context.Context, clients *cli
 	}
 
 	// Upgrading to the 2021-07-01 exposed a new expand parameter in the GET method
-	resp, err := clients.Legacy.VMScaleSetClient.Get(ctx, id.ResourceGroup, id.Name, compute.ExpandTypesForGetVMScaleSetsUserData)
+	resp, err := clients.Legacy.VMScaleSetClient.Get(ctx, id.ResourceGroup, id.Name, compute.UserData)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving Compute Virtual Machine Scale Set %q", id)
 	}

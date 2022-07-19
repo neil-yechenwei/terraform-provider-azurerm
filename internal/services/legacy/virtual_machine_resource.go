@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-08-01/network"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
@@ -17,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
 	compute2 "github.com/hashicorp/terraform-provider-azurerm/internal/services/compute"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/legacysdk/compute"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/validate"
 	networkParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/parse"
@@ -1432,9 +1432,9 @@ func expandAzureRmVirtualMachineIdentity(d *pluginsdk.ResourceData) *compute.Vir
 	identity := identities[0].(map[string]interface{})
 	identityType := compute.ResourceIdentityType(identity["type"].(string))
 
-	identityIds := make(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue)
+	identityIds := make(map[string]*compute.UserAssignedIdentitiesValue)
 	for _, id := range identity["identity_ids"].([]interface{}) {
-		identityIds[id.(string)] = &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{}
+		identityIds[id.(string)] = &compute.UserAssignedIdentitiesValue{}
 	}
 
 	vmIdentity := compute.VirtualMachineIdentity{
@@ -1696,7 +1696,7 @@ func expandAzureRmVirtualMachineDataDisk(d *pluginsdk.ResourceData) ([]compute.D
 		if vhdURI != "" && managedDiskType != "" {
 			return nil, fmt.Errorf("[ERROR] Conflict between `vhd_uri` and `managed_disk_type` (only one or the other can be used)")
 		}
-		if managedDiskID == "" && vhdURI == "" && strings.EqualFold(string(data_disk.CreateOption), string(compute.DiskCreateOptionAttach)) {
+		if managedDiskID == "" && vhdURI == "" && strings.EqualFold(string(data_disk.CreateOption), string(compute.Attach)) {
 			return nil, fmt.Errorf("[ERROR] Must specify `vhd_uri` or `managed_disk_id` to attach")
 		}
 
@@ -1853,7 +1853,7 @@ func expandAzureRmVirtualMachineOsDisk(d *pluginsdk.ResourceData) (*compute.OSDi
 		return nil, fmt.Errorf("[ERROR] Conflict between `vhd_uri` and `managed_disk_type` (only one or the other can be used)")
 	}
 	// END: code to be removed after GH-13016 is merged
-	if managedDiskID == "" && vhdURI == "" && strings.EqualFold(string(osDisk.CreateOption), string(compute.DiskCreateOptionAttach)) {
+	if managedDiskID == "" && vhdURI == "" && strings.EqualFold(string(osDisk.CreateOption), string(compute.Attach)) {
 		return nil, fmt.Errorf("[ERROR] Must specify `vhd_uri` or `managed_disk_id` to attach")
 	}
 

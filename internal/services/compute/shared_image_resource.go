@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/legacysdk/compute"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
@@ -76,8 +76,8 @@ func resourceSharedImage() *pluginsdk.Resource {
 				Elem: &pluginsdk.Schema{
 					Type: pluginsdk.TypeString,
 					ValidateFunc: validation.StringInSlice([]string{
-						string(compute.DiskStorageAccountTypesStandardLRS),
-						string(compute.DiskStorageAccountTypesPremiumLRS),
+						string(compute.StandardLRS),
+						string(compute.PremiumLRS),
 					}, false),
 				},
 			},
@@ -95,8 +95,8 @@ func resourceSharedImage() *pluginsdk.Resource {
 				Default:  string(compute.HyperVGenerationTypesV1),
 				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
-					string(compute.HyperVGenerationV1),
-					string(compute.HyperVGenerationV2),
+					string(compute.V1),
+					string(compute.V2),
 				}, false),
 			},
 
@@ -298,9 +298,9 @@ func resourceSharedImageCreateUpdate(d *pluginsdk.ResourceData, meta interface{}
 	}
 
 	if d.Get("specialized").(bool) {
-		image.GalleryImageProperties.OsState = compute.OperatingSystemStateTypesSpecialized
+		image.GalleryImageProperties.OsState = compute.Specialized
 	} else {
-		image.GalleryImageProperties.OsState = compute.OperatingSystemStateTypesGeneralized
+		image.GalleryImageProperties.OsState = compute.Generalized
 	}
 
 	future, err := client.CreateOrUpdate(ctx, id.ResourceGroup, id.GalleryName, id.ImageName, image)
@@ -392,7 +392,7 @@ func resourceSharedImageRead(d *pluginsdk.ResourceData, meta interface{}) error 
 		d.Set("min_recommended_memory_in_gb", minRecommendedMemoryInGB)
 
 		d.Set("os_type", string(props.OsType))
-		d.Set("specialized", props.OsState == compute.OperatingSystemStateTypesSpecialized)
+		d.Set("specialized", props.OsState == compute.Specialized)
 		d.Set("hyper_v_generation", string(props.HyperVGeneration))
 		d.Set("privacy_statement_uri", props.PrivacyStatementURI)
 		d.Set("release_note_uri", props.ReleaseNoteURI)

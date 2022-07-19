@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/legacysdk/compute"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	validate2 "github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/validate"
@@ -218,8 +218,8 @@ func resourceVirtualMachineScaleSet() *pluginsdk.Resource {
 				Optional: true,
 				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
-					string(compute.VirtualMachinePriorityTypesLow),
-					string(compute.VirtualMachinePriorityTypesRegular),
+					string(compute.Low),
+					string(compute.Regular),
 				}, false),
 			},
 
@@ -804,7 +804,7 @@ func resourceVirtualMachineScaleSetCreateUpdate(d *pluginsdk.ResourceData, meta 
 
 	if d.IsNewResource() {
 		// Upgrading to the 2021-07-01 exposed a new expand parameter in the GET method
-		existing, err := client.Get(ctx, id.ResourceGroup, id.Name, compute.ExpandTypesForGetVMScaleSetsUserData)
+		existing, err := client.Get(ctx, id.ResourceGroup, id.Name, compute.UserData)
 		if err != nil {
 			if !utils.ResponseWasNotFound(existing.Response) {
 				return fmt.Errorf("checking for presence of existing %s: %s", id, err)
@@ -876,12 +876,12 @@ func resourceVirtualMachineScaleSetCreateUpdate(d *pluginsdk.ResourceData, meta 
 		// OrchestrationMode needs to be hardcoded to Uniform, for the
 		// standard VMSS resource, since virtualMachineProfile is now supported
 		// in both VMSS and Orchestrated VMSS...
-		OrchestrationMode:    compute.OrchestrationModeUniform,
+		OrchestrationMode:    compute.Uniform,
 		Overprovision:        &overprovision,
 		SinglePlacementGroup: &singlePlacementGroup,
 	}
 
-	if strings.EqualFold(priority, string(compute.VirtualMachinePriorityTypesLow)) {
+	if strings.EqualFold(priority, string(compute.Low)) {
 		scaleSetProps.VirtualMachineProfile.EvictionPolicy = compute.VirtualMachineEvictionPolicyTypes(evictionPolicy)
 	}
 
@@ -948,7 +948,7 @@ func resourceVirtualMachineScaleSetRead(d *pluginsdk.ResourceData, meta interfac
 	}
 
 	// Upgrading to the 2021-07-01 exposed a new expand parameter in the GET method
-	resp, err := client.Get(ctx, id.ResourceGroup, id.Name, compute.ExpandTypesForGetVMScaleSetsUserData)
+	resp, err := client.Get(ctx, id.ResourceGroup, id.Name, compute.UserData)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
 			log.Printf("[INFO] AzureRM Virtual Machine Scale Set (%s) Not Found. Removing from State", id.Name)
@@ -1977,9 +1977,9 @@ func expandAzureRmVirtualMachineScaleSetIdentity(d *pluginsdk.ResourceData) *com
 	identity := identities[0].(map[string]interface{})
 	identityType := compute.ResourceIdentityType(identity["type"].(string))
 
-	identityIds := make(map[string]*compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue)
+	identityIds := make(map[string]*compute.UserAssignedIdentitiesValue)
 	for _, id := range identity["identity_ids"].([]interface{}) {
-		identityIds[id.(string)] = &compute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{}
+		identityIds[id.(string)] = &compute.UserAssignedIdentitiesValue{}
 	}
 
 	vmssIdentity := compute.VirtualMachineScaleSetIdentity{
