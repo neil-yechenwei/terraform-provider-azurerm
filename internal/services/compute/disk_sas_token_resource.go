@@ -1,6 +1,8 @@
 package compute
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2022-03-02/disks"
 	"log"
@@ -14,6 +16,18 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 )
+
+type Result struct {
+	Properties Properties `tfschema:"properties"`
+}
+
+type Properties struct {
+	Output Output `tfschema:"output"`
+}
+
+type Output struct {
+	AccessSAS string `tfschema:"accessSAS"`
+}
 
 func resourceManagedDiskSasToken() *pluginsdk.Resource {
 
@@ -100,14 +114,25 @@ func resourceManagedDiskSasTokenCreate(d *pluginsdk.ResourceData, meta interface
 				return fmt.Errorf("active SAS Token for Disk Export already exists, cannot create another one %s: %+v", *diskId, err)
 			}
 
-			err := client.GrantAccessThenPoll(ctx, *diskId, grantAccessData)
+			future, err := client.GrantAccess(ctx, *diskId, grantAccessData)
 			if err != nil {
-				return fmt.Errorf("granting access to %s: %+v", *diskId, err)
+				return fmt.Errorf("performing GrantAccess: %+v", err)
+			}
+
+			if err := future.Poller.PollUntilDone(); err != nil {
+				return fmt.Errorf("polling after GrantAccess: %+v", err)
+			}
+
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(future.Poller.HttpResponse.Body)
+			var result Result
+			err = json.Unmarshal([]byte(buf.String()), &result)
+			if err != nil {
+				return err
 			}
 
 			d.SetId(diskId.ID())
-			//sasToken := *read.AccessSAS
-			//d.Set("sas_url", sasToken)
+			d.Set("sas_url", result.Properties.Output.AccessSAS)
 		}
 	}
 
