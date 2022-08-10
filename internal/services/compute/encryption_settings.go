@@ -1,7 +1,7 @@
 package compute
 
 import (
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2022-03-02/disks"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
@@ -63,42 +63,42 @@ func encryptionSettingsSchema() *pluginsdk.Schema {
 	}
 }
 
-func expandManagedDiskEncryptionSettings(settings map[string]interface{}) *compute.EncryptionSettingsCollection {
+func expandManagedDiskEncryptionSettings(settings map[string]interface{}) *disks.EncryptionSettingsCollection {
 	enabled := settings["enabled"].(bool)
-	config := &compute.EncryptionSettingsCollection{
-		Enabled: utils.Bool(enabled),
+	config := &disks.EncryptionSettingsCollection{
+		Enabled: enabled,
 	}
 
-	var diskEncryptionKey *compute.KeyVaultAndSecretReference
+	var diskEncryptionKey *disks.KeyVaultAndSecretReference
 	if v := settings["disk_encryption_key"].([]interface{}); len(v) > 0 {
 		dek := v[0].(map[string]interface{})
 
 		secretURL := dek["secret_url"].(string)
 		sourceVaultId := dek["source_vault_id"].(string)
-		diskEncryptionKey = &compute.KeyVaultAndSecretReference{
-			SecretURL: utils.String(secretURL),
-			SourceVault: &compute.SourceVault{
-				ID: utils.String(sourceVaultId),
+		diskEncryptionKey = &disks.KeyVaultAndSecretReference{
+			SecretUrl: secretURL,
+			SourceVault: disks.SourceVault{
+				Id: utils.String(sourceVaultId),
 			},
 		}
 	}
 
-	var keyEncryptionKey *compute.KeyVaultAndKeyReference
+	var keyEncryptionKey *disks.KeyVaultAndKeyReference
 	if v := settings["key_encryption_key"].([]interface{}); len(v) > 0 {
 		kek := v[0].(map[string]interface{})
 
 		secretURL := kek["key_url"].(string)
 		sourceVaultId := kek["source_vault_id"].(string)
-		keyEncryptionKey = &compute.KeyVaultAndKeyReference{
-			KeyURL: utils.String(secretURL),
-			SourceVault: &compute.SourceVault{
-				ID: utils.String(sourceVaultId),
+		keyEncryptionKey = &disks.KeyVaultAndKeyReference{
+			KeyUrl: secretURL,
+			SourceVault: disks.SourceVault{
+				Id: utils.String(sourceVaultId),
 			},
 		}
 	}
 
 	// at this time we only support a single element
-	config.EncryptionSettings = &[]compute.EncryptionSettingsElement{
+	config.EncryptionSettings = &[]disks.EncryptionSettingsElement{
 		{
 			DiskEncryptionKey: diskEncryptionKey,
 			KeyEncryptionKey:  keyEncryptionKey,
@@ -107,14 +107,14 @@ func expandManagedDiskEncryptionSettings(settings map[string]interface{}) *compu
 	return config
 }
 
-func flattenManagedDiskEncryptionSettings(encryptionSettings *compute.EncryptionSettingsCollection) []interface{} {
+func flattenManagedDiskEncryptionSettings(encryptionSettings *disks.EncryptionSettingsCollection) []interface{} {
 	if encryptionSettings == nil {
 		return []interface{}{}
 	}
 
 	enabled := false
-	if encryptionSettings.Enabled != nil {
-		enabled = *encryptionSettings.Enabled
+	if encryptionSettings.Enabled {
+		enabled = encryptionSettings.Enabled
 	}
 
 	diskEncryptionKeys := make([]interface{}, 0)
@@ -125,13 +125,13 @@ func flattenManagedDiskEncryptionSettings(encryptionSettings *compute.Encryption
 
 		if key := settings.DiskEncryptionKey; key != nil {
 			secretUrl := ""
-			if key.SecretURL != nil {
-				secretUrl = *key.SecretURL
+			if key.SecretUrl != "" {
+				secretUrl = key.SecretUrl
 			}
 
 			sourceVaultId := ""
-			if key.SourceVault != nil && key.SourceVault.ID != nil {
-				sourceVaultId = *key.SourceVault.ID
+			if key.SourceVault.Id != nil {
+				sourceVaultId = *key.SourceVault.Id
 			}
 
 			diskEncryptionKeys = append(diskEncryptionKeys, map[string]interface{}{
@@ -142,13 +142,13 @@ func flattenManagedDiskEncryptionSettings(encryptionSettings *compute.Encryption
 
 		if key := settings.KeyEncryptionKey; key != nil {
 			keyUrl := ""
-			if key.KeyURL != nil {
-				keyUrl = *key.KeyURL
+			if key.KeyUrl != "" {
+				keyUrl = key.KeyUrl
 			}
 
 			sourceVaultId := ""
-			if key.SourceVault != nil && key.SourceVault.ID != nil {
-				sourceVaultId = *key.SourceVault.ID
+			if key.SourceVault.Id != nil {
+				sourceVaultId = *key.SourceVault.Id
 			}
 
 			keyEncryptionKeys = append(keyEncryptionKeys, map[string]interface{}{
