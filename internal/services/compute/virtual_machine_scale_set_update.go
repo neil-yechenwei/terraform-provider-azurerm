@@ -3,12 +3,12 @@ package compute
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/virtualmachinescalesets"
 	"log"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/client"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
 
@@ -23,19 +23,19 @@ type virtualMachineScaleSetUpdateMetaData struct {
 	UpdateInstances bool
 
 	Client   *client.Client
-	Existing compute.VirtualMachineScaleSet
-	ID       *parse.VirtualMachineScaleSetId
+	Existing virtualmachinescalesets.VirtualMachineScaleSet
+	ID       *virtualmachinescalesets.VirtualMachineScaleSetId
 	OSType   compute.OperatingSystemTypes
 }
 
-func (metadata virtualMachineScaleSetUpdateMetaData) performUpdate(ctx context.Context, update compute.VirtualMachineScaleSetUpdate) error {
+func (metadata virtualMachineScaleSetUpdateMetaData) performUpdate(ctx context.Context, update virtualmachinescalesets.VirtualMachineScaleSetUpdate) error {
 	if metadata.AutomaticOSUpgradeIsEnabled {
 		// Virtual Machine Scale Sets with Automatic OS Upgrade enabled must have all VM instances upgraded to same
 		// Platform Image. Upgrade all VM instances to latest Virtual Machine Scale Set model while property
 		// 'upgradePolicy.automaticOSUpgradePolicy.enableAutomaticOSUpgrade' is false and then update property
 		// 'upgradePolicy.automaticOSUpgradePolicy.enableAutomaticOSUpgrade' to true
 
-		update.VirtualMachineScaleSetUpdateProperties.UpgradePolicy.AutomaticOSUpgradePolicy.EnableAutomaticOSUpgrade = utils.Bool(false)
+		update.Properties.UpgradePolicy.AutomaticOSUpgradePolicy.EnableAutomaticOSUpgrade = utils.Bool(false)
 	}
 
 	if err := metadata.updateVmss(ctx, update); err != nil {
@@ -45,18 +45,18 @@ func (metadata virtualMachineScaleSetUpdateMetaData) performUpdate(ctx context.C
 	// if we update the SKU, we also need to subsequently roll the instances using the `UpdateInstances` API
 	if metadata.UpdateInstances {
 		userWantsToRollInstances := metadata.CanRollInstancesWhenRequired
-		upgradeMode := metadata.Existing.VirtualMachineScaleSetProperties.UpgradePolicy.Mode
+		upgradeMode := metadata.Existing.Properties.UpgradePolicy.Mode
 
 		if userWantsToRollInstances {
 			// If the updated image version is not "latest" and upgrade mode is automatic then azure will roll the instances automatically.
 			// Calling upgradeInstancesForAutomaticUpgradePolicy() in this case will cause an error.
-			if upgradeMode == compute.UpgradeModeAutomatic && isUsingLatestImage(update) {
+			if *upgradeMode == virtualmachinescalesets.UpgradeModeAutomatic && isUsingLatestImage(update) {
 				if err := metadata.upgradeInstancesForAutomaticUpgradePolicy(ctx); err != nil {
 					return err
 				}
 			}
 
-			if upgradeMode == compute.UpgradeModeManual {
+			if *upgradeMode == virtualmachinescalesets.UpgradeModeManual {
 				if err := metadata.upgradeInstancesForManualUpgradePolicy(ctx); err != nil {
 					return err
 				}
@@ -71,7 +71,7 @@ func (metadata virtualMachineScaleSetUpdateMetaData) performUpdate(ctx context.C
 		// 'upgradePolicy.automaticOSUpgradePolicy.enableAutomaticOSUpgrade' to true
 
 		// finally set this to true
-		update.VirtualMachineScaleSetUpdateProperties.UpgradePolicy.AutomaticOSUpgradePolicy.EnableAutomaticOSUpgrade = utils.Bool(true)
+		update.Properties.UpgradePolicy.AutomaticOSUpgradePolicy.EnableAutomaticOSUpgrade = utils.Bool(true)
 
 		// then update the VM
 		if err := metadata.updateVmss(ctx, update); err != nil {
@@ -82,21 +82,16 @@ func (metadata virtualMachineScaleSetUpdateMetaData) performUpdate(ctx context.C
 	return nil
 }
 
-func (metadata virtualMachineScaleSetUpdateMetaData) updateVmss(ctx context.Context, update compute.VirtualMachineScaleSetUpdate) error {
+func (metadata virtualMachineScaleSetUpdateMetaData) updateVmss(ctx context.Context, update virtualmachinescalesets.VirtualMachineScaleSetUpdate) error {
 	client := metadata.Client.VMScaleSetClient
 	id := metadata.ID
 
-	log.Printf("[DEBUG] Updating %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.Name, id.ResourceGroup)
-	future, err := client.Update(ctx, id.ResourceGroup, id.Name, update)
+	log.Printf("[DEBUG] Updating %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName)
+	err := client.UpdateThenPoll(ctx, *id, update)
 	if err != nil {
-		return fmt.Errorf("updating %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.Name, id.ResourceGroup, err)
+		return fmt.Errorf("updating %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName, err)
 	}
-
-	log.Printf("[DEBUG] Waiting for update of %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.Name, id.ResourceGroup)
-	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for update of %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.Name, id.ResourceGroup, err)
-	}
-	log.Printf("[DEBUG] Updated %s Virtual Machine Scale Set %q (Resource Group %q).", metadata.OSType, id.Name, id.ResourceGroup)
+	log.Printf("[DEBUG] Updated %s Virtual Machine Scale Set %q (Resource Group %q).", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName)
 
 	return nil
 }
@@ -106,17 +101,17 @@ func (metadata virtualMachineScaleSetUpdateMetaData) upgradeInstancesForAutomati
 	rollingUpgradesClient := metadata.Client.VMScaleSetRollingUpgradesClient
 	id := metadata.ID
 
-	log.Printf("[DEBUG] Updating instances for %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.Name, id.ResourceGroup)
-	future, err := rollingUpgradesClient.StartOSUpgrade(ctx, id.ResourceGroup, id.Name)
+	log.Printf("[DEBUG] Updating instances for %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName)
+	future, err := rollingUpgradesClient.StartOSUpgrade(ctx, id.ResourceGroupName, id.VirtualMachineScaleSetName)
 	if err != nil {
-		return fmt.Errorf("updating instances for %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.Name, id.ResourceGroup, err)
+		return fmt.Errorf("updating instances for %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName, err)
 	}
 
-	log.Printf("[DEBUG] Waiting for update of instances for %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.Name, id.ResourceGroup)
+	log.Printf("[DEBUG] Waiting for update of instances for %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName)
 	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for update of instances for %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.Name, id.ResourceGroup, err)
+		return fmt.Errorf("waiting for update of instances for %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName, err)
 	}
-	log.Printf("[DEBUG] Updated instances for %s Virtual Machine Scale Set %q (Resource Group %q).", metadata.OSType, id.Name, id.ResourceGroup)
+	log.Printf("[DEBUG] Updated instances for %s Virtual Machine Scale Set %q (Resource Group %q).", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName)
 
 	return nil
 }
@@ -125,11 +120,11 @@ func (metadata virtualMachineScaleSetUpdateMetaData) upgradeInstancesForManualUp
 	client := metadata.Client.VMScaleSetClient
 	id := metadata.ID
 
-	log.Printf("[DEBUG] Rolling the VM Instances for %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.Name, id.ResourceGroup)
+	log.Printf("[DEBUG] Rolling the VM Instances for %s Virtual Machine Scale Set %q (Resource Group %q)..", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName)
 	instancesClient := metadata.Client.VMScaleSetVMsClient
-	instances, err := instancesClient.ListComplete(ctx, id.ResourceGroup, id.Name, "", "", "")
+	instances, err := instancesClient.ListComplete(ctx, id.ResourceGroupName, id.VirtualMachineScaleSetName, "", "", "")
 	if err != nil {
-		return fmt.Errorf("listing VM Instances for %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.Name, id.ResourceGroup, err)
+		return fmt.Errorf("listing VM Instances for %s Virtual Machine Scale Set %q (Resource Group %q): %+v", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName, err)
 	}
 
 	log.Printf("[DEBUG] Determining instances to roll..")
@@ -154,46 +149,39 @@ func (metadata virtualMachineScaleSetUpdateMetaData) upgradeInstancesForManualUp
 		instanceIds := []string{instanceId}
 
 		log.Printf("[DEBUG] Updating Instance %q to the Latest Configuration..", instanceId)
-		ids := compute.VirtualMachineScaleSetVMInstanceRequiredIDs{
-			InstanceIds: &instanceIds,
+		ids := virtualmachinescalesets.VirtualMachineScaleSetVMInstanceRequiredIDs{
+			InstanceIds: instanceIds,
 		}
-		future, err := client.UpdateInstances(ctx, id.ResourceGroup, id.Name, ids)
+		err := client.UpdateInstancesThenPoll(ctx, *id, ids)
 		if err != nil {
-			return fmt.Errorf("updating Instance %q (%s VM Scale Set %q / Resource Group %q) to the Latest Configuration: %+v", instanceId, metadata.OSType, id.Name, id.ResourceGroup, err)
-		}
-
-		if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-			return fmt.Errorf("waiting for update of Instance %q (%s VM Scale Set %q / Resource Group %q) to the Latest Configuration: %+v", instanceId, metadata.OSType, id.Name, id.ResourceGroup, err)
+			return fmt.Errorf("updating Instance %q (%s VM Scale Set %q / Resource Group %q) to the Latest Configuration: %+v", instanceId, metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName, err)
 		}
 		log.Printf("[DEBUG] Updated Instance %q to the Latest Configuration.", instanceId)
 
 		// TODO: does this want to be a separate, user-configurable toggle?
 		log.Printf("[DEBUG] Reimaging Instance %q..", instanceId)
-		reimageInput := &compute.VirtualMachineScaleSetReimageParameters{
+		reimageInput := virtualmachinescalesets.VirtualMachineScaleSetReimageParameters{
 			InstanceIds: &instanceIds,
 		}
-		reimageFuture, err := client.Reimage(ctx, id.ResourceGroup, id.Name, reimageInput)
+		err = client.ReimageThenPoll(ctx, *id, reimageInput)
 		if err != nil {
-			return fmt.Errorf("reimaging Instance %q (%s VM Scale Set %q / Resource Group %q): %+v", instanceId, metadata.OSType, id.Name, id.ResourceGroup, err)
+			return fmt.Errorf("reimaging Instance %q (%s VM Scale Set %q / Resource Group %q): %+v", instanceId, metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName, err)
 		}
 
-		if err = reimageFuture.WaitForCompletionRef(ctx, client.Client); err != nil {
-			return fmt.Errorf("waiting for reimage of Instance %q (%s VM Scale Set %q / Resource Group %q): %+v", instanceId, metadata.OSType, id.Name, id.ResourceGroup, err)
-		}
 		log.Printf("[DEBUG] Reimaged Instance %q..", instanceId)
 	}
 
-	log.Printf("[DEBUG] Rolled the VM Instances for %s Virtual Machine Scale Set %q (Resource Group %q).", metadata.OSType, id.Name, id.ResourceGroup)
+	log.Printf("[DEBUG] Rolled the VM Instances for %s Virtual Machine Scale Set %q (Resource Group %q).", metadata.OSType, id.VirtualMachineScaleSetName, id.ResourceGroupName)
 	return nil
 }
 
-func isUsingLatestImage(update compute.VirtualMachineScaleSetUpdate) bool {
-	if update.VirtualMachineProfile.StorageProfile == nil ||
-		update.VirtualMachineProfile.StorageProfile.ImageReference == nil ||
-		update.VirtualMachineProfile.StorageProfile.ImageReference.Version == nil {
+func isUsingLatestImage(update virtualmachinescalesets.VirtualMachineScaleSetUpdate) bool {
+	if update.Properties.VirtualMachineProfile.StorageProfile == nil ||
+		update.Properties.VirtualMachineProfile.StorageProfile.ImageReference == nil ||
+		update.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Version == nil {
 		return false
 	}
-	if strings.EqualFold(*update.VirtualMachineProfile.StorageProfile.ImageReference.Version, "latest") {
+	if strings.EqualFold(*update.Properties.VirtualMachineProfile.StorageProfile.ImageReference.Version, "latest") {
 		return true
 	}
 	return false

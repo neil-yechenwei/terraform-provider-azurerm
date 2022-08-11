@@ -3,6 +3,7 @@ package compute
 import (
 	"bytes"
 	"fmt"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/virtualmachines"
 	"log"
 	"regexp"
 
@@ -43,14 +44,14 @@ func SSHKeysSchema(isVirtualMachine bool) *pluginsdk.Schema {
 	}
 }
 
-func ExpandSSHKeys(input []interface{}) []compute.SSHPublicKey {
-	output := make([]compute.SSHPublicKey, 0)
+func ExpandSSHKeys(input []interface{}) []virtualmachines.SshPublicKey {
+	output := make([]virtualmachines.SshPublicKey, 0)
 
 	for _, v := range input {
 		raw := v.(map[string]interface{})
 
 		username := raw["username"].(string)
-		output = append(output, compute.SSHPublicKey{
+		output = append(output, virtualmachines.SshPublicKey{
 			KeyData: utils.String(raw["public_key"].(string)),
 			Path:    utils.String(formatUsernameForAuthorizedKeysPath(username)),
 		})

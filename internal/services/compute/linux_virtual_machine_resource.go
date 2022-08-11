@@ -11,8 +11,10 @@ import (
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/availabilitysets"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/proximityplacementgroups"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/virtualmachines"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	azValidate "github.com/hashicorp/terraform-provider-azurerm/helpers/validate"
@@ -21,7 +23,6 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	computeValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/validate"
 	networkValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/validate"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/base64"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/suppress"
@@ -310,7 +311,7 @@ func resourceLinuxVirtualMachine() *pluginsdk.Resource {
 				ValidateFunc: validation.IntAtLeast(-1),
 			},
 
-			"tags": tags.Schema(),
+			"tags": commonschema.Tags(),
 
 			"termination_notification": virtualMachineTerminationNotificationSchema(),
 
@@ -402,7 +403,7 @@ func resourceLinuxVirtualMachineCreate(d *pluginsdk.ResourceData, meta interface
 		return fmt.Errorf("expanding `identity`: %+v", err)
 	}
 	planRaw := d.Get("plan").([]interface{})
-	plan := expandPlan(planRaw)
+	plan := expandVirtualMachinePlan(planRaw)
 	priority := compute.VirtualMachinePriorityTypes(d.Get("priority").(string))
 	provisionVMAgent := d.Get("provision_vm_agent").(bool)
 	size := d.Get("size").(string)
@@ -431,40 +432,41 @@ func resourceLinuxVirtualMachineCreate(d *pluginsdk.ResourceData, meta interface
 	sshKeysRaw := d.Get("admin_ssh_key").(*pluginsdk.Set).List()
 	sshKeys := ExpandSSHKeys(sshKeysRaw)
 
-	params := compute.VirtualMachine{
+	vmSize := virtualmachines.VirtualMachineSizeTypes(size)
+	params := virtualmachines.VirtualMachine{
 		Name:             utils.String(id.Name),
 		ExtendedLocation: expandEdgeZone(d.Get("edge_zone").(string)),
-		Location:         utils.String(location),
+		Location:         location,
 		Identity:         identity,
 		Plan:             plan,
-		VirtualMachineProperties: &compute.VirtualMachineProperties{
-			HardwareProfile: &compute.HardwareProfile{
-				VMSize: compute.VirtualMachineSizeTypes(size),
+		Properties: &virtualmachines.VirtualMachineProperties{
+			HardwareProfile: &virtualmachines.HardwareProfile{
+				VmSize: &vmSize,
 			},
-			OsProfile: &compute.OSProfile{
+			OsProfile: &virtualmachines.OSProfile{
 				AdminUsername:            utils.String(adminUsername),
 				ComputerName:             utils.String(computerName),
 				AllowExtensionOperations: utils.Bool(allowExtensionOperations),
-				LinuxConfiguration: &compute.LinuxConfiguration{
+				LinuxConfiguration: &virtualmachines.LinuxConfiguration{
 					DisablePasswordAuthentication: utils.Bool(disablePasswordAuthentication),
 					ProvisionVMAgent:              utils.Bool(provisionVMAgent),
-					SSH: &compute.SSHConfiguration{
+					Ssh: &virtualmachines.SshConfiguration{
 						PublicKeys: &sshKeys,
 					},
 				},
 				Secrets: secrets,
 			},
-			NetworkProfile: &compute.NetworkProfile{
+			NetworkProfile: &virtualmachines.NetworkProfile{
 				NetworkInterfaces: &networkInterfaceIds,
 			},
 			Priority: priority,
-			StorageProfile: &compute.StorageProfile{
+			StorageProfile: &virtualmachines.StorageProfile{
 				ImageReference: sourceImageReference,
 				OsDisk:         osDisk,
 
 				// Data Disks are instead handled via the Association resource - as such we can send an empty value here
 				// but for Updates this'll need to be nil, else any associations will be overwritten
-				DataDisks: &[]compute.DataDisk{},
+				DataDisks: &[]virtualmachines.DataDisk{},
 			},
 
 			// Optional

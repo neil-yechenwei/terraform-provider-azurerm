@@ -3,7 +3,6 @@ package compute
 import (
 	"context"
 	"fmt"
-
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-11-01/compute"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
 	azValidate "github.com/hashicorp/terraform-provider-azurerm/helpers/validate"
@@ -67,19 +66,19 @@ func flattenVirtualMachineAdditionalCapabilities(input *compute.AdditionalCapabi
 	}
 }
 
-func expandVirtualMachineIdentity(input []interface{}) (*compute.VirtualMachineIdentity, error) {
+func expandVirtualMachineIdentity(input []interface{}) (*identity.SystemAndUserAssignedMap, error) {
 	expanded, err := identity.ExpandSystemAndUserAssignedMap(input)
 	if err != nil {
 		return nil, err
 	}
 
-	out := compute.VirtualMachineIdentity{
-		Type: compute.ResourceIdentityType(string(expanded.Type)),
+	out := identity.SystemAndUserAssignedMap{
+		Type: expanded.Type,
 	}
 	if expanded.Type == identity.TypeUserAssigned || expanded.Type == identity.TypeSystemAssignedUserAssigned {
-		out.UserAssignedIdentities = make(map[string]*compute.VirtualMachineIdentityUserAssignedIdentitiesValue)
+		out.IdentityIds = make(map[string]identity.UserAssignedIdentityDetails)
 		for k := range expanded.IdentityIds {
-			out.UserAssignedIdentities[k] = &compute.VirtualMachineIdentityUserAssignedIdentitiesValue{
+			out.IdentityIds[k] = identity.UserAssignedIdentityDetails{
 				// intentionally empty
 			}
 		}
