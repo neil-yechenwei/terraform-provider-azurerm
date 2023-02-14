@@ -302,6 +302,7 @@ resource "azurerm_netapp_volume" "test" {
   service_level       = "Standard"
   subnet_id           = azurerm_subnet.test.id
   storage_quota_in_gb = 100
+  throughput_in_mibps = 1.562
 
   tags = {
     "CreatedOnDate"    = "2022-07-08T23:50:21Z",
@@ -532,7 +533,7 @@ resource "azurerm_netapp_volume" "test" {
 
   export_policy_rule {
     rule_index        = 1
-    allowed_clients   = ["0.0.0.0/0"]
+    allowed_clients   = ["1.2.3.0/24"]
     protocols_enabled = ["NFSv3"]
     unix_read_only    = false
     unix_read_write   = true
@@ -655,7 +656,7 @@ resource "azurerm_netapp_volume" "test" {
 
   export_policy_rule {
     rule_index        = 1
-    allowed_clients   = ["0.0.0.0/0"]
+    allowed_clients   = ["1.2.3.0/24"]
     protocols_enabled = ["NFSv3"]
     unix_read_only    = false
     unix_read_write   = true
@@ -663,7 +664,7 @@ resource "azurerm_netapp_volume" "test" {
 
   export_policy_rule {
     rule_index        = 2
-    allowed_clients   = ["0.0.0.0/0"]
+    allowed_clients   = ["1.2.5.0"]
     protocols_enabled = ["NFSv3"]
     unix_read_only    = true
     unix_read_write   = false
@@ -671,7 +672,7 @@ resource "azurerm_netapp_volume" "test" {
 
   export_policy_rule {
     rule_index        = 3
-    allowed_clients   = ["0.0.0.0/0"]
+    allowed_clients   = ["1.2.6.0/24"]
     protocols_enabled = ["NFSv3"]
     unix_read_only    = true
     unix_read_write   = false
