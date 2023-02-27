@@ -334,14 +334,14 @@ func TestAccLogAnalyticsWorkspace_updateSkuFromPerGB2018(t *testing.T) {
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
 		{
-			Config: r.updateSkuFromPerGB2018(data, "PerGB2018"),
+			Config: r.basic(data),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
 			),
 		},
 		data.ImportStep(),
 		{
-			Config: r.updateSkuFromPerGB2018(data, "CapacityReservation"),
+			Config: r.withCapacityReservation(data, 2000),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
 			),
@@ -711,25 +711,4 @@ resource "azurerm_log_analytics_workspace" "test" {
   local_authentication_disabled = %[4]t
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, disableLocalAuth)
-}
-
-func (LogAnalyticsWorkspaceResource) updateSkuFromPerGB2018(data acceptance.TestData, sku string) string {
-	return fmt.Sprintf(`
-provider "azurerm" {
-  features {}
-}
-
-resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-%d"
-  location = "%s"
-}
-
-resource "azurerm_log_analytics_workspace" "test" {
-  name                = "acctestLAW-%d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-  sku                 = "%s"
-  retention_in_days   = 30
-}
-`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, sku)
 }
