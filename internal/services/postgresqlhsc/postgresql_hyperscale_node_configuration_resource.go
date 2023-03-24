@@ -3,12 +3,11 @@ package postgresqlhsc
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
-	"github.com/hashicorp/terraform-provider-azurerm/utils"
 	"time"
 
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresqlhsc/2022-11-08/configurations"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
@@ -86,8 +85,7 @@ func (r PostgreSQLHyperScaleNodeConfigurationResource) Create() sdk.ResourceFunc
 
 			parameters := &configurations.ServerConfiguration{
 				Properties: &configurations.ServerConfigurationProperties{
-					Value:  model.Value,
-					Source: utils.String("user-override"),
+					Value: model.Value,
 				},
 			}
 
@@ -122,14 +120,8 @@ func (r PostgreSQLHyperScaleNodeConfigurationResource) Update() sdk.ResourceFunc
 				return fmt.Errorf("decoding: %+v", err)
 			}
 
-			resp, err := client.GetNode(ctx, *id)
-			if err != nil {
-				return fmt.Errorf("retrieving %s: %+v", *id, err)
-			}
-
-			parameters := resp.Model
-			if parameters == nil {
-				return fmt.Errorf("retrieving %s: properties was nil", id)
+			parameters := &configurations.ServerConfiguration{
+				Properties: &configurations.ServerConfigurationProperties{},
 			}
 
 			if metadata.ResourceData.HasChange("value") {
@@ -212,8 +204,7 @@ func (r PostgreSQLHyperScaleNodeConfigurationResource) Delete() sdk.ResourceFunc
 
 			parameters := &configurations.ServerConfiguration{
 				Properties: &configurations.ServerConfigurationProperties{
-					Value:  defaultValue,
-					Source: utils.String("user-override"),
+					Value: defaultValue,
 				},
 			}
 
