@@ -116,5 +116,6 @@ var services = mapOf(
         "vmware" to "VMware",
         "videoanalyzer" to "Video Analyzer",
         "voiceservices" to "Voice Services",
-        "web" to "Web"
+        "web" to "Web",
+        "workloads" to "Workloads"
 )
