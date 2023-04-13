@@ -111,7 +111,7 @@ provider "azurerm" {
 data "azurerm_subscription" "current" {}
 
 resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-sapapp-%d"
+  name     = "acctestRG-sapcentral-%d"
   location = "%s"
 }
 
@@ -261,7 +261,7 @@ func (r WorkloadsSAPCentralServerInstanceResource) basic(data acceptance.TestDat
 %s
 
 resource "azurerm_workloads_sap_central_server_instance" "test" {
-  name                    = "acctest-sapapp-%d"
+  name                    = "acctest-sapcentral-%d"
   resource_group_name     = azurerm_resource_group.test.name
   location                = azurerm_resource_group.test.location
   sap_virtual_instance_id = azurerm_workloads_sap_virtual_instance.test.id
@@ -287,7 +287,7 @@ func (r WorkloadsSAPCentralServerInstanceResource) complete(data acceptance.Test
 %s
 
 resource "azurerm_workloads_sap_central_server_instance" "test" {
-  name                    = "acctest-sapapp-%d"
+  name                    = "acctest-sapcentral-%d"
   resource_group_name     = azurerm_resource_group.test.name
   location                = azurerm_resource_group.test.location
   sap_virtual_instance_id = azurerm_workloads_sap_virtual_instance.test.id
