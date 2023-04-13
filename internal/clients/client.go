@@ -15,6 +15,7 @@ import (
 	nginx2 "github.com/hashicorp/go-azure-sdk/resource-manager/nginx/2022-08-01"
 	redis_v2022_06_01 "github.com/hashicorp/go-azure-sdk/resource-manager/redis/2022-06-01"
 	timeseriesinsights_v2020_05_15 "github.com/hashicorp/go-azure-sdk/resource-manager/timeseriesinsights/2020-05-15"
+	workloads_v2023_04_01 "github.com/hashicorp/go-azure-sdk/resource-manager/workloads/2023-04-01"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/common"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 	aadb2c "github.com/hashicorp/terraform-provider-azurerm/internal/services/aadb2c/client"
@@ -254,6 +255,7 @@ type Client struct {
 	Vmware                *vmware.Client
 	VoiceServices         *voiceServices.Client
 	Web                   *web.Client
+	Workloads             *workloads_v2023_04_01.Client
 }
 
 // NOTE: it should be possible for this method to become Private once the top level Client's removed
