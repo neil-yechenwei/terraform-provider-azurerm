@@ -63,8 +63,6 @@ The following arguments are supported:
 
 * `grouping` - (Optional) A `grouping` block as defined below.
 
-* `identity` - (Optional) An `identity` block as defined below.
-
 * `log_analytics_workspace_id` - (Optional) The resource ID of the Log Analytics Workspace that is used for SAP Monitor. Changing this forces a new resource to be created.
 
 * `top_metrics_thresholds` - (Optional) A `top_metrics_thresholds` block as defined below.
@@ -72,14 +70,6 @@ The following arguments are supported:
 * `zone_redundancy_preference` - (Optional) The preference for zone redundancy on resources created for the SAP Monitor. Changing this forces a new resource to be created.
 
 * `tags` - (Optional) A mapping of tags which should be assigned to the SAP Monitor.
-
----
-
-An `identity` block supports the following:
-
-* `type` - (Required) The type of Managed Service Identity. Possible values are `UserAssigned`.
-
-* `identity_ids` - (Required) A list of IDs for User Assigned Managed Identity resources to be assigned.
 
 ---
 

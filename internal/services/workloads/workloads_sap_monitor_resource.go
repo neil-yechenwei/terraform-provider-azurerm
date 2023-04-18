@@ -3,15 +3,14 @@ package workloads
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/workloads/2023-04-01/saplandscapemonitor"
 	"time"
 
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
-	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/operationalinsights/2020-08-01/workspaces"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/workloads/2023-04-01/monitors"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/workloads/2023-04-01/saplandscapemonitor"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	networkValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
@@ -20,19 +19,18 @@ import (
 )
 
 type WorkloadsSAPMonitorModel struct {
-	Name                     string                       `tfschema:"name"`
-	ResourceGroupName        string                       `tfschema:"resource_group_name"`
-	Location                 string                       `tfschema:"location"`
-	AppLocation              string                       `tfschema:"app_location"`
-	Grouping                 []Grouping                   `tfschema:"grouping"`
-	Identity                 []identity.ModelUserAssigned `tfschema:"identity"`
-	LogAnalyticsWorkspaceId  string                       `tfschema:"log_analytics_workspace_id"`
-	ManagedResourceGroupName string                       `tfschema:"managed_resource_group_name"`
-	RoutingPreference        string                       `tfschema:"routing_preference"`
-	SubnetId                 string                       `tfschema:"subnet_id"`
-	TopMetricsThresholds     []TopMetricsThresholds       `tfschema:"top_metrics_thresholds"`
-	ZoneRedundancyPreference string                       `tfschema:"zone_redundancy_preference"`
-	Tags                     map[string]string            `tfschema:"tags"`
+	Name                     string                 `tfschema:"name"`
+	ResourceGroupName        string                 `tfschema:"resource_group_name"`
+	Location                 string                 `tfschema:"location"`
+	AppLocation              string                 `tfschema:"app_location"`
+	Grouping                 []Grouping             `tfschema:"grouping"`
+	LogAnalyticsWorkspaceId  string                 `tfschema:"log_analytics_workspace_id"`
+	ManagedResourceGroupName string                 `tfschema:"managed_resource_group_name"`
+	RoutingPreference        string                 `tfschema:"routing_preference"`
+	SubnetId                 string                 `tfschema:"subnet_id"`
+	TopMetricsThresholds     []TopMetricsThresholds `tfschema:"top_metrics_thresholds"`
+	ZoneRedundancyPreference string                 `tfschema:"zone_redundancy_preference"`
+	Tags                     map[string]string      `tfschema:"tags"`
 }
 
 type Grouping struct {
@@ -155,8 +153,6 @@ func (r WorkloadsSAPMonitorResource) Arguments() map[string]*pluginsdk.Schema {
 			},
 		},
 
-		"identity": commonschema.UserAssignedIdentityOptional(),
-
 		"log_analytics_workspace_id": {
 			Type:         pluginsdk.TypeString,
 			Optional:     true,
@@ -229,15 +225,9 @@ func (r WorkloadsSAPMonitorResource) Create() sdk.ResourceFunc {
 				return metadata.ResourceRequiresImport(r.ResourceType(), id)
 			}
 
-			identity, err := identity.ExpandUserAssignedMap(metadata.ResourceData.Get("identity").([]interface{}))
-			if err != nil {
-				return fmt.Errorf("expanding `identity`: %+v", err)
-			}
-
 			routingPreference := monitors.RoutingPreference(model.RoutingPreference)
 
 			parameters := &monitors.Monitor{
-				Identity: identity,
 				Location: location.Normalize(model.Location),
 				Tags:     &model.Tags,
 				Properties: &monitors.MonitorProperties{
@@ -310,14 +300,6 @@ func (r WorkloadsSAPMonitorResource) Update() sdk.ResourceFunc {
 			}
 
 			parameters := &monitors.UpdateMonitorRequest{}
-
-			if metadata.ResourceData.HasChange("identity") {
-				identityValue, err := identity.ExpandUserAssignedMap(metadata.ResourceData.Get("identity").([]interface{}))
-				if err != nil {
-					return fmt.Errorf("expanding `identity`: %+v", err)
-				}
-				parameters.Identity = identityValue
-			}
 
 			if metadata.ResourceData.HasChange("tags") {
 				parameters.Tags = &model.Tags
@@ -400,12 +382,6 @@ func (r WorkloadsSAPMonitorResource) Read() sdk.ResourceFunc {
 				ResourceGroupName: id.ResourceGroupName,
 				Location:          location.Normalize(model.Location),
 			}
-
-			identity, err := identity.FlattenUserAssignedMapToModel(model.Identity)
-			if err != nil {
-				return fmt.Errorf("flattening `identity`: %+v", err)
-			}
-			state.Identity = *identity
 
 			if props := model.Properties; props != nil {
 				state.AppLocation = *props.AppLocation

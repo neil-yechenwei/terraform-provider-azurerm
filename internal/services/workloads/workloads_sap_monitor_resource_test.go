@@ -163,18 +163,6 @@ func (r WorkloadsSAPMonitorResource) complete(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 %s
 
-resource "azurerm_user_assigned_identity" "test" {
-  name                = "acctest-uai-%d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-}
-
-resource "azurerm_role_assignment" "test" {
-  scope                = data.azurerm_subscription.current.id
-  role_definition_name = "Azure Center for SAP solutions service role"
-  principal_id         = azurerm_user_assigned_identity.test.principal_id
-}
-
 resource "azurerm_log_analytics_workspace" "test" {
   name                = "acctestLAW-%d"
   location            = azurerm_resource_group.test.location
@@ -194,49 +182,17 @@ resource "azurerm_workloads_sap_monitor" "test" {
   log_analytics_workspace_id  = azurerm_log_analytics_workspace.test.id
   zone_redundancy_preference  = "ZoneRedundantApp"
 
-  identity {
-    type = "UserAssigned"
-
-    identity_ids = [
-      azurerm_user_assigned_identity.test.id,
-    ]
-  }
-
   tags = {
     Env = "Test"
   }
 }
-`, r.template(data), data.RandomInteger, data.RandomInteger, data.RandomInteger, data.Locations.Secondary)
+`, r.template(data), data.RandomInteger, data.RandomInteger, data.Locations.Secondary)
 }
 
 func (r WorkloadsSAPMonitorResource) update(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 %s
 
-resource "azurerm_user_assigned_identity" "test" {
-  name                = "acctest-uai-%d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-}
-
-resource "azurerm_role_assignment" "test" {
-  scope                = data.azurerm_subscription.current.id
-  role_definition_name = "Azure Center for SAP solutions service role"
-  principal_id         = azurerm_user_assigned_identity.test.principal_id
-}
-
-resource "azurerm_user_assigned_identity" "test2" {
-  name                = "acctest-uai2-%d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-}
-
-resource "azurerm_role_assignment" "test2" {
-  scope                = data.azurerm_subscription.current.id
-  role_definition_name = "Azure Center for SAP solutions service role"
-  principal_id         = azurerm_user_assigned_identity.test2.principal_id
-}
-
 resource "azurerm_log_analytics_workspace" "test" {
   name                = "acctestLAW-%d"
   location            = azurerm_resource_group.test.location
@@ -256,17 +212,9 @@ resource "azurerm_workloads_sap_monitor" "test" {
   log_analytics_workspace_id  = azurerm_log_analytics_workspace.test.id
   zone_redundancy_preference  = "ZoneRedundantApp"
 
-  identity {
-    type = "UserAssigned"
-
-    identity_ids = [
-      azurerm_user_assigned_identity.test2.id,
-    ]
-  }
-
   tags = {
     Env = "Test2"
   }
 }
-`, r.template(data), data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.Locations.Secondary)
+`, r.template(data), data.RandomInteger, data.RandomInteger, data.Locations.Secondary)
 }
