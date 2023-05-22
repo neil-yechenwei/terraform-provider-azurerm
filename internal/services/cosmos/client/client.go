@@ -4,6 +4,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/cosmos-db/mgmt/2021-10-15/documentdb" // nolint: staticcheck
 	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2022-05-15/managedcassandras"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2022-05-15/sqldedicatedgateway"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2023-04-15/cosmosdb"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresqlhsc/2022-11-08/clusters"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresqlhsc/2022-11-08/configurations"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresqlhsc/2022-11-08/firewallrules"
@@ -17,6 +18,7 @@ type Client struct {
 	CassandraDatacentersClient       *documentdb.CassandraDataCentersClient
 	ClustersClient                   *clusters.ClustersClient
 	ConfigurationsClient             *configurations.ConfigurationsClient
+	CosmosDBClient                   *cosmosdb.CosmosDBClient
 	DatabaseClient                   *documentdb.DatabaseAccountsClient
 	FirewallRulesClient              *firewallrules.FirewallRulesClient
 	GremlinClient                    *documentdb.GremlinResourcesClient
@@ -45,6 +47,9 @@ func NewClient(o *common.ClientOptions) *Client {
 
 	configurationsClient := configurations.NewConfigurationsClientWithBaseURI(o.ResourceManagerEndpoint)
 	o.ConfigureClient(&configurationsClient.Client, o.ResourceManagerAuthorizer)
+
+	cosmosdbClient := cosmosdb.NewCosmosDBClientWithBaseURI(o.ResourceManagerEndpoint)
+	o.ConfigureClient(&cosmosdbClient.Client, o.ResourceManagerAuthorizer)
 
 	databaseClient := documentdb.NewDatabaseAccountsClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
 	o.ConfigureClient(&databaseClient.Client, o.ResourceManagerAuthorizer)
@@ -85,6 +90,7 @@ func NewClient(o *common.ClientOptions) *Client {
 		CassandraDatacentersClient:       &cassandraDatacentersClient,
 		ClustersClient:                   &clustersClient,
 		ConfigurationsClient:             &configurationsClient,
+		CosmosDBClient:                   &cosmosdbClient,
 		DatabaseClient:                   &databaseClient,
 		FirewallRulesClient:              &firewallRulesClient,
 		GremlinClient:                    &gremlinClient,

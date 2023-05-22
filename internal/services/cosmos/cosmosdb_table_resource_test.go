@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/cosmos-db/mgmt/2021-10-15/documentdb" // nolint: staticcheck
+	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2023-04-15/cosmosdb"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -125,7 +125,7 @@ resource "azurerm_cosmosdb_table" "test" {
   resource_group_name = azurerm_cosmosdb_account.test.resource_group_name
   account_name        = azurerm_cosmosdb_account.test.name
 }
-`, CosmosDBAccountResource{}.capabilities(data, documentdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableTable"}), data.RandomInteger)
+`, CosmosDBAccountResource{}.capabilities(data, cosmosdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableTable"}), data.RandomInteger)
 }
 
 func (CosmosTableResource) throughput(data acceptance.TestData, throughput int) string {
@@ -138,7 +138,7 @@ resource "azurerm_cosmosdb_table" "test" {
   account_name        = azurerm_cosmosdb_account.test.name
   throughput          = %[3]d
 }
-`, CosmosDBAccountResource{}.capabilities(data, documentdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableTable"}), data.RandomInteger, throughput)
+`, CosmosDBAccountResource{}.capabilities(data, cosmosdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableTable"}), data.RandomInteger, throughput)
 }
 
 func (CosmosTableResource) autoscale(data acceptance.TestData, maxThroughput int) string {
@@ -153,7 +153,7 @@ resource "azurerm_cosmosdb_table" "test" {
     max_throughput = %[3]d
   }
 }
-`, CosmosDBAccountResource{}.capabilities(data, documentdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableTable"}), data.RandomInteger, maxThroughput)
+`, CosmosDBAccountResource{}.capabilities(data, cosmosdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableTable"}), data.RandomInteger, maxThroughput)
 }
 
 func (CosmosTableResource) serverless(data acceptance.TestData) string {
@@ -165,5 +165,5 @@ resource "azurerm_cosmosdb_table" "test" {
   resource_group_name = azurerm_cosmosdb_account.test.resource_group_name
   account_name        = azurerm_cosmosdb_account.test.name
 }
-`, CosmosDBAccountResource{}.capabilities(data, documentdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableServerless", "EnableTable"}), data.RandomInteger)
+`, CosmosDBAccountResource{}.capabilities(data, cosmosdb.DatabaseAccountKindGlobalDocumentDB, []string{"EnableServerless", "EnableTable"}), data.RandomInteger)
 }

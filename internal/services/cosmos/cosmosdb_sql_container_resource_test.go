@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/cosmos-db/mgmt/2021-10-15/documentdb" // nolint: staticcheck
+	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2023-04-15/cosmosdb"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -343,7 +343,7 @@ resource "azurerm_cosmosdb_sql_container" "test" {
   partition_key_path     = "/definition/id"
   analytical_storage_ttl = 600
 }
-`, CosmosDBAccountResource{}.analyticalStorage(data, "GlobalDocumentDB", documentdb.DefaultConsistencyLevelEventual, true), data.RandomInteger, data.RandomInteger)
+`, CosmosDBAccountResource{}.analyticalStorage(data, "GlobalDocumentDB", cosmosdb.DefaultConsistencyLevelEventual, true), data.RandomInteger, data.RandomInteger)
 }
 
 func (CosmosSqlContainerResource) analyticalStorageTTL_removed(data acceptance.TestData) string {
@@ -363,7 +363,7 @@ resource "azurerm_cosmosdb_sql_container" "test" {
   database_name       = azurerm_cosmosdb_sql_database.test.name
   partition_key_path  = "/definition/id"
 }
-`, CosmosDBAccountResource{}.analyticalStorage(data, "GlobalDocumentDB", documentdb.DefaultConsistencyLevelEventual, true), data.RandomInteger, data.RandomInteger)
+`, CosmosDBAccountResource{}.analyticalStorage(data, "GlobalDocumentDB", cosmosdb.DefaultConsistencyLevelEventual, true), data.RandomInteger, data.RandomInteger)
 }
 
 func (CosmosSqlContainerResource) update(data acceptance.TestData) string {
