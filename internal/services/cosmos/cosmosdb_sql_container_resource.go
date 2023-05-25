@@ -83,6 +83,53 @@ func resourceCosmosDbSQLContainer() *pluginsdk.Resource {
 				ValidateFunc: validation.IntBetween(1, 2),
 			},
 
+			"client_encryption_policy": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"included_path": {
+							Type:     pluginsdk.TypeList,
+							Required: true,
+							Elem: &pluginsdk.Resource{
+								Schema: map[string]*pluginsdk.Schema{
+									"client_encryption_key_id": {
+										Type:         pluginsdk.TypeString,
+										Required:     true,
+										ValidateFunc: validation.StringIsNotEmpty,
+									},
+
+									"encryption_algorithm": {
+										Type:         pluginsdk.TypeString,
+										Required:     true,
+										ValidateFunc: validation.StringIsNotEmpty,
+									},
+
+									"encryption_type": {
+										Type:         pluginsdk.TypeString,
+										Required:     true,
+										ValidateFunc: validation.StringIsNotEmpty,
+									},
+
+									"path": {
+										Type:         pluginsdk.TypeString,
+										Required:     true,
+										ValidateFunc: validation.StringIsNotEmpty,
+									},
+								},
+							},
+						},
+
+						"policy_format_version": {
+							Type:         pluginsdk.TypeInt,
+							Required:     true,
+							ValidateFunc: validation.IntInSlice([]int{1, 2}),
+						},
+					},
+				},
+			},
+
 			"conflict_resolution_policy": common.ConflictResolutionPolicy(),
 
 			"throughput": {
@@ -167,6 +214,7 @@ func resourceCosmosDbSQLContainerCreate(d *pluginsdk.ResourceData, meta interfac
 			Resource: cosmosdb.SqlContainerResource{
 				Id:                       id.ContainerName,
 				IndexingPolicy:           indexingPolicy,
+				ClientEncryptionPolicy:   expandCosmosSQLContainerClientEncryptionPolicy(d.Get("client_encryption_policy").([]interface{})),
 				ConflictResolutionPolicy: common.ExpandCosmosDbConflicResolutionPolicy(d.Get("conflict_resolution_policy").([]interface{})),
 			},
 			Options: &cosmosdb.CreateUpdateOptions{},
@@ -245,8 +293,9 @@ func resourceCosmosDbSQLContainerUpdate(d *pluginsdk.ResourceData, meta interfac
 	db := cosmosdb.SqlContainerCreateUpdateParameters{
 		Properties: cosmosdb.SqlContainerCreateUpdateProperties{
 			Resource: cosmosdb.SqlContainerResource{
-				Id:             id.ContainerName,
-				IndexingPolicy: indexingPolicy,
+				Id:                     id.ContainerName,
+				IndexingPolicy:         indexingPolicy,
+				ClientEncryptionPolicy: expandCosmosSQLContainerClientEncryptionPolicy(d.Get("client_encryption_policy").([]interface{})),
 			},
 			Options: &cosmosdb.CreateUpdateOptions{},
 		},
@@ -362,6 +411,10 @@ func resourceCosmosDbSQLContainerRead(d *pluginsdk.ResourceData, meta interface{
 					d.Set("indexing_policy", common.FlattenAzureRmCosmosDbIndexingPolicy(indexingPolicy))
 				}
 
+				if err := d.Set("client_encryption_policy", flattenCosmosSQLContainerClientEncryptionPolicy(res.ClientEncryptionPolicy)); err != nil {
+					return fmt.Errorf("setting `client_encryption_policy`: %+v", err)
+				}
+
 				if err := d.Set("conflict_resolution_policy", common.FlattenCosmosDbConflictResolutionPolicy(res.ConflictResolutionPolicy)); err != nil {
 					return fmt.Errorf("setting `conflict_resolution_policy`: %+v", err)
 				}
@@ -460,4 +513,67 @@ func flattenCosmosSQLContainerUniqueKeys(keys *[]cosmosdb.UniqueKey) *[]map[stri
 	}
 
 	return &slice
+}
+
+func expandCosmosSQLContainerClientEncryptionPolicy(input []interface{}) *cosmosdb.ClientEncryptionPolicy {
+	if len(input) == 0 {
+		return nil
+	}
+
+	clientEncryptionPolicy := input[0].(map[string]interface{})
+
+	result := cosmosdb.ClientEncryptionPolicy{
+		PolicyFormatVersion: int64(clientEncryptionPolicy["policy_format_version"].(int)),
+		IncludedPaths:       expandCosmosSQLContainerIncludedPaths(clientEncryptionPolicy["included_path"].([]interface{})),
+	}
+
+	return &result
+}
+
+func expandCosmosSQLContainerIncludedPaths(input []interface{}) []cosmosdb.ClientEncryptionIncludedPath {
+	result := make([]cosmosdb.ClientEncryptionIncludedPath, 0)
+
+	for _, v := range input {
+		item := v.(map[string]interface{})
+
+		includedPath := cosmosdb.ClientEncryptionIncludedPath{
+			ClientEncryptionKeyId: item["client_encryption_key_id"].(string),
+			EncryptionAlgorithm:   item["encryption_algorithm"].(string),
+			EncryptionType:        item["encryption_type"].(string),
+			Path:                  item["path"].(string),
+		}
+
+		result = append(result, includedPath)
+	}
+
+	return result
+}
+
+func flattenCosmosSQLContainerClientEncryptionPolicy(input *cosmosdb.ClientEncryptionPolicy) []interface{} {
+	if input == nil {
+		return []interface{}{}
+	}
+
+	return []interface{}{
+		map[string]interface{}{
+			"included_path":         flattenCosmosSQLContainerIncludedPaths(input.IncludedPaths),
+			"policy_format_version": input.PolicyFormatVersion,
+		},
+	}
+}
+
+func flattenCosmosSQLContainerIncludedPaths(input []cosmosdb.ClientEncryptionIncludedPath) []interface{} {
+	result := make([]interface{}, 0)
+
+	for _, v := range input {
+		includedPath := map[string]interface{}{
+			"client_encryption_key_id": v.ClientEncryptionKeyId,
+			"encryption_algorithm":     v.EncryptionAlgorithm,
+			"encryption_type":          v.EncryptionType,
+			"path":                     v.Path,
+		}
+		result = append(result, includedPath)
+	}
+
+	return result
 }

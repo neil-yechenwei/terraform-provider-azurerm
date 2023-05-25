@@ -85,6 +85,8 @@ The following arguments are supported:
 
 * `analytical_storage_ttl` - (Optional) The default time to live of Analytical Storage for this SQL container. If present and the value is set to `-1`, it is equal to infinity, and items don’t expire by default. If present and the value is set to some number `n` – items will expire `n` seconds after their last modified time.
 
+* `client_encryption_policy` - (Optional) A `client_encryption_policy` block as defined below.
+
 * `conflict_resolution_policy` - (Optional) A `conflict_resolution_policy` blocks as defined below. Changing this forces a new resource to be created.
 
 ---
@@ -142,6 +144,26 @@ An `index` block supports the following:
 * `path` - (Required) Path for which the indexing behaviour applies to.
 
 * `order` - (Required) Order of the index. Possible values are `Ascending` or `Descending`.
+
+---
+
+A `client_encryption_policy` block supports the following:
+
+* `included_path` - (Required) An `included_path` block as defined below.
+
+* `policy_format_version` - (Required) The version of the client encryption policy definition. Possible values are `1` and `2`.
+
+---
+
+An `included_path` block supports the following:
+
+* `client_encryption_key_id` - (Required) The identifier of the client encryption key to be used to encrypt the path.
+
+* `encryption_algorithm` - (Required) The encryption algorithm which will be used.
+
+* `encryption_type` - (Required) The type of encryption to be performed.
+
+* `path` - (Required) The path that needs to be encrypted.
 
 ---
 
