@@ -86,6 +86,7 @@ var services = mapOf(
         "nginx" to "Nginx",
         "notificationhub" to "Notification Hub",
         "orbital" to "Orbital",
+        "paloaltonetworks" to "PaloAltoNetworks",
         "policy" to "Policy",
         "portal" to "Portal",
         "postgres" to "PostgreSQL",

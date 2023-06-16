@@ -231,6 +231,9 @@ service/nginx:
 service/notifications:
   - internal/services/notificationhub/**/*
 
+service/paloaltonetworks:
+  - internal/services/paloaltonetworks/**/*
+
 service/policy:
   - internal/services/policy/**/*
 

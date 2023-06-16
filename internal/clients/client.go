@@ -13,6 +13,7 @@ import (
 	dns_v2018_05_01 "github.com/hashicorp/go-azure-sdk/resource-manager/dns/2018-05-01"
 	fluidrelay_2022_05_26 "github.com/hashicorp/go-azure-sdk/resource-manager/fluidrelay/2022-05-26"
 	nginx2 "github.com/hashicorp/go-azure-sdk/resource-manager/nginx/2022-08-01"
+	paloaltonetworks_v2022_08_29 "github.com/hashicorp/go-azure-sdk/resource-manager/paloaltonetworks/2022-08-29"
 	redis_v2022_06_01 "github.com/hashicorp/go-azure-sdk/resource-manager/redis/2022-06-01"
 	timeseriesinsights_v2020_05_15 "github.com/hashicorp/go-azure-sdk/resource-manager/timeseriesinsights/2020-05-15"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/common"
@@ -100,6 +101,7 @@ import (
 	nginx "github.com/hashicorp/terraform-provider-azurerm/internal/services/nginx/client"
 	notificationhub "github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub/client"
 	orbital "github.com/hashicorp/terraform-provider-azurerm/internal/services/orbital/client"
+	paloaltonetworks "github.com/hashicorp/terraform-provider-azurerm/internal/services/paloaltonetworks/client"
 	policy "github.com/hashicorp/terraform-provider-azurerm/internal/services/policy/client"
 	portal "github.com/hashicorp/terraform-provider-azurerm/internal/services/portal/client"
 	postgres "github.com/hashicorp/terraform-provider-azurerm/internal/services/postgres/client"
@@ -227,6 +229,7 @@ type Client struct {
 	Nginx                 *nginx2.Client
 	NotificationHubs      *notificationhub.Client
 	Orbital               *orbital.Client
+	PaloAltoNetworks      *paloaltonetworks_v2022_08_29.Client
 	Policy                *policy.Client
 	Portal                *portal.Client
 	Postgres              *postgres.Client
@@ -420,6 +423,9 @@ func (client *Client) Build(ctx context.Context, o *common.ClientOptions) error 
 	}
 	client.NotificationHubs = notificationhub.NewClient(o)
 	client.Orbital = orbital.NewClient(o)
+	if client.PaloAltoNetworks, err = paloaltonetworks.NewClient(o); err != nil {
+		return fmt.Errorf("building clients for PaloAltoNetworks: %+v", err)
+	}
 	if client.Policy, err = policy.NewClient(o); err != nil {
 		return fmt.Errorf("building clients for Policy: %+v", err)
 	}

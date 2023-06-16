@@ -87,6 +87,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/nginx"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/notificationhub"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/orbital"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/paloaltonetworks"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/policy"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/portal"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/postgres"
@@ -167,6 +168,7 @@ func SupportedTypedServices() []sdk.TypedServiceRegistration {
 		network.Registration{},
 		netapp.Registration{},
 		nginx.Registration{},
+		paloaltonetworks.Registration{},
 		policy.Registration{},
 		privatednsresolver.Registration{},
 		recoveryservices.Registration{},
