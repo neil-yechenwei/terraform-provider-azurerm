@@ -26,12 +26,11 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
 
-type WorkloadsSAPVirtualInstanceModel struct {
+type WorkloadsSAPDeploymentVirtualInstanceModel struct {
 	Name                          string                          `tfschema:"name"`
 	ResourceGroupName             string                          `tfschema:"resource_group_name"`
 	Location                      string                          `tfschema:"location"`
 	DeploymentWithOSConfiguration []DeploymentWithOSConfiguration `tfschema:"deployment_with_os_configuration"`
-	DiscoveryConfiguration        []DiscoveryConfiguration        `tfschema:"discovery_configuration"`
 	Environment                   string                          `tfschema:"environment"`
 	Identity                      []identity.ModelUserAssigned    `tfschema:"identity"`
 	ManagedResourceGroupName      string                          `tfschema:"managed_resource_group_name"`
@@ -44,11 +43,6 @@ type DeploymentWithOSConfiguration struct {
 	OsSapConfiguration        []OsSapConfiguration        `tfschema:"os_sap_configuration"`
 	SingleServerConfiguration []SingleServerConfiguration `tfschema:"single_server_configuration"`
 	ThreeTierConfiguration    []ThreeTierConfiguration    `tfschema:"three_tier_configuration"`
-}
-
-type DiscoveryConfiguration struct {
-	CentralServerVmId         string `tfschema:"central_server_virtual_machine_id"`
-	ManagedStorageAccountName string `tfschema:"managed_storage_account_name"`
 }
 
 type OsSapConfiguration struct {
@@ -183,23 +177,23 @@ type SharedStorage struct {
 	PrivateEndpointName string `tfschema:"private_endpoint_name"`
 }
 
-type WorkloadsSAPVirtualInstanceResource struct{}
+type WorkloadsSAPDeploymentVirtualInstanceResource struct{}
 
-var _ sdk.ResourceWithUpdate = WorkloadsSAPVirtualInstanceResource{}
+var _ sdk.ResourceWithUpdate = WorkloadsSAPDeploymentVirtualInstanceResource{}
 
-func (r WorkloadsSAPVirtualInstanceResource) ResourceType() string {
-	return "azurerm_workloads_sap_virtual_instance"
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) ResourceType() string {
+	return "azurerm_workloads_sap_deployment_virtual_instance"
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) ModelObject() interface{} {
-	return &WorkloadsSAPVirtualInstanceModel{}
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) ModelObject() interface{} {
+	return &WorkloadsSAPDeploymentVirtualInstanceModel{}
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {
 	return sapvirtualinstances.ValidateSapVirtualInstanceID
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) Arguments() map[string]*pluginsdk.Schema {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) Arguments() map[string]*pluginsdk.Schema {
 	return map[string]*pluginsdk.Schema{
 		"name": {
 			Type:         pluginsdk.TypeString,
@@ -212,35 +206,11 @@ func (r WorkloadsSAPVirtualInstanceResource) Arguments() map[string]*pluginsdk.S
 
 		"location": commonschema.Location(),
 
-		"environment": {
-			Type:     pluginsdk.TypeString,
-			Required: true,
-			ForceNew: true,
-			ValidateFunc: validation.StringInSlice([]string{
-				string(sapvirtualinstances.SAPEnvironmentTypeNonProd),
-				string(sapvirtualinstances.SAPEnvironmentTypeProd),
-			}, false),
-		},
-
-		"identity": commonschema.UserAssignedIdentityOptional(),
-
-		"sap_product": {
-			Type:     pluginsdk.TypeString,
-			Required: true,
-			ForceNew: true,
-			ValidateFunc: validation.StringInSlice([]string{
-				string(sapvirtualinstances.SAPProductTypeECC),
-				string(sapvirtualinstances.SAPProductTypeOther),
-				string(sapvirtualinstances.SAPProductTypeSFourHANA),
-			}, false),
-		},
-
 		"deployment_with_os_configuration": {
-			Type:         pluginsdk.TypeList,
-			Optional:     true,
-			ForceNew:     true,
-			MaxItems:     1,
-			AtLeastOneOf: []string{"deployment_with_os_configuration", "discovery_configuration"},
+			Type:     pluginsdk.TypeList,
+			Required: true,
+			ForceNew: true,
+			MaxItems: 1,
 			Elem: &pluginsdk.Resource{
 				Schema: map[string]*pluginsdk.Schema{
 					"app_location": commonschema.Location(),
@@ -1304,29 +1274,27 @@ func (r WorkloadsSAPVirtualInstanceResource) Arguments() map[string]*pluginsdk.S
 			},
 		},
 
-		"discovery_configuration": {
-			Type:         pluginsdk.TypeList,
-			Optional:     true,
-			ForceNew:     true,
-			MaxItems:     1,
-			AtLeastOneOf: []string{"deployment_with_os_configuration", "discovery_configuration"},
-			Elem: &pluginsdk.Resource{
-				Schema: map[string]*pluginsdk.Schema{
-					"central_server_virtual_machine_id": {
-						Type:         pluginsdk.TypeString,
-						Required:     true,
-						ForceNew:     true,
-						ValidateFunc: commonids.ValidateVirtualMachineID,
-					},
+		"environment": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+			ForceNew: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(sapvirtualinstances.SAPEnvironmentTypeNonProd),
+				string(sapvirtualinstances.SAPEnvironmentTypeProd),
+			}, false),
+		},
 
-					"managed_storage_account_name": {
-						Type:         pluginsdk.TypeString,
-						Optional:     true,
-						ForceNew:     true,
-						ValidateFunc: storageValidate.StorageAccountName,
-					},
-				},
-			},
+		"identity": commonschema.UserAssignedIdentityOptional(),
+
+		"sap_product": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+			ForceNew: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(sapvirtualinstances.SAPProductTypeECC),
+				string(sapvirtualinstances.SAPProductTypeOther),
+				string(sapvirtualinstances.SAPProductTypeSFourHANA),
+			}, false),
 		},
 
 		"managed_resource_group_name": {
@@ -1340,15 +1308,15 @@ func (r WorkloadsSAPVirtualInstanceResource) Arguments() map[string]*pluginsdk.S
 	}
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) Attributes() map[string]*pluginsdk.Schema {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) Attributes() map[string]*pluginsdk.Schema {
 	return map[string]*pluginsdk.Schema{}
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) Create() sdk.ResourceFunc {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) Create() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
 		Timeout: 60 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
-			var model WorkloadsSAPVirtualInstanceModel
+			var model WorkloadsSAPDeploymentVirtualInstanceModel
 			if err := metadata.Decode(&model); err != nil {
 				return fmt.Errorf("decoding: %+v", err)
 			}
@@ -1389,10 +1357,6 @@ func (r WorkloadsSAPVirtualInstanceResource) Create() sdk.ResourceFunc {
 				parameters.Properties.Configuration = deploymentWithOSConfiguration
 			}
 
-			if v := model.DiscoveryConfiguration; v != nil {
-				parameters.Properties.Configuration = expandDiscoveryConfiguration(v)
-			}
-
 			if v := model.ManagedResourceGroupName; v != "" {
 				parameters.Properties.ManagedResourceGroupConfiguration = &sapvirtualinstances.ManagedRGConfiguration{
 					Name: utils.String(v),
@@ -1409,7 +1373,7 @@ func (r WorkloadsSAPVirtualInstanceResource) Create() sdk.ResourceFunc {
 	}
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) Update() sdk.ResourceFunc {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) Update() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
 		Timeout: 60 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
@@ -1420,7 +1384,7 @@ func (r WorkloadsSAPVirtualInstanceResource) Update() sdk.ResourceFunc {
 				return err
 			}
 
-			var model WorkloadsSAPVirtualInstanceModel
+			var model WorkloadsSAPDeploymentVirtualInstanceModel
 			if err := metadata.Decode(&model); err != nil {
 				return fmt.Errorf("decoding: %+v", err)
 			}
@@ -1448,7 +1412,7 @@ func (r WorkloadsSAPVirtualInstanceResource) Update() sdk.ResourceFunc {
 	}
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) Read() sdk.ResourceFunc {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) Read() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
 		Timeout: 5 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
@@ -1468,7 +1432,7 @@ func (r WorkloadsSAPVirtualInstanceResource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("retrieving %s: %+v", *id, err)
 			}
 
-			state := WorkloadsSAPVirtualInstanceModel{}
+			state := WorkloadsSAPDeploymentVirtualInstanceModel{}
 			if model := resp.Model; model != nil {
 				state.Name = id.SapVirtualInstanceName
 				state.ResourceGroupName = id.ResourceGroupName
@@ -1493,10 +1457,6 @@ func (r WorkloadsSAPVirtualInstanceResource) Read() sdk.ResourceFunc {
 						}
 						state.DeploymentWithOSConfiguration = deploymentWithOSConfiguration
 					}
-
-					if v, ok := config.(sapvirtualinstances.DiscoveryConfiguration); ok {
-						state.DiscoveryConfiguration = flattenDiscoveryConfiguration(v)
-					}
 				}
 
 				if v := props.ManagedResourceGroupConfiguration; v != nil {
@@ -1509,7 +1469,7 @@ func (r WorkloadsSAPVirtualInstanceResource) Read() sdk.ResourceFunc {
 	}
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) Delete() sdk.ResourceFunc {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) Delete() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
 		Timeout: 60 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
@@ -1527,20 +1487,6 @@ func (r WorkloadsSAPVirtualInstanceResource) Delete() sdk.ResourceFunc {
 			return nil
 		},
 	}
-}
-
-func expandDiscoveryConfiguration(input []DiscoveryConfiguration) *sapvirtualinstances.DiscoveryConfiguration {
-	configuration := input[0]
-
-	result := &sapvirtualinstances.DiscoveryConfiguration{
-		CentralServerVMId: utils.String(configuration.CentralServerVmId),
-	}
-
-	if v := configuration.ManagedStorageAccountName; v != "" {
-		result.ManagedRgStorageAccountName = utils.String(v)
-	}
-
-	return result
 }
 
 func expandVirtualMachineConfiguration(input []VirtualMachineConfiguration) *sapvirtualinstances.VirtualMachineConfiguration {
@@ -2447,14 +2393,5 @@ func flattenDeployerVMPackages(input *sapvirtualinstances.DeployerVMPackages) []
 	return append(result, DeployerVmPackages{
 		StorageAccountId: pointer.From(input.StorageAccountId),
 		Url:              pointer.From(input.Url),
-	})
-}
-
-func flattenDiscoveryConfiguration(input sapvirtualinstances.DiscoveryConfiguration) []DiscoveryConfiguration {
-	result := make([]DiscoveryConfiguration, 0)
-
-	return append(result, DiscoveryConfiguration{
-		CentralServerVmId:         pointer.From(input.CentralServerVMId),
-		ManagedStorageAccountName: pointer.From(input.ManagedRgStorageAccountName),
 	})
 }

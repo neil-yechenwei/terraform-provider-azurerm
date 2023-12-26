@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"os"
 	"testing"
 	"time"
 
@@ -17,11 +16,11 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
 
-type WorkloadsSAPVirtualInstanceResource struct{}
+type WorkloadsSAPDeploymentVirtualInstanceResource struct{}
 
-func TestAccWorkloadsSAPVirtualInstance_basic(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_virtual_instance", "test")
-	r := WorkloadsSAPVirtualInstanceResource{}
+func TestAccWorkloadsSAPDeploymentVirtualInstance_basic(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_deployment_virtual_instance", "test")
+	r := WorkloadsSAPDeploymentVirtualInstanceResource{}
 	sapVISNameSuffix := RandomInt()
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
@@ -35,9 +34,9 @@ func TestAccWorkloadsSAPVirtualInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccWorkloadsSAPVirtualInstance_requiresImport(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_virtual_instance", "test")
-	r := WorkloadsSAPVirtualInstanceResource{}
+func TestAccWorkloadsSAPDeploymentVirtualInstance_requiresImport(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_deployment_virtual_instance", "test")
+	r := WorkloadsSAPDeploymentVirtualInstanceResource{}
 	sapVISNameSuffix := RandomInt()
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
@@ -54,9 +53,9 @@ func TestAccWorkloadsSAPVirtualInstance_requiresImport(t *testing.T) {
 	})
 }
 
-func TestAccWorkloadsSAPVirtualInstance_complete(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_virtual_instance", "test")
-	r := WorkloadsSAPVirtualInstanceResource{}
+func TestAccWorkloadsSAPDeploymentVirtualInstance_complete(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_deployment_virtual_instance", "test")
+	r := WorkloadsSAPDeploymentVirtualInstanceResource{}
 	sapVISNameSuffix := RandomInt()
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
@@ -74,9 +73,9 @@ func TestAccWorkloadsSAPVirtualInstance_complete(t *testing.T) {
 	})
 }
 
-func TestAccWorkloadsSAPVirtualInstance_update(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_virtual_instance", "test")
-	r := WorkloadsSAPVirtualInstanceResource{}
+func TestAccWorkloadsSAPDeploymentVirtualInstance_update(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_deployment_virtual_instance", "test")
+	r := WorkloadsSAPDeploymentVirtualInstanceResource{}
 	sapVISNameSuffix := RandomInt()
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
@@ -97,9 +96,9 @@ func TestAccWorkloadsSAPVirtualInstance_update(t *testing.T) {
 	})
 }
 
-func TestAccWorkloadsSAPVirtualInstance_transportMount(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_virtual_instance", "test")
-	r := WorkloadsSAPVirtualInstanceResource{}
+func TestAccWorkloadsSAPDeploymentVirtualInstance_transportMount(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_deployment_virtual_instance", "test")
+	r := WorkloadsSAPDeploymentVirtualInstanceResource{}
 	sapVISNameSuffix := RandomInt()
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
@@ -117,27 +116,7 @@ func TestAccWorkloadsSAPVirtualInstance_transportMount(t *testing.T) {
 	})
 }
 
-// The dependent central server VM requires many complicated manual configurations. So it has to test based on the resource provided by service team.
-func TestAccWorkloadsSAPVirtualInstance_discoveryConfiguration(t *testing.T) {
-	if os.Getenv("ARM_TEST_SAP_VIRTUAL_INSTANCE_NAME") == "" || os.Getenv("ARM_TEST_CENTRAL_SERVER_VM_ID") == "" {
-		t.Skip("Skipping as `ARM_TEST_SAP_VIRTUAL_INSTANCE_NAME` and `ARM_TEST_CENTRAL_SERVER_VM_ID` are not specified")
-	}
-
-	data := acceptance.BuildTestData(t, "azurerm_workloads_sap_virtual_instance", "test")
-	r := WorkloadsSAPVirtualInstanceResource{}
-
-	data.ResourceTest(t, r, []acceptance.TestStep{
-		{
-			Config: r.discoveryConfiguration(data),
-			Check: acceptance.ComposeTestCheckFunc(
-				check.That(data.ResourceName).ExistsInAzure(r),
-			),
-		},
-		data.ImportStep(),
-	})
-}
-
-func (r WorkloadsSAPVirtualInstanceResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
 	id, err := sapvirtualinstances.ParseSapVirtualInstanceID(state.ID)
 	if err != nil {
 		return nil, err
@@ -154,7 +133,7 @@ func (r WorkloadsSAPVirtualInstanceResource) Exists(ctx context.Context, clients
 	return utils.Bool(resp.Model != nil), nil
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) template(data acceptance.TestData) string {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) template(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 provider "azurerm" {
   features {
@@ -217,11 +196,11 @@ resource "azurerm_resource_group" "app" {
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.Locations.Primary)
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) basic(data acceptance.TestData, sapVISNameSuffix int) string {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) basic(data acceptance.TestData, sapVISNameSuffix int) string {
 	return fmt.Sprintf(`
 %s
 
-resource "azurerm_workloads_sap_virtual_instance" "test" {
+resource "azurerm_workloads_sap_deployment_virtual_instance" "test" {
   name                        = "X%d"
   resource_group_name         = azurerm_resource_group.test.name
   location                    = azurerm_resource_group.test.location
@@ -333,17 +312,17 @@ resource "azurerm_workloads_sap_virtual_instance" "test" {
 `, r.template(data), sapVISNameSuffix, data.RandomInteger)
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) requiresImport(data acceptance.TestData, sapVISNameSuffix int) string {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) requiresImport(data acceptance.TestData, sapVISNameSuffix int) string {
 	return fmt.Sprintf(`
 %s
 
-resource "azurerm_workloads_sap_virtual_instance" "import" {
-  name                        = azurerm_workloads_sap_virtual_instance.test.name
-  resource_group_name         = azurerm_workloads_sap_virtual_instance.test.resource_group_name
-  location                    = azurerm_workloads_sap_virtual_instance.test.location
-  environment                 = azurerm_workloads_sap_virtual_instance.test.environment
-  sap_product                 = azurerm_workloads_sap_virtual_instance.test.sap_product
-  managed_resource_group_name = azurerm_workloads_sap_virtual_instance.test.managed_resource_group_name
+resource "azurerm_workloads_sap_deployment_virtual_instance" "import" {
+  name                        = azurerm_workloads_sap_deployment_virtual_instance.test.name
+  resource_group_name         = azurerm_workloads_sap_deployment_virtual_instance.test.resource_group_name
+  location                    = azurerm_workloads_sap_deployment_virtual_instance.test.location
+  environment                 = azurerm_workloads_sap_deployment_virtual_instance.test.environment
+  sap_product                 = azurerm_workloads_sap_deployment_virtual_instance.test.sap_product
+  managed_resource_group_name = azurerm_workloads_sap_deployment_virtual_instance.test.managed_resource_group_name
 
   deployment_with_os_configuration {
     app_location = azurerm_resource_group.app.location
@@ -449,7 +428,7 @@ resource "azurerm_workloads_sap_virtual_instance" "import" {
 `, r.basic(data, sapVISNameSuffix))
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) complete(data acceptance.TestData, sapVISNameSuffix int) string {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) complete(data acceptance.TestData, sapVISNameSuffix int) string {
 	return fmt.Sprintf(`
 %s
 
@@ -461,7 +440,7 @@ resource "azurerm_storage_account" "test" {
   account_replication_type = "LRS"
 }
 
-resource "azurerm_workloads_sap_virtual_instance" "test" {
+resource "azurerm_workloads_sap_deployment_virtual_instance" "test" {
   name                        = "X%d"
   resource_group_name         = azurerm_resource_group.test.name
   location                    = azurerm_resource_group.test.location
@@ -689,11 +668,11 @@ resource "azurerm_workloads_sap_virtual_instance" "test" {
 `, r.template(data), data.RandomString, sapVISNameSuffix, data.RandomInteger, data.RandomString, data.RandomString, data.RandomString)
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) update(data acceptance.TestData, sapVISNameSuffix int) string {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) update(data acceptance.TestData, sapVISNameSuffix int) string {
 	return fmt.Sprintf(`
 %s
 
-resource "azurerm_workloads_sap_virtual_instance" "test" {
+resource "azurerm_workloads_sap_deployment_virtual_instance" "test" {
   name                        = "X%d"
   resource_group_name         = azurerm_resource_group.test.name
   location                    = azurerm_resource_group.test.location
@@ -797,7 +776,7 @@ resource "azurerm_workloads_sap_virtual_instance" "test" {
 `, r.template(data), sapVISNameSuffix, data.RandomInteger)
 }
 
-func (r WorkloadsSAPVirtualInstanceResource) transportMount(data acceptance.TestData, sapVISNameSuffix int) string {
+func (r WorkloadsSAPDeploymentVirtualInstanceResource) transportMount(data acceptance.TestData, sapVISNameSuffix int) string {
 	return fmt.Sprintf(`
 %s
 
@@ -842,7 +821,7 @@ resource "azurerm_private_endpoint" "test" {
   }
 }
 
-resource "azurerm_workloads_sap_virtual_instance" "test" {
+resource "azurerm_workloads_sap_deployment_virtual_instance" "test" {
   name                        = "X%d"
   resource_group_name         = azurerm_resource_group.test.name
   location                    = azurerm_resource_group.test.location
@@ -1068,59 +1047,6 @@ resource "azurerm_workloads_sap_virtual_instance" "test" {
   ]
 }
 `, r.template(data), data.RandomString, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, sapVISNameSuffix, data.RandomInteger, data.RandomString, data.RandomString)
-}
-
-func (r WorkloadsSAPVirtualInstanceResource) discoveryConfiguration(data acceptance.TestData) string {
-	return fmt.Sprintf(`
-provider "azurerm" {
-  features {}
-}
-
-data "azurerm_subscription" "current" {}
-
-resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-sapvis-%d"
-  location = "%s"
-}
-
-resource "azurerm_user_assigned_identity" "test" {
-  name                = "acctest-uai-%d"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-}
-
-resource "azurerm_role_assignment" "test" {
-  scope                = data.azurerm_subscription.current.id
-  role_definition_name = "Azure Center for SAP solutions service role"
-  principal_id         = azurerm_user_assigned_identity.test.principal_id
-}
-
-resource "azurerm_workloads_sap_virtual_instance" "test" {
-  name                        = "%s"
-  resource_group_name         = azurerm_resource_group.test.name
-  location                    = azurerm_resource_group.test.location
-  environment                 = "NonProd"
-  sap_product                 = "S4HANA"
-  managed_resource_group_name = "managedTestRG%d"
-
-  discovery_configuration {
-    central_server_virtual_machine_id = "%s"
-    managed_storage_account_name      = "managedsa%s"
-  }
-
-  identity {
-    type = "UserAssigned"
-
-    identity_ids = [
-      azurerm_user_assigned_identity.test.id,
-    ]
-  }
-
-  depends_on = [
-    azurerm_role_assignment.test
-  ]
-}
-`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, os.Getenv("ARM_TEST_SAP_VIRTUAL_INSTANCE_NAME"), data.RandomInteger, os.Getenv("ARM_TEST_CENTRAL_SERVER_VM_ID"), data.RandomString)
 }
 
 func RandomInt() int {

@@ -1,14 +1,14 @@
 ---
 subcategory: "Workloads"
 layout: "azurerm"
-page_title: "Azure Resource Manager: azurerm_workloads_sap_virtual_instance"
+page_title: "Azure Resource Manager: azurerm_workloads_sap_deployment_virtual_instance"
 description: |-
-  Manages a SAP Virtual Instance.
+  Manages a SAP Virtual Instance with new SAP System.
 ---
 
-# azurerm_workloads_sap_virtual_instance
+# azurerm_workloads_sap_deployment_virtual_instance
 
-Manages a SAP Virtual Instance.
+Manages a SAP Virtual Instance with new SAP System.
 
 -> **Note:** Before using this resource, it's required to submit the request of registering the Resource Provider with Azure CLI `az provider register --namespace "Microsoft.Workloads"`. The Resource Provider can take a while to register, you can check the status by running `az provider show --namespace "Microsoft.Workloads" --query "registrationState"`. Once this outputs "Registered" the Resource Provider is available for use.
 
@@ -66,7 +66,7 @@ resource "azurerm_resource_group" "app" {
   ]
 }
 
-resource "azurerm_workloads_sap_virtual_instance" "example" {
+resource "azurerm_workloads_sap_deployment_virtual_instance" "example" {
   name                        = "X05"
   resource_group_name         = azurerm_resource_group.example.name
   location                    = azurerm_resource_group.example.location
@@ -183,15 +183,13 @@ The following arguments are supported:
 
 * `location` - (Required) The Azure Region where the SAP Virtual Instance should exist. Changing this forces a new resource to be created.
 
+* `deployment_with_os_configuration` - (Required) A `deployment_with_os_configuration` block as defined below. Changing this forces a new resource to be created.
+
 * `environment` - (Required) The environment type for the SAP Virtual Instance. Possible values are `NonProd` and `Prod`. Changing this forces a new resource to be created.
 
 * `identity` - (Optional) An `identity` block as defined below.
 
 * `sap_product` - (Required) The SAP Product type for the SAP Virtual Instance. Possible values are `ECC`, `Other` and `S4HANA`. Changing this forces a new resource to be created.
-
-* `deployment_with_os_configuration` - (Optional) A `deployment_with_os_configuration` block as defined below. Changing this forces a new resource to be created.
-
-* `discovery_configuration` - (Optional) A `discovery_configuration` block as defined below. Changing this forces a new resource to be created.
 
 * `managed_resource_group_name` - (Optional) The name of the managed Resource Group for the SAP Virtual Instance. Changing this forces a new resource to be created.
 
@@ -453,14 +451,6 @@ A `shared_storage` block supports the following:
 
 ---
 
-A `discovery_configuration` block supports the following:
-
-* `central_server_virtual_machine_id` - (Required) The resource ID of the Virtual Machine of the Central Server. Changing this forces a new resource to be created.
-
-* `managed_storage_account_name` - (Optional) The name of the custom Storage Account created by the service in the managed Resource Group. Changing this forces a new resource to be created.
-
----
-
 An `identity` block supports the following:
 
 * `type` - (Required) The type of Managed Service Identity that should be configured on this SAP Virtual Instance. Only possible value is `UserAssigned`.
@@ -477,15 +467,15 @@ In addition to the Arguments listed above - the following Attributes are exporte
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 60 minutes) Used when creating the SAP Virtual Instance.
-* `read` - (Defaults to 5 minutes) Used when retrieving the SAP Virtual Instance.
-* `update` - (Defaults to 60 minutes) Used when updating the SAP Virtual Instance.
-* `delete` - (Defaults to 60 minutes) Used when deleting the SAP Virtual Instance.
+* `create` - (Defaults to 60 minutes) Used when creating the SAP Virtual Instance with new SAP System.
+* `read` - (Defaults to 5 minutes) Used when retrieving the SAP Virtual Instance with new SAP System.
+* `update` - (Defaults to 60 minutes) Used when updating the SAP Virtual Instance with new SAP System.
+* `delete` - (Defaults to 60 minutes) Used when deleting the SAP Virtual Instance with new SAP System.
 
 ## Import
 
-SAP Virtual Instances can be imported using the `resource id`, e.g.
+SAP Virtual Instances with new SAP Systems can be imported using the `resource id`, e.g.
 
 ```shell
-terraform import azurerm_workloads_sap_virtual_instance.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Workloads/sapVirtualInstances/vis1
+terraform import azurerm_workloads_sap_deployment_virtual_instance.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Workloads/sapVirtualInstances/vis1
 ```
