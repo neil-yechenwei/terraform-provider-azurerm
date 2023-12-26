@@ -16,8 +16,8 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1
-	github.com/hashicorp/go-azure-helpers v0.62.0
-	github.com/hashicorp/go-azure-sdk v0.20231025.1113325
+	github.com/hashicorp/go-azure-helpers v0.65.0
+	github.com/hashicorp/go-azure-sdk v0.20231215.1114251
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-uuid v1.0.3
@@ -82,7 +82,7 @@ require (
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
-	google.golang.org/grpc v1.58.0 // indirect
+	google.golang.org/grpc v1.58.3 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.2.1 // indirect
 )
