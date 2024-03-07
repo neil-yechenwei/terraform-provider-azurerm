@@ -41,9 +41,9 @@ resource "azurerm_monitor_action_group" "example" {
 
   automation_runbook_receiver {
     name                    = "action_name_1"
-    automation_account_id   = "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/rg-runbooks/providers/microsoft.automation/automationaccounts/aaa001"
+    automation_account_id   = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-runbooks/providers/Microsoft.Automation/automationAccounts/aaa001"
     runbook_name            = "my runbook"
-    webhook_resource_id     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/rg-runbooks/providers/microsoft.automation/automationaccounts/aaa001/webhooks/webhook_alert"
+    webhook_resource_id     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-runbooks/providers/Microsoft.Automation/automationAccounts/aaa001/webHooks/webhook_alert"
     is_global_runbook       = true
     service_uri             = "https://s13events.azure-automation.net/webhooks?token=randomtoken"
     use_common_alert_schema = true
@@ -242,7 +242,7 @@ The `webhook_receiver` block supports the following:
 * `name` - (Required) The name of the webhook receiver. Names must be unique (case-insensitive) across all receivers within an action group.
 * `service_uri` - (Required) The URI where webhooks should be sent.
 * `use_common_alert_schema` - (Optional) Enables or disables the common alert schema.
-* `aad_auth` - (Optional) The `aad_auth` block as defined below
+* `aad_auth` - (Optional) The `aad_auth` block as defined below.
 
 ~> **NOTE:** Before adding a secure webhook receiver by setting `aad_auth`, please read [the configuration instruction of the AAD application](https://docs.microsoft.com/azure/azure-monitor/platform/action-groups#secure-webhook).
 

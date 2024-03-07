@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package servicebus
 
 import (
@@ -7,23 +10,26 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/servicebus/2021-06-01-preview/namespacesauthorizationrule"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/servicebus/2022-01-01-preview/namespaces"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/servicebus/2022-10-01-preview/namespaces"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 	keyVaultParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/parse"
 	keyVaultValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/servicebus/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/servicebus/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/suppress"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
@@ -89,6 +95,14 @@ func resourceServiceBusNamespace() *pluginsdk.Resource {
 				Optional:     true,
 				Default:      0,
 				ValidateFunc: validation.IntInSlice([]int{0, 1, 2, 4, 8, 16}),
+			},
+
+			"premium_messaging_partitions": {
+				Type:         pluginsdk.TypeInt,
+				ForceNew:     true,
+				Default:      0,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{0, 1, 2, 4}),
 			},
 
 			"customer_managed_key": {
@@ -169,6 +183,68 @@ func resourceServiceBusNamespace() *pluginsdk.Resource {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
 				ForceNew: true,
+			},
+
+			"network_rule_set": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				Computed: !features.FourPointOhBeta(),
+				MaxItems: 1,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"default_action": {
+							Type:     pluginsdk.TypeString,
+							Optional: true,
+							Default:  string(namespaces.DefaultActionAllow),
+							ValidateFunc: validation.StringInSlice([]string{
+								string(namespaces.DefaultActionAllow),
+								string(namespaces.DefaultActionDeny),
+							}, false),
+						},
+
+						"public_network_access_enabled": {
+							Type:     pluginsdk.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+
+						"ip_rules": {
+							Type:     pluginsdk.TypeSet,
+							Optional: true,
+							Elem: &pluginsdk.Schema{
+								Type: pluginsdk.TypeString,
+							},
+						},
+
+						"trusted_services_allowed": {
+							Type:     pluginsdk.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+
+						"network_rules": {
+							Type:     pluginsdk.TypeSet,
+							Optional: true,
+							Set:      networkRuleHash,
+							Elem: &pluginsdk.Resource{
+								Schema: map[string]*pluginsdk.Schema{
+									"subnet_id": {
+										Type:         pluginsdk.TypeString,
+										Required:     true,
+										ValidateFunc: commonids.ValidateSubnetID,
+										// The subnet ID returned from the service will have `resourceGroup/{resourceGroupName}` all in lower cases...
+										DiffSuppressFunc: suppress.CaseDifference,
+									},
+									"ignore_missing_vnet_service_endpoint": {
+										Type:     pluginsdk.TypeBool,
+										Optional: true,
+										Default:  false,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 
 			"endpoint": {
@@ -268,11 +344,40 @@ func resourceServiceBusNamespaceCreateUpdate(d *pluginsdk.ResourceData, meta int
 		parameters.Sku.Capacity = utils.Int64(int64(capacity.(int)))
 	}
 
+	if premiumMessagingUnit := d.Get("premium_messaging_partitions"); premiumMessagingUnit != nil {
+		if !strings.EqualFold(sku, string(namespaces.SkuNamePremium)) && premiumMessagingUnit.(int) > 0 {
+			return fmt.Errorf("Premium messaging partition is not supported by service Bus SKU %q and it can only be set to 0", sku)
+		}
+		if strings.EqualFold(sku, string(namespaces.SkuNamePremium)) && premiumMessagingUnit.(int) == 0 {
+			return fmt.Errorf("Service Bus SKU %q only supports `premium_messaging_partitions` of 1, 2, 4", sku)
+		}
+		parameters.Properties.PremiumMessagingPartitions = utils.Int64(int64(premiumMessagingUnit.(int)))
+	}
+
 	if err := client.CreateOrUpdateThenPoll(ctx, id, parameters); err != nil {
 		return fmt.Errorf("creating/updating %s: %+v", id, err)
 	}
 
 	d.SetId(id.ID())
+
+	if d.HasChange("network_rule_set") {
+		oldNetworkRuleSet, newNetworkRuleSet := d.GetChange("network_rule_set")
+		// if the network rule set has been removed from config, reset it instead as there is no way to remove a rule set
+		if len(oldNetworkRuleSet.([]interface{})) == 1 && len(newNetworkRuleSet.([]interface{})) == 0 {
+			log.Printf("[DEBUG] Resetting Network Rule Set associated with %s..", id)
+			if err = resetNetworkRuleSetForNamespace(ctx, client, id); err != nil {
+				return err
+			}
+			log.Printf("[DEBUG] Reset the Existing Network Rule Set associated with %s", id)
+		} else {
+			log.Printf("[DEBUG] Creating the Network Rule Set associated with %s..", id)
+			if err = createNetworkRuleSetForNamespace(ctx, client, id, newNetworkRuleSet.([]interface{})); err != nil {
+				return err
+			}
+			log.Printf("[DEBUG] Created the Network Rule Set associated with %s", id)
+		}
+	}
+
 	return resourceServiceBusNamespaceRead(d, meta)
 }
 
@@ -324,6 +429,7 @@ func resourceServiceBusNamespaceRead(d *pluginsdk.ResourceData, meta interface{}
 			d.Set("capacity", sku.Capacity)
 
 			if props := model.Properties; props != nil {
+				d.Set("premium_messaging_partitions", props.PremiumMessagingPartitions)
 				d.Set("zone_redundant", props.ZoneRedundant)
 				if customerManagedKey, err := flattenServiceBusNamespaceEncryption(props.Encryption); err == nil {
 					d.Set("customer_managed_key", customerManagedKey)
@@ -341,7 +447,7 @@ func resourceServiceBusNamespaceRead(d *pluginsdk.ResourceData, meta interface{}
 				d.Set("public_network_access_enabled", publicNetworkAccess)
 
 				if props.MinimumTlsVersion != nil {
-					d.Set("minimum_tls_version", *props.MinimumTlsVersion)
+					d.Set("minimum_tls_version", string(pointer.From(props.MinimumTlsVersion)))
 				}
 
 				d.Set("endpoint", props.ServiceBusEndpoint)
@@ -362,6 +468,18 @@ func resourceServiceBusNamespaceRead(d *pluginsdk.ResourceData, meta interface{}
 			d.Set("default_secondary_key", keysModel.SecondaryKey)
 		}
 	}
+
+	networkRuleSet, err := client.GetNetworkRuleSet(ctx, *id)
+	if err != nil {
+		return fmt.Errorf("retrieving network rule set %s: %+v", *id, err)
+	}
+
+	if model := networkRuleSet.Model; model != nil {
+		if props := model.Properties; props != nil {
+			d.Set("network_rule_set", flattenServiceBusNamespaceNetworkRuleSet(*props))
+		}
+	}
+
 	return nil
 }
 
@@ -419,7 +537,7 @@ func flattenServiceBusNamespaceEncryption(encryption *namespaces.Encryption) ([]
 	var identityId string
 	if keyVaultProperties := encryption.KeyVaultProperties; keyVaultProperties != nil && len(*keyVaultProperties) != 0 {
 		props := (*keyVaultProperties)[0]
-		keyVaultKeyId, err := keyVaultParse.NewNestedItemID(*props.KeyVaultUri, "keys", *props.KeyName, *props.KeyVersion)
+		keyVaultKeyId, err := keyVaultParse.NewNestedItemID(*props.KeyVaultUri, keyVaultParse.NestedItemTypeKey, *props.KeyName, *props.KeyVersion)
 		if err != nil {
 			return nil, fmt.Errorf("parsing `key_vault_key_id`: %+v", err)
 		}
@@ -485,4 +603,97 @@ func servicebusTLSVersionDiff(ctx context.Context, d *pluginsdk.ResourceDiff, _ 
 		err = fmt.Errorf("`minimum_tls_version` has been set before, please set a valid value for this property ")
 	}
 	return
+}
+
+func createNetworkRuleSetForNamespace(ctx context.Context, client *namespaces.NamespacesClient, id namespaces.NamespaceId, input []interface{}) error {
+	if len(input) < 1 || input[0] == nil {
+		return nil
+	}
+	item := input[0].(map[string]interface{})
+
+	defaultAction := namespaces.DefaultAction(item["default_action"].(string))
+	vnetRule := expandServiceBusNamespaceVirtualNetworkRules(item["network_rules"].(*pluginsdk.Set).List())
+	ipRule := expandServiceBusNamespaceIPRules(item["ip_rules"].(*pluginsdk.Set).List())
+	publicNetworkAcc := "Disabled"
+	if item["public_network_access_enabled"].(bool) {
+		publicNetworkAcc = "Enabled"
+	}
+
+	// API doesn't accept "Deny" to be set for "default_action" if no "ip_rules" or "network_rules" is defined and returns no error message to the user
+	if defaultAction == namespaces.DefaultActionDeny && vnetRule == nil && ipRule == nil {
+		return fmt.Errorf(" The `default_action` of `network_rule_set` can only be set to `Allow` if no `ip_rules` or `network_rules` is set")
+	}
+
+	publicNetworkAccess := namespaces.PublicNetworkAccessFlag(publicNetworkAcc)
+
+	parameters := namespaces.NetworkRuleSet{
+		Properties: &namespaces.NetworkRuleSetProperties{
+			DefaultAction:               &defaultAction,
+			VirtualNetworkRules:         vnetRule,
+			IPRules:                     ipRule,
+			PublicNetworkAccess:         &publicNetworkAccess,
+			TrustedServiceAccessEnabled: utils.Bool(item["trusted_services_allowed"].(bool)),
+		},
+	}
+
+	if _, err := client.CreateOrUpdateNetworkRuleSet(ctx, id, parameters); err != nil {
+		return fmt.Errorf("creating/updating %s: %+v", id, err)
+	}
+
+	return nil
+}
+
+func resetNetworkRuleSetForNamespace(ctx context.Context, client *namespaces.NamespacesClient, id namespaces.NamespaceId) error {
+	defaultAction := namespaces.DefaultActionAllow
+	parameters := namespaces.NetworkRuleSet{
+		Properties: &namespaces.NetworkRuleSetProperties{
+			DefaultAction: &defaultAction,
+		},
+	}
+
+	if _, err := client.CreateOrUpdateNetworkRuleSet(ctx, id, parameters); err != nil {
+		return fmt.Errorf("resetting %s: %+v", id, err)
+	}
+
+	return nil
+}
+
+func flattenServiceBusNamespaceNetworkRuleSet(networkRuleSet namespaces.NetworkRuleSetProperties) []interface{} {
+	defaultAction := ""
+	if v := networkRuleSet.DefaultAction; v != nil {
+		defaultAction = string(*v)
+	}
+	publicNetworkAccess := namespaces.PublicNetworkAccessFlagEnabled
+	if v := networkRuleSet.PublicNetworkAccess; v != nil {
+		publicNetworkAccess = *v
+	}
+
+	trustedServiceEnabled := false
+	if networkRuleSet.TrustedServiceAccessEnabled != nil {
+		trustedServiceEnabled = *networkRuleSet.TrustedServiceAccessEnabled
+	}
+
+	networkRules := flattenServiceBusNamespaceVirtualNetworkRules(networkRuleSet.VirtualNetworkRules)
+	ipRules := flattenServiceBusNamespaceIPRules(networkRuleSet.IPRules)
+
+	// only set network rule set if the values are different than what they are defaulted to during namespace creation
+	// this has to wait until 4.0 due to `azurerm_servicebus_namespace_network_rule_set` which forces `network_rule_set` to be Optional/Computed
+	if features.FourPointOhBeta() {
+		if defaultAction == string(namespaces.DefaultActionAllow) &&
+			publicNetworkAccess == namespaces.PublicNetworkAccessFlagEnabled &&
+			!trustedServiceEnabled &&
+			len(networkRules) == 0 &&
+			len(ipRules) == 0 {
+
+			return []interface{}{}
+		}
+	}
+
+	return []interface{}{map[string]interface{}{
+		"default_action":                defaultAction,
+		"trusted_services_allowed":      trustedServiceEnabled,
+		"public_network_access_enabled": publicNetworkAccess == namespaces.PublicNetworkAccessFlagEnabled,
+		"network_rules":                 pluginsdk.NewSet(networkRuleHash, networkRules),
+		"ip_rules":                      ipRules,
+	}}
 }

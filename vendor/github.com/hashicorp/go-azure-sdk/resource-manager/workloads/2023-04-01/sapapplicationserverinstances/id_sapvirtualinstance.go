@@ -10,7 +10,7 @@ import (
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
 
-var _ resourceids.ResourceId = SapVirtualInstanceId{}
+var _ resourceids.ResourceId = &SapVirtualInstanceId{}
 
 // SapVirtualInstanceId is a struct representing the Resource ID for a Sap Virtual Instance
 type SapVirtualInstanceId struct {
@@ -30,25 +30,15 @@ func NewSapVirtualInstanceID(subscriptionId string, resourceGroupName string, sa
 
 // ParseSapVirtualInstanceID parses 'input' into a SapVirtualInstanceId
 func ParseSapVirtualInstanceID(input string) (*SapVirtualInstanceId, error) {
-	parser := resourceids.NewParserFromResourceIdType(SapVirtualInstanceId{})
+	parser := resourceids.NewParserFromResourceIdType(&SapVirtualInstanceId{})
 	parsed, err := parser.Parse(input, false)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := SapVirtualInstanceId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.SapVirtualInstanceName, ok = parsed.Parsed["sapVirtualInstanceName"]; !ok {
-		return nil, fmt.Errorf("the segment 'sapVirtualInstanceName' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
@@ -57,28 +47,36 @@ func ParseSapVirtualInstanceID(input string) (*SapVirtualInstanceId, error) {
 // ParseSapVirtualInstanceIDInsensitively parses 'input' case-insensitively into a SapVirtualInstanceId
 // note: this method should only be used for API response data and not user input
 func ParseSapVirtualInstanceIDInsensitively(input string) (*SapVirtualInstanceId, error) {
-	parser := resourceids.NewParserFromResourceIdType(SapVirtualInstanceId{})
+	parser := resourceids.NewParserFromResourceIdType(&SapVirtualInstanceId{})
 	parsed, err := parser.Parse(input, true)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := SapVirtualInstanceId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.SapVirtualInstanceName, ok = parsed.Parsed["sapVirtualInstanceName"]; !ok {
-		return nil, fmt.Errorf("the segment 'sapVirtualInstanceName' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
+}
+
+func (id *SapVirtualInstanceId) FromParseResult(input resourceids.ParseResult) error {
+	var ok bool
+
+	if id.SubscriptionId, ok = input.Parsed["subscriptionId"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "subscriptionId", input)
+	}
+
+	if id.ResourceGroupName, ok = input.Parsed["resourceGroupName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "resourceGroupName", input)
+	}
+
+	if id.SapVirtualInstanceName, ok = input.Parsed["sapVirtualInstanceName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "sapVirtualInstanceName", input)
+	}
+
+	return nil
 }
 
 // ValidateSapVirtualInstanceID checks that 'input' can be parsed as a Sap Virtual Instance ID

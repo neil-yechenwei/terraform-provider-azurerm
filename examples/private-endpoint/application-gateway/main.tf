@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 provider "azurerm" {
   features {}
 }
@@ -114,6 +117,7 @@ resource "azurerm_application_gateway" "example" {
     http_listener_name         = "listener"
     backend_address_pool_name  = "backend"
     backend_http_settings_name = "settings"
+    priority                   = 100
   }
 }
 

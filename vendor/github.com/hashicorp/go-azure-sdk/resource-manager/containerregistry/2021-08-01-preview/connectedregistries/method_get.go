@@ -20,7 +20,7 @@ type GetOperationResponse struct {
 // Get ...
 func (c ConnectedRegistriesClient) Get(ctx context.Context, id ConnectedRegistryId) (result GetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c ConnectedRegistriesClient) Get(ctx context.Context, id ConnectedRegistry
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model ConnectedRegistry
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

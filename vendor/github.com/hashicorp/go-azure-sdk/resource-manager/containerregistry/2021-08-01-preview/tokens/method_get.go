@@ -20,7 +20,7 @@ type GetOperationResponse struct {
 // Get ...
 func (c TokensClient) Get(ctx context.Context, id TokenId) (result GetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c TokensClient) Get(ctx context.Context, id TokenId) (result GetOperationR
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model Token
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

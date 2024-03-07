@@ -20,7 +20,7 @@ type GetOperationResponse struct {
 // Get ...
 func (c VNetPeeringClient) Get(ctx context.Context, id VirtualNetworkPeeringId) (result GetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusNoContent,
 			http.StatusOK,
@@ -44,7 +44,10 @@ func (c VNetPeeringClient) Get(ctx context.Context, id VirtualNetworkPeeringId) 
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model VirtualNetworkPeering
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

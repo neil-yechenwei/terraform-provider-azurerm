@@ -48,7 +48,7 @@ func (o UpdateOperationOptions) ToQuery() *client.QueryParams {
 // Update ...
 func (c ZonesClient) Update(ctx context.Context, id DnsZoneId, input ZoneUpdate, options UpdateOperationOptions) (result UpdateOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -76,7 +76,10 @@ func (c ZonesClient) Update(ctx context.Context, id DnsZoneId, input ZoneUpdate,
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model Zone
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

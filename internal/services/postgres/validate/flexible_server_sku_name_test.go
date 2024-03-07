@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package validate
 
 import "testing"
@@ -101,6 +104,11 @@ func TestFlexibleServerSkuName(t *testing.T) {
 		{
 			name:  "MO_Standard_E16ads_v5",
 			input: "MO_Standard_E16ads_v5",
+			valid: true,
+		},
+		{
+			name:  "MO_Standard_E96ds_v5",
+			input: "MO_Standard_E96ds_v5",
 			valid: true,
 		},
 	}

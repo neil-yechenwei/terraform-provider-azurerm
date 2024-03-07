@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package hdinsight_test
 
 import (
@@ -5,10 +8,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/services/hdinsight/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
@@ -676,20 +679,17 @@ func TestAccHDInsightSparkCluster_computeIsolation(t *testing.T) {
 }
 
 func (t HDInsightSparkClusterResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
-	id, err := parse.ClusterID(state.ID)
+	id, err := commonids.ParseHDInsightClusterID(state.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	resourceGroup := id.ResourceGroup
-	name := id.Name
-
-	resp, err := clients.HDInsight.ClustersClient.Get(ctx, resourceGroup, name)
+	resp, err := clients.HDInsight.Clusters.Get(ctx, *id)
 	if err != nil {
-		return nil, fmt.Errorf("reading HDInsight Spark Cluster (%s): %+v", id.String(), err)
+		return nil, fmt.Errorf("reading Spark %s: %+v", id, err)
 	}
 
-	return utils.Bool(resp.ID != nil), nil
+	return utils.Bool(resp.Model != nil), nil
 }
 
 func (r HDInsightSparkClusterResource) basic(data acceptance.TestData) string {
@@ -1005,11 +1005,9 @@ resource "azurerm_hdinsight_spark_cluster" "import" {
       dynamic "head_node" {
         for_each = lookup(roles.value, "head_node", [])
         content {
-          password           = lookup(head_node.value, "password", null)
-          subnet_id          = lookup(head_node.value, "subnet_id", null)
-          username           = head_node.value.username
-          virtual_network_id = lookup(head_node.value, "virtual_network_id", null)
-          vm_size            = head_node.value.vm_size
+          password = lookup(head_node.value, "password", null)
+          username = head_node.value.username
+          vm_size  = head_node.value.vm_size
         }
       }
 
@@ -1017,10 +1015,8 @@ resource "azurerm_hdinsight_spark_cluster" "import" {
         for_each = lookup(roles.value, "worker_node", [])
         content {
           password              = lookup(worker_node.value, "password", null)
-          subnet_id             = lookup(worker_node.value, "subnet_id", null)
           target_instance_count = worker_node.value.target_instance_count
           username              = worker_node.value.username
-          virtual_network_id    = lookup(worker_node.value, "virtual_network_id", null)
           vm_size               = worker_node.value.vm_size
         }
       }
@@ -1028,11 +1024,9 @@ resource "azurerm_hdinsight_spark_cluster" "import" {
       dynamic "zookeeper_node" {
         for_each = lookup(roles.value, "zookeeper_node", [])
         content {
-          password           = lookup(zookeeper_node.value, "password", null)
-          subnet_id          = lookup(zookeeper_node.value, "subnet_id", null)
-          username           = zookeeper_node.value.username
-          virtual_network_id = lookup(zookeeper_node.value, "virtual_network_id", null)
-          vm_size            = zookeeper_node.value.vm_size
+          password = lookup(zookeeper_node.value, "password", null)
+          username = zookeeper_node.value.username
+          vm_size  = zookeeper_node.value.vm_size
         }
       }
     }

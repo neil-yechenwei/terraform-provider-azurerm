@@ -19,13 +19,14 @@ type ListOperationResponse struct {
 }
 
 type ListCompleteResult struct {
-	Items []SAPDatabaseInstance
+	LatestHttpResponse *http.Response
+	Items              []SAPDatabaseInstance
 }
 
 // List ...
 func (c SAPDatabaseInstancesClient) List(ctx context.Context, id SapVirtualInstanceId) (result ListOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -83,7 +84,8 @@ func (c SAPDatabaseInstancesClient) ListCompleteMatchingPredicate(ctx context.Co
 	}
 
 	result = ListCompleteResult{
-		Items: items,
+		LatestHttpResponse: resp.HttpResponse,
+		Items:              items,
 	}
 	return
 }

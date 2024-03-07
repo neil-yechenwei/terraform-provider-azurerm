@@ -6,7 +6,7 @@ import (
 
 type Registration struct{}
 
-var _ sdk.TypedServiceRegistrationWithAGitHubLabel = Registration{}
+var _ sdk.TypedServiceRegistration = Registration{}
 
 func (r Registration) AssociatedGitHubLabel() string {
 	return "service/workloads"
@@ -33,5 +33,6 @@ func (r Registration) DataSources() []sdk.DataSource {
 func (r Registration) Resources() []sdk.Resource {
 	return []sdk.Resource{
 		WorkloadsSAPApplicationServerInstanceResource{},
+		WorkloadsSAPThreeTierVirtualInstanceResource{},
 	}
 }

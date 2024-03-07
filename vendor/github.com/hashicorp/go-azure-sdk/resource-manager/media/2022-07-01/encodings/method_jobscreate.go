@@ -20,7 +20,7 @@ type JobsCreateOperationResponse struct {
 // JobsCreate ...
 func (c EncodingsClient) JobsCreate(ctx context.Context, id JobId, input Job) (result JobsCreateOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusCreated,
 		},
@@ -47,7 +47,10 @@ func (c EncodingsClient) JobsCreate(ctx context.Context, id JobId, input Job) (r
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model Job
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

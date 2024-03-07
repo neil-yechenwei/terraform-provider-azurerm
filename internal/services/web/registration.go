@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package web
 
 import (
@@ -59,13 +62,9 @@ func (r Registration) SupportedResources() map[string]*pluginsdk.Resource {
 }
 
 func (r Registration) DataSources() []sdk.DataSource {
-	return []sdk.DataSource{
-		AppServiceEnvironmentV3DataSource{},
-	}
+	return []sdk.DataSource{}
 }
 
 func (r Registration) Resources() []sdk.Resource {
-	return []sdk.Resource{
-		AppServiceEnvironmentV3Resource{},
-	}
+	return []sdk.Resource{}
 }

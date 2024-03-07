@@ -1,20 +1,20 @@
+// Copyright (c) HashiCorp Inc. All rights reserved.
+// Licensed under the MPL-2.0 License. See NOTICE.txt in the project root for license information.
+
 package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-azure-sdk/sdk/environments"
 	"github.com/hashicorp/go-azure-sdk/sdk/internal/azurecli"
 	"golang.org/x/oauth2"
 )
-
-// Copyright (c) HashiCorp Inc. All rights reserved.
-// Licensed under the MIT License. See NOTICE.txt in the project root for license information.
 
 type AzureCliAuthorizerOptions struct {
 	// Api describes the Azure API being used
@@ -59,11 +59,6 @@ func (a *AzureCliAuthorizer) Token(_ context.Context, _ *http.Request) (*oauth2.
 
 	azArgs := []string{"account", "get-access-token"}
 
-	// verify that the Azure CLI supports MSAL - ADAL is no longer supported
-	err := azurecli.CheckAzVersion(azurecli.MsalVersion, nil)
-	if err != nil {
-		return nil, fmt.Errorf("checking the version of the Azure CLI: %+v", err)
-	}
 	scope, err := environments.Scope(a.conf.Api)
 	if err != nil {
 		return nil, fmt.Errorf("determining scope for %q: %+v", a.conf.Api.Name(), err)
@@ -77,12 +72,20 @@ func (a *AzureCliAuthorizer) Token(_ context.Context, _ *http.Request) (*oauth2.
 	}
 
 	var token azureCliToken
-	if err := azurecli.JSONUnmarshalAzCmd(&token, azArgs...); err != nil {
+	if err = azurecli.JSONUnmarshalAzCmd(false, &token, azArgs...); err != nil {
 		return nil, err
+	}
+
+	var expiry time.Time
+	if token.ExpiresOn != "" {
+		if expiry, err = time.ParseInLocation("2006-01-02 15:04:05.999999", token.ExpiresOn, time.Local); err != nil {
+			return nil, fmt.Errorf("internal-error: parsing expiresOn value for az-cli token")
+		}
 	}
 
 	return &oauth2.Token{
 		AccessToken: token.AccessToken,
+		Expiry:      expiry,
 		TokenType:   token.TokenType,
 	}, nil
 }
@@ -105,11 +108,6 @@ func (a *AzureCliAuthorizer) AuxiliaryTokens(_ context.Context, _ *http.Request)
 
 	azArgs := []string{"account", "get-access-token"}
 
-	// verify that the Azure CLI supports MSAL - ADAL is no longer supported
-	err := azurecli.CheckAzVersion(AzureCliMsalVersion, nil)
-	if err != nil {
-		return nil, fmt.Errorf("checking the version of the Azure CLI: %+v", err)
-	}
 	scope, err := environments.Scope(a.conf.Api)
 	if err != nil {
 		return nil, fmt.Errorf("determining scope for %q: %+v", a.conf.Api.Name(), err)
@@ -121,7 +119,7 @@ func (a *AzureCliAuthorizer) AuxiliaryTokens(_ context.Context, _ *http.Request)
 		argsWithTenant := append(azArgs, "--tenant", tenantId)
 
 		var token azureCliToken
-		if err := azurecli.JSONUnmarshalAzCmd(&token, argsWithTenant...); err != nil {
+		if err = azurecli.JSONUnmarshalAzCmd(false, &token, argsWithTenant...); err != nil {
 			return nil, err
 		}
 
@@ -133,12 +131,6 @@ func (a *AzureCliAuthorizer) AuxiliaryTokens(_ context.Context, _ *http.Request)
 
 	return tokens, nil
 }
-
-const (
-	AzureCliMinimumVersion   = "2.0.81"
-	AzureCliMsalVersion      = "2.30.0"
-	AzureCliNextMajorVersion = "3.0.0"
-)
 
 // azureCliConfig configures an AzureCliAuthorizer.
 type azureCliConfig struct {
@@ -156,27 +148,35 @@ type azureCliConfig struct {
 
 // newAzureCliConfig validates the supplied tenant ID and returns a new azureCliConfig.
 func newAzureCliConfig(api environments.Api, tenantId string, auxiliaryTenantIds []string) (*azureCliConfig, error) {
-	var err error
-
-	// check az-cli version
-	nextMajor := azurecli.NextMajorVersion
-	if err = azurecli.CheckAzVersion(azurecli.MinimumVersion, &nextMajor); err != nil {
+	// check az-cli version, ensure that MSAL is supported
+	if err := azurecli.CheckAzVersion(); err != nil {
 		return nil, err
 	}
 
-	// check tenant ID
-	tenantId, err = azurecli.CheckTenantID(tenantId)
-	if err != nil {
-		return nil, err
+	// obtain default tenant ID if no tenant ID was provided
+	if strings.TrimSpace(tenantId) == "" {
+		if defaultTenantId, err := azurecli.GetDefaultTenantID(); err != nil {
+			return nil, fmt.Errorf("tenant ID was not specified and the default tenant ID could not be determined: %v", err)
+		} else if defaultTenantId == nil {
+			return nil, fmt.Errorf("tenant ID was not specified and the default tenant ID could not be determined")
+		} else {
+			tenantId = *defaultTenantId
+		}
 	}
-	if tenantId == "" {
-		return nil, errors.New("invalid tenantId or unable to determine tenantId")
+
+	// validate tenant ID
+	if valid, err := azurecli.ValidateTenantID(tenantId); err != nil {
+		return nil, err
+	} else if !valid {
+		return nil, fmt.Errorf("invalid tenant ID was provided")
 	}
 
 	// get the default subscription ID
-	subscriptionId, err := azurecli.GetDefaultSubscriptionID()
-	if err != nil {
+	var subscriptionId string
+	if defaultSubscriptionId, err := azurecli.GetDefaultSubscriptionID(); err != nil {
 		return nil, err
+	} else if defaultSubscriptionId != nil {
+		subscriptionId = *defaultSubscriptionId
 	}
 
 	return &azureCliConfig{

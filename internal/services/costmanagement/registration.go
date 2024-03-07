@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package costmanagement
 
 import (
@@ -23,6 +26,7 @@ func (r Registration) Resources() []sdk.Resource {
 		SubscriptionCostManagementExportResource{},
 		SubscriptionCostManagementViewResource{},
 		ResourceGroupCostManagementViewResource{},
+		CostManagementScheduledActionResource{},
 		AnomalyAlertResource{},
 	}
 }

@@ -21,7 +21,7 @@ type ListKeysOperationResponse struct {
 // ListKeys ...
 func (c AccountsClient) ListKeys(ctx context.Context, id AccountId) (result ListKeysOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -44,7 +44,10 @@ func (c AccountsClient) ListKeys(ctx context.Context, id AccountId) (result List
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model MapsAccountKeys
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

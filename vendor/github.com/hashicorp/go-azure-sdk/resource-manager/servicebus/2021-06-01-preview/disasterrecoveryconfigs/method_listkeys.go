@@ -19,9 +19,9 @@ type ListKeysOperationResponse struct {
 }
 
 // ListKeys ...
-func (c DisasterRecoveryConfigsClient) ListKeys(ctx context.Context, id AuthorizationRuleId) (result ListKeysOperationResponse, err error) {
+func (c DisasterRecoveryConfigsClient) ListKeys(ctx context.Context, id DisasterRecoveryConfigAuthorizationRuleId) (result ListKeysOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -44,7 +44,10 @@ func (c DisasterRecoveryConfigsClient) ListKeys(ctx context.Context, id Authoriz
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model AccessKeys
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

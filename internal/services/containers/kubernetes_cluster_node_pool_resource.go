@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package containers
 
 import (
@@ -8,22 +11,25 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/zones"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2022-03-01/capacityreservationgroups"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2022-03-01/proximityplacementgroups"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-02-02-preview/agentpools"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-02-02-preview/managedclusters"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-06-02-preview/agentpools"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-06-02-preview/managedclusters"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-06-02-preview/snapshots"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 	computeValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/containers/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/containers/parse"
 	containerValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/containers/validate"
-	networkValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
@@ -54,311 +60,364 @@ func resourceKubernetesClusterNodePool() *pluginsdk.Resource {
 			0: migration.KubernetesClusterNodePoolV0ToV1{},
 		}),
 
-		Schema: map[string]*pluginsdk.Schema{
-			"name": {
-				Type:         pluginsdk.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: containerValidate.KubernetesAgentPoolName,
-			},
-
-			"kubernetes_cluster_id": {
-				Type:         pluginsdk.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: containerValidate.ClusterID,
-			},
-
-			"node_count": {
-				Type:         pluginsdk.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
-			},
-
-			"tags": commonschema.Tags(),
-
-			"vm_size": {
-				Type:         pluginsdk.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringIsNotEmpty,
-			},
-
-			"host_group_id": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: computeValidate.HostGroupID,
-			},
-
-			// Optional
-			"capacity_reservation_group_id": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: capacityreservationgroups.ValidateCapacityReservationGroupID,
-			},
-
-			"custom_ca_trust_enabled": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-			},
-
-			"enable_auto_scaling": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-			},
-
-			"enable_host_encryption": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"enable_node_public_ip": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"eviction_policy": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.ScaleSetEvictionPolicyDelete),
-					string(agentpools.ScaleSetEvictionPolicyDeallocate),
-				}, false),
-			},
-
-			"kubelet_config": schemaNodePoolKubeletConfig(),
-
-			"linux_os_config": schemaNodePoolLinuxOSConfig(),
-
-			"fips_enabled": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"kubelet_disk_type": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				Computed: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.KubeletDiskTypeOS),
-					string(agentpools.KubeletDiskTypeTemporary),
-				}, false),
-			},
-
-			"max_count": {
-				Type:         pluginsdk.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
-			},
-
-			"max_pods": {
-				Type:     pluginsdk.TypeInt,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
-
-			"message_of_the_day": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringIsNotEmpty,
-			},
-
-			"mode": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				Default:  string(agentpools.AgentPoolModeUser),
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.AgentPoolModeSystem),
-					string(agentpools.AgentPoolModeUser),
-				}, false),
-			},
-
-			"min_count": {
-				Type:     pluginsdk.TypeInt,
-				Optional: true,
-				// NOTE: rather than setting `0` users should instead pass `null` here
-				ValidateFunc: validation.IntBetween(0, 1000),
-			},
-
-			"node_network_profile": schemaNodePoolNetworkProfile(),
-
-			"node_labels": {
-				Type:     pluginsdk.TypeMap,
-				Optional: true,
-				Computed: true,
-				Elem: &pluginsdk.Schema{
-					Type: pluginsdk.TypeString,
-				},
-			},
-
-			"node_public_ip_prefix_id": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				RequiredWith: []string{"enable_node_public_ip"},
-			},
-
-			// Node Taints control the behaviour of the Node Pool, as such they should not be computed and
-			// must be specified/reconciled as required
-			"node_taints": {
-				Type:     pluginsdk.TypeList,
-				Optional: true,
-				ForceNew: true,
-				Elem: &pluginsdk.Schema{
-					Type: pluginsdk.TypeString,
-				},
-			},
-
-			"orchestrator_version": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringIsNotEmpty,
-			},
-
-			"os_disk_size_gb": {
-				Type:         pluginsdk.TypeInt,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: validation.IntAtLeast(1),
-			},
-
-			"os_disk_type": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Default:  agentpools.OSDiskTypeManaged,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.OSDiskTypeEphemeral),
-					string(agentpools.OSDiskTypeManaged),
-				}, false),
-			},
-
-			"os_sku": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Computed: true, // defaults to Ubuntu if using Linux
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.OSSKUCBLMariner),
-					string(agentpools.OSSKUMariner),
-					string(agentpools.OSSKUUbuntu),
-					string(agentpools.OSSKUWindowsTwoZeroOneNine),
-					string(agentpools.OSSKUWindowsTwoZeroTwoTwo),
-				}, false),
-			},
-
-			"os_type": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Default:  string(agentpools.OSTypeLinux),
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.OSTypeLinux),
-					string(agentpools.OSTypeWindows),
-				}, false),
-			},
-
-			"pod_subnet_id": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: networkValidate.SubnetID,
-			},
-
-			"priority": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Default:  string(agentpools.ScaleSetPriorityRegular),
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.ScaleSetPriorityRegular),
-					string(agentpools.ScaleSetPrioritySpot),
-				}, false),
-			},
-
-			"proximity_placement_group_id": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: proximityplacementgroups.ValidateProximityPlacementGroupID,
-			},
-
-			"spot_max_price": {
-				Type:         pluginsdk.TypeFloat,
-				Optional:     true,
-				ForceNew:     true,
-				Default:      -1.0,
-				ValidateFunc: computeValidate.SpotMaxPrice,
-			},
-
-			"scale_down_mode": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				Default:  string(agentpools.ScaleDownModeDelete),
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.ScaleDownModeDeallocate),
-					string(agentpools.ScaleDownModeDelete),
-				}, false),
-			},
-
-			"ultra_ssd_enabled": {
-				Type:     pluginsdk.TypeBool,
-				ForceNew: true,
-				Default:  false,
-				Optional: true,
-			},
-
-			"vnet_subnet_id": {
-				Type:         pluginsdk.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: networkValidate.SubnetID,
-			},
-
-			"upgrade_settings": upgradeSettingsSchema(),
-
-			"windows_profile": {
-				Type:     pluginsdk.TypeList,
-				Optional: true,
-				ForceNew: true,
-				MaxItems: 1,
-				Elem: &pluginsdk.Resource{
-					Schema: map[string]*pluginsdk.Schema{
-						"outbound_nat_enabled": {
-							Type:     pluginsdk.TypeBool,
-							Optional: true,
-							ForceNew: true,
-							Default:  true,
-						},
-					},
-				},
-			},
-
-			"workload_runtime": {
-				Type:     pluginsdk.TypeString,
-				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(agentpools.WorkloadRuntimeOCIContainer),
-					string(agentpools.WorkloadRuntimeWasmWasi),
-					string(agentpools.WorkloadRuntimeKataMshvVMIsolation),
-				}, false),
-			},
-			"zones": commonschema.ZonesMultipleOptionalForceNew(),
-		},
+		Schema: resourceKubernetesClusterNodePoolSchema(),
 	}
 }
 
+func resourceKubernetesClusterNodePoolSchema() map[string]*pluginsdk.Schema {
+	s := map[string]*pluginsdk.Schema{
+		"name": {
+			Type:         pluginsdk.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: containerValidate.KubernetesAgentPoolName,
+		},
+
+		"kubernetes_cluster_id": {
+			Type:         pluginsdk.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: containerValidate.ClusterID,
+		},
+
+		"node_count": {
+			Type:         pluginsdk.TypeInt,
+			Optional:     true,
+			Computed:     true,
+			ValidateFunc: validation.IntBetween(0, 1000),
+		},
+
+		"tags": commonschema.Tags(),
+
+		"vm_size": {
+			Type:         pluginsdk.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringIsNotEmpty,
+		},
+
+		"host_group_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: computeValidate.HostGroupID,
+		},
+
+		// Optional
+		"capacity_reservation_group_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: capacityreservationgroups.ValidateCapacityReservationGroupID,
+		},
+
+		"custom_ca_trust_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+		},
+
+		"eviction_policy": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			ForceNew: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.ScaleSetEvictionPolicyDelete),
+				string(agentpools.ScaleSetEvictionPolicyDeallocate),
+			}, false),
+		},
+
+		"kubelet_config": schemaNodePoolKubeletConfigForceNew(),
+
+		"linux_os_config": schemaNodePoolLinuxOSConfigForceNew(),
+
+		"fips_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			ForceNew: true,
+		},
+
+		"gpu_instance": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			ForceNew: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.GPUInstanceProfileMIGOneg),
+				string(managedclusters.GPUInstanceProfileMIGTwog),
+				string(managedclusters.GPUInstanceProfileMIGThreeg),
+				string(managedclusters.GPUInstanceProfileMIGFourg),
+				string(managedclusters.GPUInstanceProfileMIGSeveng),
+			}, false),
+		},
+
+		"kubelet_disk_type": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			Computed: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.KubeletDiskTypeOS),
+				string(agentpools.KubeletDiskTypeTemporary),
+			}, false),
+		},
+
+		"max_count": {
+			Type:         pluginsdk.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 1000),
+		},
+
+		"max_pods": {
+			Type:     pluginsdk.TypeInt,
+			Optional: true,
+			Computed: true,
+			ForceNew: true,
+		},
+
+		"message_of_the_day": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringIsNotEmpty,
+		},
+
+		"mode": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			Default:  string(agentpools.AgentPoolModeUser),
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.AgentPoolModeSystem),
+				string(agentpools.AgentPoolModeUser),
+			}, false),
+		},
+
+		"min_count": {
+			Type:     pluginsdk.TypeInt,
+			Optional: true,
+			// NOTE: rather than setting `0` users should instead pass `null` here
+			ValidateFunc: validation.IntBetween(0, 1000),
+		},
+
+		"node_network_profile": schemaNodePoolNetworkProfile(),
+
+		"node_labels": {
+			Type:     pluginsdk.TypeMap,
+			Optional: true,
+			Computed: true,
+			Elem: &pluginsdk.Schema{
+				Type: pluginsdk.TypeString,
+			},
+		},
+
+		"node_public_ip_prefix_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			RequiredWith: []string{"enable_node_public_ip"},
+		},
+
+		// Node Taints control the behaviour of the Node Pool, as such they should not be computed and
+		// must be specified/reconciled as required
+		"node_taints": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			Elem: &pluginsdk.Schema{
+				Type: pluginsdk.TypeString,
+			},
+		},
+
+		"orchestrator_version": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			Computed:     true,
+			ValidateFunc: validation.StringIsNotEmpty,
+		},
+
+		"os_disk_size_gb": {
+			Type:         pluginsdk.TypeInt,
+			Optional:     true,
+			ForceNew:     true,
+			Computed:     true,
+			ValidateFunc: validation.IntAtLeast(1),
+		},
+
+		"os_disk_type": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			ForceNew: true,
+			Default:  agentpools.OSDiskTypeManaged,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.OSDiskTypeEphemeral),
+				string(agentpools.OSDiskTypeManaged),
+			}, false),
+		},
+
+		"os_sku": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			ForceNew: true,
+			Computed: true, // defaults to Ubuntu if using Linux
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.OSSKUAzureLinux),
+				string(agentpools.OSSKUUbuntu),
+				string(agentpools.OSSKUWindowsTwoZeroOneNine),
+				string(agentpools.OSSKUWindowsTwoZeroTwoTwo),
+			}, false),
+		},
+
+		"os_type": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			ForceNew: true,
+			Default:  string(agentpools.OSTypeLinux),
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.OSTypeLinux),
+				string(agentpools.OSTypeWindows),
+			}, false),
+		},
+
+		"pod_subnet_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: commonids.ValidateSubnetID,
+		},
+
+		"priority": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			ForceNew: true,
+			Default:  string(agentpools.ScaleSetPriorityRegular),
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.ScaleSetPriorityRegular),
+				string(agentpools.ScaleSetPrioritySpot),
+			}, false),
+		},
+
+		"proximity_placement_group_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: proximityplacementgroups.ValidateProximityPlacementGroupID,
+		},
+
+		"snapshot_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: snapshots.ValidateSnapshotID,
+		},
+
+		"spot_max_price": {
+			Type:         pluginsdk.TypeFloat,
+			Optional:     true,
+			ForceNew:     true,
+			Default:      -1.0,
+			ValidateFunc: computeValidate.SpotMaxPrice,
+		},
+
+		"scale_down_mode": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			Default:  string(agentpools.ScaleDownModeDelete),
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.ScaleDownModeDeallocate),
+				string(agentpools.ScaleDownModeDelete),
+			}, false),
+		},
+
+		"ultra_ssd_enabled": {
+			Type:     pluginsdk.TypeBool,
+			ForceNew: true,
+			Default:  false,
+			Optional: true,
+		},
+
+		"vnet_subnet_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: commonids.ValidateSubnetID,
+		},
+
+		"upgrade_settings": upgradeSettingsSchema(),
+
+		"windows_profile": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			ForceNew: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"outbound_nat_enabled": {
+						Type:     pluginsdk.TypeBool,
+						Optional: true,
+						ForceNew: true,
+						Default:  true,
+					},
+				},
+			},
+		},
+
+		"workload_runtime": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			ValidateFunc: validation.StringInSlice([]string{
+				string(agentpools.WorkloadRuntimeOCIContainer),
+				string(agentpools.WorkloadRuntimeWasmWasi),
+				string(agentpools.WorkloadRuntimeKataMshvVMIsolation),
+			}, false),
+		},
+		"zones": commonschema.ZonesMultipleOptionalForceNew(),
+	}
+
+	if !features.FourPointOhBeta() {
+		s["os_sku"].ValidateFunc = validation.StringInSlice([]string{
+			string(agentpools.OSSKUAzureLinux),
+			string(agentpools.OSSKUCBLMariner),
+			string(agentpools.OSSKUMariner),
+			string(agentpools.OSSKUUbuntu),
+			string(agentpools.OSSKUWindowsTwoZeroOneNine),
+			string(agentpools.OSSKUWindowsTwoZeroTwoTwo),
+		}, false)
+
+		s["enable_auto_scaling"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+		}
+
+		s["enable_node_public_ip"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			ForceNew: true,
+		}
+
+		s["enable_host_encryption"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			ForceNew: true,
+		}
+	}
+
+	if features.FourPointOhBeta() {
+		s["auto_scaling_enabled"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+		}
+
+		s["node_public_ip_enabled"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			ForceNew: true,
+		}
+
+		s["host_encryption_enabled"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			ForceNew: true,
+		}
+	}
+
+	return s
+}
 func resourceKubernetesClusterNodePoolCreate(d *pluginsdk.ResourceData, meta interface{}) error {
 	containersClient := meta.(*clients.Client).Containers
 	clustersClient := containersClient.KubernetesClustersClient
@@ -366,7 +425,7 @@ func resourceKubernetesClusterNodePoolCreate(d *pluginsdk.ResourceData, meta int
 	ctx, cancel := timeouts.ForCreate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	clusterId, err := managedclusters.ParseManagedClusterID(d.Get("kubernetes_cluster_id").(string))
+	clusterId, err := commonids.ParseKubernetesClusterID(d.Get("kubernetes_cluster_id").(string))
 	if err != nil {
 		return err
 	}
@@ -413,6 +472,17 @@ func resourceKubernetesClusterNodePoolCreate(d *pluginsdk.ResourceData, meta int
 
 	count := d.Get("node_count").(int)
 	enableAutoScaling := d.Get("enable_auto_scaling").(bool)
+	if features.FourPointOhBeta() {
+		enableAutoScaling = d.Get("auto_scaling_enabled").(bool)
+	}
+	hostEncryption := d.Get("enable_host_encryption").(bool)
+	if features.FourPointOhBeta() {
+		hostEncryption = d.Get("host_encryption_enabled").(bool)
+	}
+	nodeIp := d.Get("enable_node_public_ip").(bool)
+	if features.FourPointOhBeta() {
+		nodeIp = d.Get("node_public_ip_enabled").(bool)
+	}
 	evictionPolicy := d.Get("eviction_policy").(string)
 	mode := agentpools.AgentPoolMode(d.Get("mode").(string))
 	osType := d.Get("os_type").(string)
@@ -421,19 +491,19 @@ func resourceKubernetesClusterNodePoolCreate(d *pluginsdk.ResourceData, meta int
 	t := d.Get("tags").(map[string]interface{})
 
 	profile := agentpools.ManagedClusterAgentPoolProfileProperties{
-		OsType:                 utils.ToPtr(agentpools.OSType(osType)),
-		EnableAutoScaling:      utils.Bool(enableAutoScaling),
-		EnableCustomCATrust:    utils.Bool(d.Get("custom_ca_trust_enabled").(bool)),
-		EnableFIPS:             utils.Bool(d.Get("fips_enabled").(bool)),
-		EnableEncryptionAtHost: utils.Bool(d.Get("enable_host_encryption").(bool)),
-		EnableUltraSSD:         utils.Bool(d.Get("ultra_ssd_enabled").(bool)),
-		EnableNodePublicIP:     utils.Bool(d.Get("enable_node_public_ip").(bool)),
-		KubeletDiskType:        utils.ToPtr(agentpools.KubeletDiskType(d.Get("kubelet_disk_type").(string))),
-		Mode:                   utils.ToPtr(mode),
-		ScaleSetPriority:       utils.ToPtr(agentpools.ScaleSetPriority(d.Get("priority").(string))),
+		OsType:                 pointer.To(agentpools.OSType(osType)),
+		EnableAutoScaling:      pointer.To(enableAutoScaling),
+		EnableCustomCATrust:    pointer.To(d.Get("custom_ca_trust_enabled").(bool)),
+		EnableFIPS:             pointer.To(d.Get("fips_enabled").(bool)),
+		EnableEncryptionAtHost: pointer.To(hostEncryption),
+		EnableUltraSSD:         pointer.To(d.Get("ultra_ssd_enabled").(bool)),
+		EnableNodePublicIP:     pointer.To(nodeIp),
+		KubeletDiskType:        pointer.To(agentpools.KubeletDiskType(d.Get("kubelet_disk_type").(string))),
+		Mode:                   pointer.To(mode),
+		ScaleSetPriority:       pointer.To(agentpools.ScaleSetPriority(d.Get("priority").(string))),
 		Tags:                   tags.Expand(t),
-		Type:                   utils.ToPtr(agentpools.AgentPoolTypeVirtualMachineScaleSets),
-		VMSize:                 utils.String(d.Get("vm_size").(string)),
+		Type:                   pointer.To(agentpools.AgentPoolTypeVirtualMachineScaleSets),
+		VMSize:                 pointer.To(d.Get("vm_size").(string)),
 		UpgradeSettings:        expandAgentPoolUpgradeSettings(d.Get("upgrade_settings").([]interface{})),
 		WindowsProfile:         expandAgentPoolWindowsProfile(d.Get("windows_profile").([]interface{})),
 
@@ -441,20 +511,24 @@ func resourceKubernetesClusterNodePoolCreate(d *pluginsdk.ResourceData, meta int
 		Count: utils.Int64(int64(count)),
 	}
 
+	if gpuInstanceProfile := d.Get("gpu_instance").(string); gpuInstanceProfile != "" {
+		profile.GpuInstanceProfile = pointer.To(agentpools.GPUInstanceProfile(gpuInstanceProfile))
+	}
+
 	if osSku := d.Get("os_sku").(string); osSku != "" {
-		profile.OsSKU = utils.ToPtr(agentpools.OSSKU(osSku))
+		profile.OsSKU = pointer.To(agentpools.OSSKU(osSku))
 	}
 
 	if scaleDownMode := d.Get("scale_down_mode").(string); scaleDownMode != "" {
-		profile.ScaleDownMode = utils.ToPtr(agentpools.ScaleDownMode(scaleDownMode))
+		profile.ScaleDownMode = pointer.To(agentpools.ScaleDownMode(scaleDownMode))
 	}
 
 	if workloadRuntime := d.Get("workload_runtime").(string); workloadRuntime != "" {
-		profile.WorkloadRuntime = utils.ToPtr(agentpools.WorkloadRuntime(workloadRuntime))
+		profile.WorkloadRuntime = pointer.To(agentpools.WorkloadRuntime(workloadRuntime))
 	}
 
 	if priority == string(managedclusters.ScaleSetPrioritySpot) {
-		profile.ScaleSetEvictionPolicy = utils.ToPtr(agentpools.ScaleSetEvictionPolicy(evictionPolicy))
+		profile.ScaleSetEvictionPolicy = pointer.To(agentpools.ScaleSetEvictionPolicy(evictionPolicy))
 		profile.SpotMaxPrice = utils.Float(spotMaxPrice)
 	} else {
 		if evictionPolicy != "" {
@@ -516,7 +590,7 @@ func resourceKubernetesClusterNodePoolCreate(d *pluginsdk.ResourceData, meta int
 	}
 
 	if osDiskType := d.Get("os_disk_type").(string); osDiskType != "" {
-		profile.OsDiskType = utils.ToPtr(agentpools.OSDiskType(osDiskType))
+		profile.OsDiskType = pointer.To(agentpools.OSDiskType(osDiskType))
 	}
 
 	if podSubnetID := d.Get("pod_subnet_id").(string); podSubnetID != "" {
@@ -582,18 +656,20 @@ func resourceKubernetesClusterNodePoolCreate(d *pluginsdk.ResourceData, meta int
 		profile.NetworkProfile = expandAgentPoolNetworkProfile(networkProfile)
 	}
 
+	if snapshotId := d.Get("snapshot_id").(string); snapshotId != "" {
+		profile.CreationData = &agentpools.CreationData{
+			SourceResourceId: utils.String(snapshotId),
+		}
+	}
+
 	parameters := agentpools.AgentPool{
 		Name:       utils.String(id.AgentPoolName),
 		Properties: &profile,
 	}
 
-	future, err := poolsClient.CreateOrUpdate(ctx, id, parameters)
+	err = poolsClient.CreateOrUpdateThenPoll(ctx, id, parameters)
 	if err != nil {
 		return fmt.Errorf("creating %s: %+v", id, err)
-	}
-
-	if err = future.Poller.PollUntilDone(); err != nil {
-		return fmt.Errorf("waiting for creation of %s: %+v", id, err)
 	}
 
 	d.SetId(id.ID())
@@ -637,21 +713,20 @@ func resourceKubernetesClusterNodePoolUpdate(d *pluginsdk.ResourceData, meta int
 	log.Printf("[DEBUG] Determining delta for existing %s..", *id)
 
 	// delta patching
-	if d.HasChange("enable_auto_scaling") {
-		enableAutoScaling = d.Get("enable_auto_scaling").(bool)
-		props.EnableAutoScaling = utils.Bool(enableAutoScaling)
-	}
-
-	if d.HasChange("enable_host_encryption") {
-		props.EnableEncryptionAtHost = utils.Bool(d.Get("enable_host_encryption").(bool))
+	if features.FourPointOhBeta() {
+		if d.HasChange("auto_scaling_enabled") {
+			enableAutoScaling = d.Get("auto_scaling_enabled").(bool)
+			props.EnableAutoScaling = utils.Bool(enableAutoScaling)
+		}
+	} else {
+		if d.HasChange("enable_auto_scaling") {
+			enableAutoScaling = d.Get("enable_auto_scaling").(bool)
+			props.EnableAutoScaling = utils.Bool(enableAutoScaling)
+		}
 	}
 
 	if d.HasChange("custom_ca_trust_enabled") {
 		props.EnableCustomCATrust = utils.Bool(d.Get("custom_ca_trust_enabled").(bool))
-	}
-
-	if d.HasChange("enable_node_public_ip") {
-		props.EnableNodePublicIP = utils.Bool(d.Get("enable_node_public_ip").(bool))
 	}
 
 	if d.HasChange("max_count") || d.Get("enable_auto_scaling").(bool) {
@@ -680,7 +755,7 @@ func resourceKubernetesClusterNodePoolUpdate(d *pluginsdk.ResourceData, meta int
 		if err != nil {
 			return fmt.Errorf("retrieving Node Pool %s: %+v", *id, err)
 		}
-		if existingNodePool := existingNodePoolResp.Model; existingNodePool != nil {
+		if existingNodePool := existingNodePoolResp.Model; existingNodePool != nil && existingNodePool.Properties != nil {
 			orchestratorVersion := d.Get("orchestrator_version").(string)
 			currentOrchestratorVersion := ""
 			if v := existingNodePool.Properties.CurrentOrchestratorVersion; v != nil {
@@ -717,6 +792,14 @@ func resourceKubernetesClusterNodePoolUpdate(d *pluginsdk.ResourceData, meta int
 		props.NodeLabels = expandNodeLabels(d.Get("node_labels").(map[string]interface{}))
 	}
 
+	if d.HasChange("node_taints") {
+		props.NodeTaints = utils.ExpandStringSlice(d.Get("node_taints").([]interface{}))
+	}
+
+	if d.HasChange("node_network_profile") {
+		props.NetworkProfile = expandAgentPoolNetworkProfile(d.Get("node_network_profile").([]interface{}))
+	}
+
 	// validate the auto-scale fields are both set/unset to prevent a continual diff
 	maxCount := 0
 	if props.MaxCount != nil {
@@ -746,13 +829,9 @@ func resourceKubernetesClusterNodePoolUpdate(d *pluginsdk.ResourceData, meta int
 
 	log.Printf("[DEBUG] Updating existing %s..", *id)
 	existing.Model.Properties = props
-	future, err := client.CreateOrUpdate(ctx, *id, *existing.Model)
+	err = client.CreateOrUpdateThenPoll(ctx, *id, *existing.Model)
 	if err != nil {
 		return fmt.Errorf("updating Node Pool %s: %+v", *id, err)
-	}
-
-	if err = future.Poller.PollUntilDone(); err != nil {
-		return fmt.Errorf("waiting for update of %s: %+v", *id, err)
 	}
 
 	d.Partial(false)
@@ -772,7 +851,7 @@ func resourceKubernetesClusterNodePoolRead(d *pluginsdk.ResourceData, meta inter
 	}
 
 	// if the parent cluster doesn't exist then the node pool won't
-	clusterId := managedclusters.NewManagedClusterID(id.SubscriptionId, id.ResourceGroupName, id.ManagedClusterName)
+	clusterId := commonids.NewKubernetesClusterID(id.SubscriptionId, id.ResourceGroupName, id.ManagedClusterName)
 	cluster, err := clustersClient.Get(ctx, clusterId)
 	if err != nil {
 		if response.WasNotFound(cluster.HttpResponse) {
@@ -801,15 +880,29 @@ func resourceKubernetesClusterNodePoolRead(d *pluginsdk.ResourceData, meta inter
 	if model := resp.Model; model != nil && model.Properties != nil {
 		props := model.Properties
 		d.Set("zones", zones.FlattenUntyped(props.AvailabilityZones))
-		d.Set("enable_auto_scaling", props.EnableAutoScaling)
-		d.Set("enable_node_public_ip", props.EnableNodePublicIP)
-		d.Set("enable_host_encryption", props.EnableEncryptionAtHost)
+		if features.FourPointOhBeta() {
+			d.Set("auto_scaling_enabled", props.EnableAutoScaling)
+			d.Set("node_public_ip_enabled", props.EnableNodePublicIP)
+			d.Set("host_encryption_enabled", props.EnableEncryptionAtHost)
+		} else {
+			d.Set("enable_auto_scaling", props.EnableAutoScaling)
+			d.Set("enable_node_public_ip", props.EnableNodePublicIP)
+			d.Set("enable_host_encryption", props.EnableEncryptionAtHost)
+		}
 		d.Set("custom_ca_trust_enabled", props.EnableCustomCATrust)
 		d.Set("fips_enabled", props.EnableFIPS)
 		d.Set("ultra_ssd_enabled", props.EnableUltraSSD)
 
 		if v := props.KubeletDiskType; v != nil {
 			d.Set("kubelet_disk_type", string(*v))
+		}
+
+		if v := props.GpuInstanceProfile; v != nil {
+			d.Set("gpu_instance", string(*v))
+		}
+
+		if props.CreationData != nil {
+			d.Set("snapshot_id", props.CreationData.SourceResourceId)
 		}
 
 		scaleDownMode := string(managedclusters.ScaleDownModeDelete)
@@ -964,15 +1057,11 @@ func resourceKubernetesClusterNodePoolDelete(d *pluginsdk.ResourceData, meta int
 	}
 
 	ignorePodDisruptionBudget := true
-	future, err := client.Delete(ctx, *id, agentpools.DeleteOperationOptions{
+	err = client.DeleteThenPoll(ctx, *id, agentpools.DeleteOperationOptions{
 		IgnorePodDisruptionBudget: &ignorePodDisruptionBudget,
 	})
 	if err != nil {
 		return fmt.Errorf("deleting %s: %+v", *id, err)
-	}
-
-	if err := future.Poller.PollUntilDone(); err != nil {
-		return fmt.Errorf("waiting for the deletion of %s: %+v", id, err)
 	}
 
 	return nil
@@ -1443,8 +1532,37 @@ func expandAgentPoolNetworkProfile(input []interface{}) *agentpools.AgentPoolNet
 	}
 	v := input[0].(map[string]interface{})
 	return &agentpools.AgentPoolNetworkProfile{
-		NodePublicIPTags: expandAgentPoolNetworkProfileNodePublicIPTags(v["node_public_ip_tags"].(map[string]interface{})),
+		AllowedHostPorts:          expandAgentPoolNetworkProfileAllowedHostPorts(v["allowed_host_ports"].([]interface{})),
+		ApplicationSecurityGroups: utils.ExpandStringSlice(v["application_security_group_ids"].([]interface{})),
+		NodePublicIPTags:          expandAgentPoolNetworkProfileNodePublicIPTags(v["node_public_ip_tags"].(map[string]interface{})),
 	}
+}
+
+func expandAgentPoolNetworkProfileAllowedHostPorts(input []interface{}) *[]agentpools.PortRange {
+	if len(input) == 0 {
+		return nil
+	}
+	out := make([]agentpools.PortRange, 0)
+	for _, v := range input {
+		raw := v.(map[string]interface{})
+		var portEnd, portStart int64
+		var protocol agentpools.Protocol
+		if raw["port_end"] != nil {
+			portEnd = int64(raw["port_end"].(int))
+		}
+		if raw["port_start"] != nil {
+			portStart = int64(raw["port_start"].(int))
+		}
+		if raw["protocol"] != nil {
+			protocol = agentpools.Protocol(raw["protocol"].(string))
+		}
+		out = append(out, agentpools.PortRange{
+			PortEnd:   pointer.To(portEnd),
+			PortStart: pointer.To(portStart),
+			Protocol:  pointer.To(protocol),
+		})
+	}
+	return &out
 }
 
 func expandAgentPoolNetworkProfileNodePublicIPTags(input map[string]interface{}) *[]agentpools.IPTag {
@@ -1464,15 +1582,32 @@ func expandAgentPoolNetworkProfileNodePublicIPTags(input map[string]interface{})
 }
 
 func flattenAgentPoolNetworkProfile(input *agentpools.AgentPoolNetworkProfile) []interface{} {
-	if input == nil || input.NodePublicIPTags == nil {
+	if input == nil || input.NodePublicIPTags == nil && input.AllowedHostPorts == nil && input.ApplicationSecurityGroups == nil {
 		return []interface{}{}
 	}
 
 	return []interface{}{
 		map[string]interface{}{
-			"node_public_ip_tags": flattenAgentPoolNetworkProfileNodePublicIPTags(input.NodePublicIPTags),
+			"allowed_host_ports":             flattenAgentPoolNetworkProfileAllowedHostPorts(input.AllowedHostPorts),
+			"application_security_group_ids": utils.FlattenStringSlice(input.ApplicationSecurityGroups),
+			"node_public_ip_tags":            flattenAgentPoolNetworkProfileNodePublicIPTags(input.NodePublicIPTags),
 		},
 	}
+}
+
+func flattenAgentPoolNetworkProfileAllowedHostPorts(input *[]agentpools.PortRange) []interface{} {
+	if input == nil {
+		return []interface{}{}
+	}
+	out := make([]interface{}, 0)
+	for _, portRange := range *input {
+		out = append(out, map[string]interface{}{
+			"port_end":   pointer.From(portRange.PortEnd),
+			"port_start": pointer.From(portRange.PortStart),
+			"protocol":   pointer.From(portRange.Protocol),
+		})
+	}
+	return out
 }
 
 func flattenAgentPoolNetworkProfileNodePublicIPTags(input *[]agentpools.IPTag) map[string]interface{} {

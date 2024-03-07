@@ -2,6 +2,7 @@ package saprecommendations
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -21,7 +22,7 @@ type SAPSizingRecommendationsOperationResponse struct {
 // SAPSizingRecommendations ...
 func (c SAPRecommendationsClient) SAPSizingRecommendations(ctx context.Context, id LocationId, input SAPSizingRecommendationRequest) (result SAPSizingRecommendationsOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -48,9 +49,15 @@ func (c SAPRecommendationsClient) SAPSizingRecommendations(ctx context.Context, 
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var respObj json.RawMessage
+	if err = resp.Unmarshal(&respObj); err != nil {
 		return
 	}
+	model, err := unmarshalSAPSizingRecommendationResultImplementation(respObj)
+	if err != nil {
+		return
+	}
+	result.Model = &model
 
 	return
 }

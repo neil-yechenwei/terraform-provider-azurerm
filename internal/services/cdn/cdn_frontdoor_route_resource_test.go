@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package cdn_test
 
 import (
@@ -76,6 +79,30 @@ func TestAccCdnFrontDoorRoute_update(t *testing.T) {
 			Config: r.update(data),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep("cdn_frontdoor_origin_group_id", "cdn_frontdoor_origin_ids"),
+	})
+}
+
+func TestAccCdnFrontDoorRoute_originPath(t *testing.T) {
+	// regression test case for issue #24466
+	data := acceptance.BuildTestData(t, "azurerm_cdn_frontdoor_route", "test")
+	r := CdnFrontDoorRouteResource{}
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.completeNoCache(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+				check.That(data.ResourceName).Key("cdn_frontdoor_origin_path").HasValue("/example"),
+			),
+		},
+		data.ImportStep("cdn_frontdoor_origin_group_id", "cdn_frontdoor_origin_ids"),
+		{
+			Config: r.complete(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+				check.That(data.ResourceName).Key("cdn_frontdoor_origin_path").HasValue("/example"),
 			),
 		},
 		data.ImportStep("cdn_frontdoor_origin_group_id", "cdn_frontdoor_origin_ids"),
@@ -197,6 +224,7 @@ resource "azurerm_cdn_frontdoor_route" "test" {
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.test.id
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.test.id]
   cdn_frontdoor_rule_set_ids    = [azurerm_cdn_frontdoor_rule_set.test.id]
+  cdn_frontdoor_origin_path     = "/example"
 
   enabled                = true
   forwarding_protocol    = "HttpsOnly"
@@ -208,6 +236,28 @@ resource "azurerm_cdn_frontdoor_route" "test" {
     query_strings                 = ["foo", "bar"]
     query_string_caching_behavior = "IgnoreSpecifiedQueryStrings"
   }
+}
+`, template, data.RandomInteger)
+}
+
+func (r CdnFrontDoorRouteResource) completeNoCache(data acceptance.TestData) string {
+	template := r.template(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_cdn_frontdoor_route" "test" {
+  name                          = "accTestRoute-%d"
+  cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.test.id
+  cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.test.id
+  cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.test.id]
+  cdn_frontdoor_rule_set_ids    = [azurerm_cdn_frontdoor_rule_set.test.id]
+  cdn_frontdoor_origin_path     = "/example"
+
+  enabled                = true
+  forwarding_protocol    = "HttpsOnly"
+  https_redirect_enabled = true
+  patterns_to_match      = ["/*"]
+  supported_protocols    = ["Http", "Https"]
 }
 `, template, data.RandomInteger)
 }

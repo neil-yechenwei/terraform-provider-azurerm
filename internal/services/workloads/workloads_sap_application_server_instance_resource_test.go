@@ -3,17 +3,14 @@ package workloads_test
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/workloads/2023-04-01/sapapplicationserverinstances"
-	"math/rand"
-	"testing"
-	"time"
-
 	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/workloads/2023-04-01/sapapplicationserverinstances"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
+	"testing"
 )
 
 type WorkloadsSAPApplicationServerInstanceResource struct{}
@@ -297,11 +294,4 @@ resource "azurerm_workloads_sap_application_server_instance" "test" {
   }
 }
 `, r.template(data), data.RandomInteger, tags)
-}
-
-func RandomInt() int {
-	rand.Seed(time.Now().UnixNano())
-	num := rand.Intn(90) + 10
-
-	return num
 }

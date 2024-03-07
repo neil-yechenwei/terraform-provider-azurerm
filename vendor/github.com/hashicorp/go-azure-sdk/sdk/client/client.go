@@ -6,10 +6,12 @@ package client
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net"
 	"net/http"
@@ -66,10 +68,10 @@ func RequestRetryAll(retryFuncs ...RequestRetryFunc) func(resp *http.Response, o
 	}
 }
 
-// RetryableErrorHandler ensures that the response is returned after exhausting retries for a request
-// We mustn't return an error here, or net/http will not return the response
-func RetryableErrorHandler(resp *http.Response, _ error, _ int) (*http.Response, error) {
-	return resp, nil
+// RetryableErrorHandler simply returns the resp and err, this is needed to make the Do() method
+// of retryablehttp client return early with the response body not drained.
+func RetryableErrorHandler(resp *http.Response, err error, _ int) (*http.Response, error) {
+	return resp, err
 }
 
 // Request embeds *http.Request and adds useful metadata
@@ -79,53 +81,71 @@ type Request struct {
 	ValidStatusFunc  ValidStatusFunc
 
 	Client BaseClient
+	Pager  odata.CustomPager
 
 	// Embed *http.Request so that we can send this to an *http.Client
 	*http.Request
 }
 
+// Marshal serializes a payload body and adds it to the *Request
 func (r *Request) Marshal(payload interface{}) error {
 	contentType := strings.ToLower(r.Header.Get("Content-Type"))
 
-	if strings.Contains(contentType, "application/json") {
+	switch {
+	case strings.Contains(contentType, "application/json"):
 		body, err := json.Marshal(payload)
 		if err == nil {
 			r.ContentLength = int64(len(body))
 			r.Body = io.NopCloser(bytes.NewReader(body))
 		}
-		return nil
-	}
 
-	if strings.Contains(contentType, "application/xml") || strings.Contains(contentType, "text/xml") {
+		return nil
+
+	case strings.Contains(contentType, "application/xml") || strings.Contains(contentType, "text/xml"):
 		body, err := xml.Marshal(payload)
 		if err == nil {
+			// Prepend the xml doctype declaration if not detected
+			if !strings.HasPrefix(strings.TrimSpace(strings.ToLower(string(body[0:5]))), "<?xml") {
+				body = append([]byte(xml.Header), body...)
+			}
+
 			r.ContentLength = int64(len(body))
 			r.Body = io.NopCloser(bytes.NewReader(body))
 		}
+
 		return nil
 	}
 
-	if strings.Contains(contentType, "application/octet-stream") {
-		v, ok := payload.([]byte)
-		if !ok {
-			return fmt.Errorf("internal-error: `payload` must be []byte but got %+v", payload)
+	switch v := payload.(type) {
+	case *[]byte:
+		if v == nil {
+			r.ContentLength = int64(len([]byte{}))
+			r.Body = io.NopCloser(bytes.NewReader([]byte{}))
+		} else {
+			r.ContentLength = int64(len(*v))
+			r.Body = io.NopCloser(bytes.NewReader(*v))
 		}
-
+	case []byte:
 		r.ContentLength = int64(len(v))
 		r.Body = io.NopCloser(bytes.NewReader(v))
+	default:
+		return fmt.Errorf("internal-error: `payload` must be []byte or *[]byte but got type %T", payload)
 	}
 
-	return fmt.Errorf("internal-error: unimplemented marshal function for content type %q", contentType)
+	return nil
 }
 
+// Execute invokes the Execute method for the Request's Client
 func (r *Request) Execute(ctx context.Context) (*Response, error) {
 	return r.Client.Execute(ctx, r)
 }
 
+// ExecutePaged invokes the ExecutePaged method for the Request's Client
 func (r *Request) ExecutePaged(ctx context.Context) (*Response, error) {
 	return r.Client.ExecutePaged(ctx, r)
 }
 
+// IsIdempotent determines whether a Request can be safely retried when encountering a connection failure
 func (r *Request) IsIdempotent() bool {
 	switch strings.ToUpper(r.Method) {
 	case http.MethodGet, http.MethodHead, http.MethodOptions:
@@ -142,6 +162,7 @@ type Response struct {
 	*http.Response
 }
 
+// Unmarshal deserializes a response body into the provided model
 func (r *Response) Unmarshal(model interface{}) error {
 	if model == nil {
 		return fmt.Errorf("model was nil")
@@ -161,7 +182,14 @@ func (r *Response) Unmarshal(model interface{}) error {
 			contentType = strings.ToLower(r.Request.Header.Get("Content-Type"))
 		}
 	}
-	if strings.Contains(contentType, "application/json") {
+
+	// Some APIs (e.g. Maintenance) return 200 without a body, don't unmarshal these
+	if r.ContentLength == 0 && (r.Body == nil || r.Body == http.NoBody) {
+		return nil
+	}
+
+	switch {
+	case strings.Contains(contentType, "application/json"):
 		// Read the response body and close it
 		respBody, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -172,6 +200,11 @@ func (r *Response) Unmarshal(model interface{}) error {
 		// Trim away a BOM if present
 		respBody = bytes.TrimPrefix(respBody, []byte("\xef\xbb\xbf"))
 
+		// In some cases the respBody is empty, but not nil, so don't attempt to unmarshal this
+		if len(respBody) == 0 {
+			return nil
+		}
+
 		// Unmarshal into provided model
 		if err := json.Unmarshal(respBody, model); err != nil {
 			return fmt.Errorf("unmarshaling response body: %+v", err)
@@ -179,9 +212,10 @@ func (r *Response) Unmarshal(model interface{}) error {
 
 		// Reassign the response body as downstream code may expect it
 		r.Body = io.NopCloser(bytes.NewBuffer(respBody))
-	}
 
-	if strings.Contains(contentType, "application/xml") || strings.Contains(contentType, "text/xml") {
+		return nil
+
+	case strings.Contains(contentType, "application/xml") || strings.Contains(contentType, "text/xml"):
 		// Read the response body and close it
 		respBody, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -191,6 +225,11 @@ func (r *Response) Unmarshal(model interface{}) error {
 
 		// Trim away a BOM if present
 		respBody = bytes.TrimPrefix(respBody, []byte("\xef\xbb\xbf"))
+
+		// In some cases the respBody is empty, but not nil, so don't attempt to unmarshal this
+		if len(respBody) == 0 {
+			return nil
+		}
 
 		// Unmarshal into provided model
 		if err := xml.Unmarshal(respBody, model); err != nil {
@@ -199,11 +238,13 @@ func (r *Response) Unmarshal(model interface{}) error {
 
 		// Reassign the response body as downstream code may expect it
 		r.Body = io.NopCloser(bytes.NewBuffer(respBody))
-	}
 
-	if strings.Contains(contentType, "application/octet-stream") {
-		if _, ok := model.([]byte); !ok {
-			return fmt.Errorf("internal-error: `model` must be []byte but got %+v", model)
+		return nil
+
+	case strings.Contains(contentType, "application/octet-stream") || strings.Contains(contentType, "text/powershell"):
+		ptr, ok := model.(*[]byte)
+		if !ok || ptr == nil {
+			return fmt.Errorf("internal-error: `model` must be a non-nil `*[]byte` but got %[1]T: %+[1]v", model)
 		}
 
 		// Read the response body and close it
@@ -213,17 +254,21 @@ func (r *Response) Unmarshal(model interface{}) error {
 		}
 		r.Body.Close()
 
-		// Trim away a BOM if present
-		respBody = bytes.TrimPrefix(respBody, []byte("\xef\xbb\xbf"))
+		if strings.HasPrefix(contentType, "text/") {
+			// Trim away a BOM if present
+			respBody = bytes.TrimPrefix(respBody, []byte("\xef\xbb\xbf"))
+		}
 
 		// copy the byte stream across
-		model = respBody
+		*ptr = respBody
 
 		// Reassign the response body as downstream code may expect it
 		r.Body = io.NopCloser(bytes.NewBuffer(respBody))
+
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("internal-error: unimplemented unmarshal function for content type %q", contentType)
 }
 
 // Client is a base client to be used by API-specific clients. It satisfies the BaseClient interface.
@@ -239,6 +284,11 @@ type Client struct {
 
 	// Authorizer is anything that can provide an access token with which to authorize requests.
 	Authorizer auth.Authorizer
+
+	// AuthorizeRequest is an optional function to decorate a Request for authorization prior to being sent.
+	// When nil, a standard Authorization header will be added using a bearer token as returned by the Token method
+	// of the configured Authorizer. Define this function in order to customize the request authorization.
+	AuthorizeRequest func(context.Context, *http.Request, auth.Authorizer) error
 
 	// DisableRetries prevents the client from reattempting failed requests (which it does to work around eventual consistency issues).
 	// This does not impact handling of retries related to rate limiting, which are always performed.
@@ -263,6 +313,49 @@ func NewClient(baseUri string, serviceName, apiVersion string) *Client {
 	}
 }
 
+// SetAuthorizer configures the request authorizer for the client
+func (c *Client) SetAuthorizer(authorizer auth.Authorizer) {
+	c.Authorizer = authorizer
+}
+
+// SetUserAgent configures the user agent to be included in requests
+func (c *Client) SetUserAgent(userAgent string) {
+	c.UserAgent = userAgent
+}
+
+// GetUserAgent retrieves the configured user agent for the client
+func (c *Client) GetUserAgent() string {
+	return c.UserAgent
+}
+
+// AppendRequestMiddleware appends a request middleware function for the client
+func (c *Client) AppendRequestMiddleware(f RequestMiddleware) {
+	if c.RequestMiddlewares == nil {
+		m := make([]RequestMiddleware, 0)
+		c.RequestMiddlewares = &m
+	}
+	*c.RequestMiddlewares = append(*c.RequestMiddlewares, f)
+}
+
+// ClearRequestMiddlewares removes all request middleware functions for the client
+func (c *Client) ClearRequestMiddlewares() {
+	c.RequestMiddlewares = nil
+}
+
+// AppendResponseMiddleware appends a response middleware function for the client
+func (c *Client) AppendResponseMiddleware(f ResponseMiddleware) {
+	if c.ResponseMiddlewares == nil {
+		m := make([]ResponseMiddleware, 0)
+		c.ResponseMiddlewares = &m
+	}
+	*c.ResponseMiddlewares = append(*c.ResponseMiddlewares, f)
+}
+
+// ClearResponseMiddlewares removes all response middleware functions for the client
+func (c *Client) ClearResponseMiddlewares() {
+	c.ResponseMiddlewares = nil
+}
+
 // NewRequest configures a new *Request
 func (c *Client) NewRequest(ctx context.Context, input RequestOptions) (*Request, error) {
 	req := (&http.Request{}).WithContext(ctx)
@@ -270,7 +363,10 @@ func (c *Client) NewRequest(ctx context.Context, input RequestOptions) (*Request
 	req.Method = input.HttpMethod
 
 	req.Header = make(http.Header)
-	req.Header.Add("Content-Type", input.ContentType)
+
+	if input.ContentType != "" {
+		req.Header.Add("Content-Type", input.ContentType)
+	}
 
 	if c.UserAgent != "" {
 		req.Header.Add("User-Agent", c.UserAgent)
@@ -291,6 +387,8 @@ func (c *Client) NewRequest(ctx context.Context, input RequestOptions) (*Request
 	ret := Request{
 		Client:           c,
 		Request:          req,
+		Pager:            input.Pager,
+		RetryFunc:        input.RetryFunc,
 		ValidStatusCodes: input.ExpectedStatusCodes,
 	}
 
@@ -303,14 +401,15 @@ func (c *Client) Execute(ctx context.Context, req *Request) (*Response, error) {
 		return nil, fmt.Errorf("req.Request was nil")
 	}
 
-	// at this point we're ready to send the HTTP Request, as such let's get the Authorization token
-	// and add that to the request
-	if c.Authorizer != nil {
-		token, err := c.Authorizer.Token(ctx, req.Request)
-		if err != nil {
-			return nil, err
+	// Authorize the request
+	if c.AuthorizeRequest != nil {
+		if err := c.AuthorizeRequest(ctx, req.Request, c.Authorizer); err != nil {
+			return nil, fmt.Errorf("authorizing request: %+v", err)
 		}
-		token.SetAuthHeader(req.Request)
+	} else if c.Authorizer != nil {
+		if err := auth.SetAuthHeader(ctx, req.Request, c.Authorizer); err != nil {
+			return nil, fmt.Errorf("authorizing request: %+v", err)
+		}
 	}
 
 	var err error
@@ -323,7 +422,6 @@ func (c *Client) Execute(ctx context.Context, req *Request) (*Response, error) {
 			return nil, fmt.Errorf("reading request body: %v", err)
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(reqBody))
-		req.Header.Set("Content-Length", fmt.Sprintf("%d", req.ContentLength))
 	}
 
 	// Instantiate a RetryableHttp client and configure its CheckRetry func
@@ -342,10 +440,14 @@ func (c *Client) Execute(ctx context.Context, req *Request) (*Response, error) {
 				return true, nil
 			}
 
-			o, err := odata.FromResponse(r)
-			if err != nil {
-				return false, err
+			// Some APIs don't return a response in time
+			if r.StatusCode == http.StatusRequestTimeout {
+				return true, nil
 			}
+
+			// Extract OData from response, intentionally ignoring any errors as it's not crucial to extract
+			// valid OData at this point (valid json can still error here, such as any non-object literal)
+			o, _ := odata.FromResponse(r)
 
 			if f := req.RetryFunc; f != nil {
 				shouldRetry, err := f(r, o)
@@ -446,50 +548,62 @@ func (c *Client) ExecutePaged(ctx context.Context, req *Request) (*Response, err
 		return resp, fmt.Errorf("unsupported content-type %q received, only application/json is supported for paged results", contentType)
 	}
 
-	// Read the response body and close it
-	respBody, err := io.ReadAll(resp.Body)
+	// Unmarshal the response
+	firstOdata, err := odata.FromResponse(resp.Response)
 	if err != nil {
-		return resp, fmt.Errorf("could not parse response body")
-	}
-	resp.Body.Close()
-
-	// Unmarshal firstOdata
-	var firstOdata odata.OData
-	if err := json.Unmarshal(respBody, &firstOdata); err != nil {
 		return resp, err
 	}
 
-	firstValue, ok := firstOdata.Value.([]interface{})
-	if firstOdata.NextLink == nil || firstValue == nil || !ok {
-		// No more pages, reassign response body and return
-		resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
+	if firstOdata == nil {
+		// No results, return early
 		return resp, nil
 	}
 
-	// Get the next page, recursively
-	// TODO: may have to accommodate APIs with nonstandard paging
+	// Get results from this page
+	firstValue, ok := firstOdata.Value.([]interface{})
+	if !ok || firstValue == nil {
+		// No more results on this page
+		return resp, nil
+	}
+
+	// Get a Link for the next results page
+	var nextLink *odata.Link
+	if req.Pager == nil {
+		nextLink = firstOdata.NextLink
+	} else {
+		nextLink, err = odata.NextLinkFromCustomPager(resp.Response, req.Pager)
+		if err != nil {
+			return resp, err
+		}
+	}
+	if nextLink == nil {
+		// This is the last page
+		return resp, nil
+	}
+
+	// Build request for the next page
 	nextReq := req
-	u, err := url.Parse(string(*firstOdata.NextLink))
+	u, err := url.Parse(string(*nextLink))
 	if err != nil {
 		return resp, err
 	}
 	nextReq.URL = u
+
+	// Retrieve the next page, descend recursively
 	nextResp, err := c.ExecutePaged(ctx, req)
 	if err != nil {
 		return resp, err
 	}
 
-	// Read the next page response body and close it
-	nextRespBody, err := io.ReadAll(nextResp.Body)
-	if err != nil {
-		return resp, fmt.Errorf("could not parse response body")
-	}
-	nextResp.Body.Close()
-
 	// Unmarshal nextOdata from the next page
-	var nextOdata odata.OData
-	if err := json.Unmarshal(nextRespBody, &nextOdata); err != nil {
+	nextOdata, err := odata.FromResponse(nextResp.Response)
+	if err != nil {
 		return nextResp, err
+	}
+
+	if nextOdata == nil {
+		// No more results, return early
+		return resp, nil
 	}
 
 	// When next page has results, append to current page
@@ -535,8 +649,11 @@ func (c *Client) retryableClient(checkRetry retryablehttp.CheckRetry) (r *retrya
 
 	r.CheckRetry = checkRetry
 	r.ErrorHandler = RetryableErrorHandler
-	r.Logger = nil
+	r.Logger = log.Default()
 
+	tlsConfig := tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
 	r.HTTPClient = &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -544,6 +661,7 @@ func (c *Client) retryableClient(checkRetry retryablehttp.CheckRetry) (r *retrya
 				d := &net.Dialer{Resolver: &net.Resolver{}}
 				return d.DialContext(ctx, network, addr)
 			},
+			TLSClientConfig:       &tlsConfig,
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,

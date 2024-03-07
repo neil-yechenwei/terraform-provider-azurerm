@@ -21,7 +21,7 @@ type SAPSupportedSkuOperationResponse struct {
 // SAPSupportedSku ...
 func (c SAPSupportedSkuClient) SAPSupportedSku(ctx context.Context, id LocationId, input SAPSupportedSkusRequest) (result SAPSupportedSkuOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -48,7 +48,10 @@ func (c SAPSupportedSkuClient) SAPSupportedSku(ctx context.Context, id LocationI
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model SAPSupportedResourceSkusResult
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

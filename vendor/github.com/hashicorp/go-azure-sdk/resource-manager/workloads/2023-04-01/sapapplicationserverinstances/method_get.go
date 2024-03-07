@@ -20,7 +20,7 @@ type GetOperationResponse struct {
 // Get ...
 func (c SAPApplicationServerInstancesClient) Get(ctx context.Context, id ApplicationInstanceId) (result GetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c SAPApplicationServerInstancesClient) Get(ctx context.Context, id Applica
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model SAPApplicationServerInstance
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

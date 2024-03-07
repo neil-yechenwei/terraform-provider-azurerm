@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package web
 
 import (
@@ -9,13 +12,14 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2021-02-01/web" // nolint: staticcheck
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	storageValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/storage/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/web/parse"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/services/web/validate"
 	webValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/web/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
@@ -66,10 +70,9 @@ func resourceFunctionAppSlot() *pluginsdk.Resource {
 			},
 
 			"app_service_plan_id": {
-				Type:         pluginsdk.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validate.AppServicePlanID,
+				Type:     pluginsdk.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 
 			"version": {
@@ -521,7 +524,11 @@ func resourceFunctionAppSlotRead(d *pluginsdk.ResourceData, meta interface{}) er
 	}
 
 	if props := resp.SiteProperties; props != nil {
-		d.Set("app_service_plan_id", props.ServerFarmID)
+		servicePlan, err := commonids.ParseAppServicePlanIDInsensitively(pointer.From(props.ServerFarmID))
+		if err != nil {
+			return err
+		}
+		d.Set("app_service_plan_id", servicePlan.ID())
 		d.Set("enabled", props.Enabled)
 		d.Set("default_hostname", props.DefaultHostName)
 		d.Set("https_only", props.HTTPSOnly)
@@ -687,10 +694,10 @@ func getFunctionAppSlotServiceTier(ctx context.Context, appServicePlanID string,
 		return "", fmt.Errorf("[ERROR] Unable to parse App Service Plan ID %q: %+v", appServicePlanID, err)
 	}
 
-	log.Printf("[DEBUG] Retrieving App Service Plan %q (Resource Group %q)", id.ServerfarmName, id.ResourceGroup)
+	log.Printf("[DEBUG] Retrieving App Service Plan %q (Resource Group %q)", id.ServerFarmName, id.ResourceGroup)
 
 	appServicePlansClient := meta.(*clients.Client).Web.AppServicePlansClient
-	appServicePlan, err := appServicePlansClient.Get(ctx, id.ResourceGroup, id.ServerfarmName)
+	appServicePlan, err := appServicePlansClient.Get(ctx, id.ResourceGroup, id.ServerFarmName)
 	if err != nil {
 		return "", fmt.Errorf("[ERROR] Could not retrieve App Service Plan ID %q: %+v", appServicePlanID, err)
 	}

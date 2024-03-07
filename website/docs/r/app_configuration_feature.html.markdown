@@ -11,6 +11,8 @@ description: |-
 
 Manages an Azure App Configuration Feature.
 
+-> **Note:** App Configuration Features are provisioned using a Data Plane API which requires the role `App Configuration Data Owner` on either the App Configuration or a parent scope (such as the Resource Group/Subscription). [More information can be found in the Azure Documentation for App Configuration](https://docs.microsoft.com/azure/azure-app-configuration/concept-enable-rbac#azure-built-in-roles-for-azure-app-configuration). This is similar to providing App Configuration Keys.
+
 ## Example Usage
 
 ```hcl
@@ -23,6 +25,14 @@ resource "azurerm_app_configuration" "appconf" {
   name                = "appConf1"
   resource_group_name = azurerm_resource_group.example.name
   location            = azurerm_resource_group.example.location
+}
+
+data "azurerm_client_config" "current" {}
+
+resource "azurerm_role_assignment" "appconf_dataowner" {
+  scope                = azurerm_app_configuration.appconf.id
+  role_definition_name = "App Configuration Data Owner"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
 
 resource "azurerm_app_configuration_feature" "test" {
@@ -52,7 +62,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the App Configuration Feature. Changing this forces a new resource to be created.
 
-* `percentage_filter_value` - (Optional) A list of one or more numbers representing the value of the percentage required to enable this feature.
+* `percentage_filter_value` - (Optional) A number representing the value of the percentage required to enable this feature.
 
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
@@ -66,7 +76,7 @@ A `targeting_filter` block represents a feature filter of type `Microsoft.Target
 
 * `default_rollout_percentage` - (Required) A number representing the percentage of the entire user base.
 
-* `groups` - (Optional) One or more blocks of type `groups` as defined below.
+* `groups` - (Optional) One or more `groups` blocks as defined below.
 
 * `users` - (Optional) A list of users to target for this feature.
 

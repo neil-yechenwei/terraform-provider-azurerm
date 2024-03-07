@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package cosmos_test
 
 import (
@@ -5,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/cosmos-db/mgmt/2021-10-15/documentdb" // nolint: staticcheck
+	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2023-04-15/cosmosdb"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -407,7 +410,7 @@ resource "azurerm_cosmosdb_mongo_collection" "test" {
     unique = true
   }
 }
-`, CosmosDBAccountResource{}.capabilities(data, documentdb.DatabaseAccountKindMongoDB, []string{"EnableMongo"}), data.RandomInteger)
+`, CosmosDBAccountResource{}.capabilities(data, cosmosdb.DatabaseAccountKindMongoDB, []string{"EnableMongo"}), data.RandomInteger)
 }
 
 func (CosmosMongoCollectionResource) serverless(data acceptance.TestData) string {
@@ -431,7 +434,7 @@ resource "azurerm_cosmosdb_mongo_collection" "test" {
     unique = true
   }
 }
-`, CosmosDBAccountResource{}.capabilities(data, documentdb.DatabaseAccountKindMongoDB, []string{"EnableMongo", "EnableServerless"}), data.RandomInteger)
+`, CosmosDBAccountResource{}.capabilities(data, cosmosdb.DatabaseAccountKindMongoDB, []string{"EnableMongo", "EnableServerless"}), data.RandomInteger)
 }
 
 func (CosmosMongoCollectionResource) analyticalStorageTTL(data acceptance.TestData) string {
@@ -457,7 +460,7 @@ resource "azurerm_cosmosdb_mongo_collection" "test" {
 
   analytical_storage_ttl = 600
 }
-`, CosmosDBAccountResource{}.mongoAnalyticalStorage(data, documentdb.DefaultConsistencyLevelEventual), data.RandomInteger, data.RandomInteger)
+`, CosmosDBAccountResource{}.mongoAnalyticalStorage(data, cosmosdb.DefaultConsistencyLevelEventual), data.RandomInteger, data.RandomInteger)
 }
 
 func (CosmosMongoCollectionResource) autoscaleWithoutShareKey(data acceptance.TestData) string {

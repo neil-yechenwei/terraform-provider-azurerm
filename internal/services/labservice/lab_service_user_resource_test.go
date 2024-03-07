@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package labservice_test
 
 import (
@@ -138,6 +141,10 @@ resource "azurerm_lab_service_lab" "test" {
       name     = "Classic_Fsv2_2_4GB_128_S_SSD"
       capacity = 1
     }
+  }
+
+  connection_setting {
+    client_ssh_access = "Public"
   }
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomIntOfLength(17))

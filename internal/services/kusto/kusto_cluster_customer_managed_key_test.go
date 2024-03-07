@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package kusto_test
 
 import (
@@ -5,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/go-azure-sdk/resource-manager/kusto/2022-02-01/clusters"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -127,7 +130,7 @@ func TestAccKustoClusterCustomerManagedKey_userIdentity(t *testing.T) {
 }
 
 func (KustoClusterCustomerManagedKeyResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
-	id, err := clusters.ParseClusterID(state.ID)
+	id, err := commonids.ParseKustoClusterID(state.ID)
 	if err != nil {
 		return nil, err
 	}

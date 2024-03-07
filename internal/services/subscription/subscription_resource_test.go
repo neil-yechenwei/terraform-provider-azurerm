@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package subscription_test
 
 import (
@@ -151,6 +154,10 @@ resource "azurerm_subscription" "test" {
   alias             = "testAcc-%[3]d"
   subscription_name = "testAccSubscription Renamed %[3]d"
   billing_scope_id  = data.azurerm_billing_enrollment_account_scope.test.id
+
+  tags = {
+    key = "value"
+  }
 }
 `, billingAccount, enrollmentAccount, data.RandomInteger)
 }

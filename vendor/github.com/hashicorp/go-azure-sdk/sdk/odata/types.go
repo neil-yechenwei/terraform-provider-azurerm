@@ -1,8 +1,9 @@
+// Copyright (c) HashiCorp Inc. All rights reserved.
+// Licensed under the MPL-2.0 License. See NOTICE.txt in the project root for license information.
+
 package odata
 
-// Copyright (c) HashiCorp Inc. All rights reserved.
-// Licensed under the MIT License. See NOTICE.txt in the project root for license information.
-
+// ShortType is the unqualified data type for an entity
 type ShortType = string
 
 const (
@@ -44,6 +45,7 @@ const (
 	ShortTypeWindowsHelloForBusinessAuthenticationMethod ShortType = "windowsHelloForBusinessAuthenticationMethod"
 )
 
+// Type is the namespace-qualified data type for an entity
 type Type = string
 
 const (

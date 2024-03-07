@@ -82,9 +82,11 @@ The following arguments are supported:
 
 * `batch_max_wait_time` - (Optional) The maximum wait time per batch in `hh:mm:ss` e.g. `00:02:00` for two minutes.
 
-* `batch_min_rows` - (Optional) The minimum number of rows per batch (must be between `0` and `10000`).
+* `batch_min_rows` - (Optional) The minimum number of rows per batch (must be between `0` and `1000000`).
 
 * `storage_account_key` - (Optional) The Access Key which should be used to connect to this Storage Account.
+
+* `blob_write_mode` - (Optional) Determines whether blob blocks are either committed automatically or appended. Possible values are `Append` and `Once`. Defaults to `Append`.
 
 ---
 

@@ -27,8 +27,7 @@ resource "azurerm_recovery_services_vault" "vault" {
 
 resource "azurerm_site_recovery_hyperv_replication_policy" "policy" {
   name                                               = "policy"
-  resource_group_name                                = azurerm_resource_group.example.name
-  recovery_vault_name                                = azurerm_recovery_services_vault.vault.name
+  recovery_vault_id                                  = azurerm_recovery_services_vault.vault.id
   recovery_point_retention_in_hours                  = 2
   application_consistent_snapshot_frequency_in_hours = 1
   replication_interval_in_seconds                    = 300
@@ -41,9 +40,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the replication policy. Changing this forces a new resource to be created.
 
-* `resource_group_name` - (Required) Name of the resource group where the vault that should be updated is located. Changing this forces a new resource to be created.
-
-* `recovery_vault_name` - (Required) The name of the vault that should be updated. Changing this forces a new resource to be created.
+* `recovery_vault_id` - (Required) The id of the vault that should be updated. Changing this forces a new resource to be created.
 
 * `recovery_point_retention_in_hours` - (Required) The duration in hours for which the recovery points need to be stored.
 

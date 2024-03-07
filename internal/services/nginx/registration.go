@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package nginx
 
 import (
@@ -26,7 +29,11 @@ func (r Registration) WebsiteCategories() []string {
 
 // DataSources ...
 func (r Registration) DataSources() []sdk.DataSource {
-	return []sdk.DataSource{}
+	return []sdk.DataSource{
+		DeploymentDataSource{},
+		CertificateDataSource{},
+		ConfigurationDataSource{},
+	}
 }
 
 // Resources ...

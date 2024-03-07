@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package orbital_test
 
 import (
@@ -6,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-azure-helpers/lang/response"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/orbital/2022-03-01/spacecraft"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/orbital/2022-11-01/spacecraft"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -95,8 +98,8 @@ resource "azurerm_orbital_spacecraft" "test" {
   norad_id            = "12345"
 
   links {
-    bandwidth_mhz        = 100
-    center_frequency_mhz = 101
+    bandwidth_mhz        = 30
+    center_frequency_mhz = 2050
     direction            = "Uplink"
     polarization         = "LHCP"
     name                 = "linkname"
@@ -120,8 +123,8 @@ resource "azurerm_orbital_spacecraft" "test" {
   norad_id            = "23456"
 
   links {
-    bandwidth_mhz        = 100
-    center_frequency_mhz = 101
+    bandwidth_mhz        = 20
+    center_frequency_mhz = 2045
     direction            = "Uplink"
     polarization         = "LHCP"
     name                 = "linkname"
@@ -145,8 +148,8 @@ resource "azurerm_orbital_spacecraft" "test" {
   norad_id            = "12345"
 
   links {
-    bandwidth_mhz        = 100
-    center_frequency_mhz = 101
+    bandwidth_mhz        = 30
+    center_frequency_mhz = 2050
     direction            = "Uplink"
     polarization         = "LHCP"
     name                 = "linkname"

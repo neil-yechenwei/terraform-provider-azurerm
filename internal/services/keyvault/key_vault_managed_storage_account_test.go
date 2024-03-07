@@ -1,10 +1,15 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package keyvault_test
 
 import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -111,6 +116,9 @@ func TestAccKeyVaultManagedStorageAccount_recovery(t *testing.T) {
 		},
 		{
 			// purge true here to make sure when we end the test there's no soft-deleted items left behind
+			PreConfig: func() {
+				time.Sleep(30 * time.Second)
+			},
 			Config: r.softDeleteRecovery(data, true, "2"),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
@@ -265,29 +273,29 @@ resource "azurerm_key_vault" "test" {
 }
 
 func (KeyVaultManagedStorageAccountResource) Exists(ctx context.Context, client *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
-	dataPlaneClient := client.KeyVault.ManagementClient
-	keyVaultsClient := client.KeyVault
+	subscriptionId := client.Account.SubscriptionId
 
 	id, err := parse.ParseOptionallyVersionedNestedItemID(state.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	keyVaultIdRaw, err := keyVaultsClient.KeyVaultIDFromBaseUrl(ctx, client.Resource, id.KeyVaultBaseUrl)
+	subscriptionResourceId := commonids.NewSubscriptionID(subscriptionId)
+	keyVaultIdRaw, err := client.KeyVault.KeyVaultIDFromBaseUrl(ctx, subscriptionResourceId, id.KeyVaultBaseUrl)
 	if err != nil || keyVaultIdRaw == nil {
 		return nil, fmt.Errorf("retrieving the Resource ID the Key Vault at URL %q: %s", id.KeyVaultBaseUrl, err)
 	}
-	keyVaultId, err := parse.VaultID(*keyVaultIdRaw)
+	keyVaultId, err := commonids.ParseKeyVaultID(*keyVaultIdRaw)
 	if err != nil {
 		return nil, err
 	}
 
-	ok, err := keyVaultsClient.Exists(ctx, *keyVaultId)
+	ok, err := client.KeyVault.Exists(ctx, *keyVaultId)
 	if err != nil || !ok {
 		return nil, fmt.Errorf("checking if key vault %q for Managed Storage Account %q in Vault at url %q exists: %v", *keyVaultId, id.Name, id.KeyVaultBaseUrl, err)
 	}
 
-	resp, err := dataPlaneClient.GetStorageAccount(ctx, id.KeyVaultBaseUrl, id.Name)
+	resp, err := client.KeyVault.ManagementClient.GetStorageAccount(ctx, id.KeyVaultBaseUrl, id.Name)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving Key Vault Managed Storage Account %q: %+v", state.ID, err)
 	}

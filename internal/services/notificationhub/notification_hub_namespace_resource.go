@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package notificationhub
 
 import (
@@ -7,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
@@ -115,7 +119,7 @@ func resourceNotificationHubNamespaceCreateUpdate(d *pluginsdk.ResourceData, met
 	namespaceType := namespaces.NamespaceType(d.Get("namespace_type").(string))
 	location := location.Normalize(d.Get("location").(string))
 	parameters := namespaces.NamespaceCreateOrUpdateParameters{
-		Location: location,
+		Location: pointer.To(location),
 		Sku: &namespaces.Sku{
 			Name: namespaces.SkuName(d.Get("sku_name").(string)),
 		},
@@ -212,8 +216,8 @@ func resourceNotificationHubNamespaceDelete(d *pluginsdk.ResourceData, meta inte
 		}
 	}
 
-	if err := future.Poller.PollUntilDone(); err != nil {
-		if !response.WasNotFound(future.Poller.HttpResponse) {
+	if err := future.Poller.PollUntilDone(ctx); err != nil {
+		if !response.WasNotFound(future.HttpResponse) {
 			return fmt.Errorf("waiting for deletion of %s: %+v", *id, err)
 		}
 	}

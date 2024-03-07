@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package compute_test
 
 import (
@@ -5,13 +8,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/virtualmachines"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
-	"github.com/tombuildsstuff/kermit/sdk/compute/2022-08-01/compute"
 )
 
 type VirtualMachineDataDiskAttachmentResource struct{}
@@ -188,25 +191,49 @@ func TestAccVirtualMachineDataDiskAttachment_virtualMachineExtension(t *testing.
 	})
 }
 
+func TestAccVirtualMachineDataDiskAttachment_virtualMachineApplication(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_virtual_machine_data_disk_attachment", "test")
+	r := VirtualMachineDataDiskAttachmentResource{}
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.virtualMachineApplicationPrep(data),
+		},
+		{
+			Config: r.virtualMachineApplicationComplete(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+				check.That(data.ResourceName).Key("virtual_machine_id").Exists(),
+				check.That(data.ResourceName).Key("managed_disk_id").Exists(),
+				check.That("azurerm_linux_virtual_machine.test").Key("gallery_application.0.order").HasValue("0"),
+			),
+		},
+	})
+}
+
 func (t VirtualMachineDataDiskAttachmentResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
 	id, err := parse.DataDiskID(state.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := clients.Compute.VMClient.Get(ctx, id.ResourceGroup, id.VirtualMachineName, "")
+	virtualMachineId := virtualmachines.NewVirtualMachineID(id.SubscriptionId, id.ResourceGroup, id.VirtualMachineName)
+	resp, err := clients.Compute.VirtualMachinesClient.Get(ctx, virtualMachineId, virtualmachines.DefaultGetOperationOptions())
 	if err != nil {
-		return nil, fmt.Errorf("retrieving Compute Virtual Machine Data Disk Attachment %q", id)
+		return nil, fmt.Errorf("retrieving Data Disk Attachment %q for %s: %+v", *id, virtualMachineId, err)
 	}
 
-	var disk *compute.DataDisk
-	if profile := resp.StorageProfile; profile != nil {
-		if dataDisks := profile.DataDisks; dataDisks != nil {
-			for _, dataDisk := range *dataDisks {
-				// since this field isn't (and shouldn't be) case-sensitive; we're deliberately not using `strings.EqualFold`
-				if *dataDisk.Name == id.Name {
-					disk = &dataDisk
-					break
+	var disk *virtualmachines.DataDisk
+	if model := resp.Model; model != nil {
+		if props := model.Properties; props != nil {
+			if profile := props.StorageProfile; profile != nil {
+				if dataDisks := profile.DataDisks; dataDisks != nil {
+					for _, dataDisk := range *dataDisks {
+						// since this field isn't (and shouldn't be) case-sensitive; we're deliberately not using `strings.EqualFold`
+						if *dataDisk.Name == id.Name {
+							disk = &dataDisk
+							break
+						}
+					}
 				}
 			}
 		}
@@ -221,34 +248,34 @@ func (VirtualMachineDataDiskAttachmentResource) Destroy(ctx context.Context, cli
 		return nil, err
 	}
 
-	resp, err := client.Compute.VMClient.Get(ctx, id.ResourceGroup, id.VirtualMachineName, "")
+	virtualMachineId := virtualmachines.NewVirtualMachineID(id.SubscriptionId, id.ResourceGroup, id.VirtualMachineName)
+	resp, err := client.Compute.VirtualMachinesClient.Get(ctx, virtualMachineId, virtualmachines.DefaultGetOperationOptions())
 	if err != nil {
-		return nil, fmt.Errorf("retrieving Compute Virtual Machine Data Disk Attachment %q", id)
+		return nil, fmt.Errorf("retrieving Data Disk Attachment %q for %s: %+v", *id, virtualMachineId, err)
 	}
 
-	outputDisks := make([]compute.DataDisk, 0)
-	for _, disk := range *resp.StorageProfile.DataDisks {
-		// deliberately not using strings.Equals as this is case sensitive
-		if *disk.Name == id.Name {
-			continue
+	outputDisks := make([]virtualmachines.DataDisk, 0)
+	if model := resp.Model; model != nil {
+		if props := model.Properties; props != nil && props.StorageProfile != nil {
+			for _, disk := range *props.StorageProfile.DataDisks {
+				// deliberately not using strings.Equals as this is case sensitive
+				if *disk.Name == id.Name {
+					continue
+				}
+
+				outputDisks = append(outputDisks, disk)
+			}
+			model.Properties.StorageProfile.DataDisks = &outputDisks
+
+			// fixes #2485
+			model.Identity = nil
+			// fixes #1600
+			model.Resources = nil
+
+			if err := client.Compute.VirtualMachinesClient.CreateOrUpdateThenPoll(ctx, virtualMachineId, *model); err != nil {
+				return nil, fmt.Errorf("updating Virtual Machine %q: %+v", id, err)
+			}
 		}
-
-		outputDisks = append(outputDisks, disk)
-	}
-	resp.StorageProfile.DataDisks = &outputDisks
-
-	// fixes #2485
-	resp.Identity = nil
-	// fixes #1600
-	resp.Resources = nil
-
-	future, err := client.Compute.VMClient.CreateOrUpdate(ctx, id.ResourceGroup, id.VirtualMachineName, resp)
-	if err != nil {
-		return nil, fmt.Errorf("updating Virtual Machine %q: %+v", id, err)
-	}
-
-	if err = future.WaitForCompletionRef(ctx, client.Compute.VMClient.Client); err != nil {
-		return nil, fmt.Errorf("waiting for Virtual Machine %q: %+v", id, err)
 	}
 
 	return utils.Bool(true), nil
@@ -328,8 +355,8 @@ resource "azurerm_virtual_machine" "test" {
 
   storage_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 
@@ -470,14 +497,14 @@ resource "azurerm_virtual_machine" "test" {
   location              = azurerm_resource_group.test.location
   resource_group_name   = azurerm_resource_group.test.name
   network_interface_ids = [azurerm_network_interface.test.id]
-  vm_size               = "Standard_M64s"
+  vm_size               = "Standard_M8ms"
 
   delete_os_disk_on_termination = true
 
   storage_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 
@@ -566,8 +593,8 @@ resource "azurerm_virtual_machine" "test" {
 
   storage_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 
@@ -657,8 +684,8 @@ resource "azurerm_virtual_machine" "test" {
 
   storage_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 
@@ -724,4 +751,166 @@ resource "azurerm_virtual_machine_data_disk_attachment" "test" {
   caching            = "ReadWrite"
 }
 `, r.virtualMachineExtensionPrep(data), data.RandomInteger)
+}
+
+func (VirtualMachineDataDiskAttachmentResource) virtualMachineApplicationPrep(data acceptance.TestData) string {
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-%[1]d"
+  location = "%[2]s"
+}
+
+resource "azurerm_shared_image_gallery" "test" {
+  name                = "ACCTESTGAL%[1]d"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+}
+
+resource "azurerm_gallery_application" "test" {
+  name              = "acc-app%[1]d"
+  gallery_id        = azurerm_shared_image_gallery.test.id
+  location          = azurerm_resource_group.test.location
+  supported_os_type = "Linux"
+}
+
+resource "azurerm_storage_account" "test" {
+  name                     = "stacc%[1]d"
+  resource_group_name      = azurerm_resource_group.test.name
+  location                 = azurerm_resource_group.test.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "test" {
+  name                  = "container"
+  storage_account_name  = azurerm_storage_account.test.name
+  container_access_type = "blob"
+}
+
+resource "azurerm_storage_blob" "test" {
+  name                   = "scripts"
+  storage_account_name   = azurerm_storage_account.test.name
+  storage_container_name = azurerm_storage_container.test.name
+  type                   = "Block"
+  source_content         = "exit 0"
+}
+
+resource "azurerm_gallery_application_version" "test" {
+  name                   = "0.0.1"
+  gallery_application_id = azurerm_gallery_application.test.id
+  location               = azurerm_gallery_application.test.location
+
+  manage_action {
+    install = "exit 0"
+    remove  = "exit 0"
+  }
+
+  source {
+    media_link = azurerm_storage_blob.test.id
+  }
+
+  target_region {
+    name                   = azurerm_gallery_application.test.location
+    regional_replica_count = 1
+  }
+}
+
+resource "azurerm_virtual_network" "test" {
+  name                = "acctestvn-%[1]d"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+}
+
+resource "azurerm_subnet" "test" {
+  name                 = "acctsub"
+  resource_group_name  = azurerm_resource_group.test.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
+resource "azurerm_public_ip" "test" {
+  name                = "acctestpip%[1]d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+  allocation_method   = "Static"
+}
+
+resource "azurerm_network_interface" "test" {
+  name                = "acctestni%[1]d"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+
+  ip_configuration {
+    name                          = "testconfiguration1"
+    subnet_id                     = azurerm_subnet.test.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.test.id
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "test" {
+  name                  = "acctestvm%[1]d"
+  location              = azurerm_resource_group.test.location
+  resource_group_name   = azurerm_resource_group.test.name
+  network_interface_ids = [azurerm_network_interface.test.id]
+  size                  = "Standard_F4"
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
+    version   = "latest"
+  }
+
+  admin_username                  = "tfuser123"
+  admin_password                  = "Password1234!"
+  disable_password_authentication = false
+
+  os_disk {
+    name                 = "myosdisk1"
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  gallery_application {
+    version_id = azurerm_gallery_application_version.test.id
+    order      = 0
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    environment = "staging"
+  }
+}
+`, data.RandomInteger, data.Locations.Primary)
+}
+
+func (r VirtualMachineDataDiskAttachmentResource) virtualMachineApplicationComplete(data acceptance.TestData) string {
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_managed_disk" "test" {
+  name                 = "acctest%d"
+  location             = azurerm_resource_group.test.location
+  resource_group_name  = azurerm_resource_group.test.name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = 10
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "test" {
+  managed_disk_id    = azurerm_managed_disk.test.id
+  virtual_machine_id = azurerm_linux_virtual_machine.test.id
+  lun                = "11"
+  caching            = "ReadWrite"
+}
+`, r.virtualMachineApplicationPrep(data), data.RandomInteger)
 }

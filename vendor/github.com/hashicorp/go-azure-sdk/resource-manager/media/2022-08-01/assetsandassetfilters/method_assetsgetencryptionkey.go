@@ -21,7 +21,7 @@ type AssetsGetEncryptionKeyOperationResponse struct {
 // AssetsGetEncryptionKey ...
 func (c AssetsAndAssetFiltersClient) AssetsGetEncryptionKey(ctx context.Context, id AssetId) (result AssetsGetEncryptionKeyOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -44,7 +44,10 @@ func (c AssetsAndAssetFiltersClient) AssetsGetEncryptionKey(ctx context.Context,
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model StorageEncryptedAssetDecryptionData
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

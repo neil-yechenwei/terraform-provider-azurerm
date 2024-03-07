@@ -28,16 +28,14 @@ resource "azurerm_log_analytics_workspace" "example" {
   sku                 = "PerGB2018"
 }
 
-resource "azurerm_security_insights_sentinel_onboarding" "example" {
-  resource_group_name          = azurerm_resource_group.example.name
-  workspace_name               = azurerm_log_analytics_workspace.example.name
+resource "azurerm_sentinel_log_analytics_workspace_onboarding" "example" {
+  workspace_id                 = azurerm_log_analytics_workspace.example.id
   customer_managed_key_enabled = false
 }
 
 data "azurerm_sentinel_alert_rule_anomaly" "example" {
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.example.id
+  log_analytics_workspace_id = azurerm_sentinel_log_analytics_workspace_onboarding.example.workspace_id
   display_name               = "Potential data staging"
-  depends_on                 = [azurerm_sentinel_log_analytics_workspace_onboarding.example]
 }
 
 resource "azurerm_sentinel_alert_rule_anomaly_built_in" "example" {
@@ -52,9 +50,9 @@ resource "azurerm_sentinel_alert_rule_anomaly_built_in" "example" {
 
 The following arguments are supported:
 
-* `name` - (Optional) The Name of the built-in Anomaly Alert Rule. Changing this forces a new Built-in Anomaly Alert Rule to be created.
+* `name` - (Optional) The Name of the built-in Anomaly Alert Rule.
 
-* `display_name` - (Optional) The Display Name of the built-in Anomaly Alert Rule. Changing this forces a new Built-in Anomaly Alert Rule to be created.
+* `display_name` - (Optional) The Display Name of the built-in Anomaly Alert Rule.
 
 ~> **Note:** One of `name` or `display_name` block must be specified.
 

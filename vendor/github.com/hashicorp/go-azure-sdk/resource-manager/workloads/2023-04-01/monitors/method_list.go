@@ -20,13 +20,14 @@ type ListOperationResponse struct {
 }
 
 type ListCompleteResult struct {
-	Items []Monitor
+	LatestHttpResponse *http.Response
+	Items              []Monitor
 }
 
 // List ...
 func (c MonitorsClient) List(ctx context.Context, id commonids.SubscriptionId) (result ListOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -84,7 +85,8 @@ func (c MonitorsClient) ListCompleteMatchingPredicate(ctx context.Context, id co
 	}
 
 	result = ListCompleteResult{
-		Items: items,
+		LatestHttpResponse: resp.HttpResponse,
+		Items:              items,
 	}
 	return
 }

@@ -42,6 +42,14 @@ resource "azurerm_log_analytics_solution" "example" {
   }
 }
 
+resource "azurerm_eventhub_namespace" "example" {
+  name                = "exeventns"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+  sku                 = "Standard"
+  capacity            = 1
+}
+
 resource "azurerm_eventhub" "example" {
   name                = "exevent2"
   namespace_name      = azurerm_eventhub_namespace.example.name
@@ -83,33 +91,33 @@ resource "azurerm_monitor_data_collection_rule" "example" {
   destinations {
     log_analytics {
       workspace_resource_id = azurerm_log_analytics_workspace.example.id
-      name                  = "test-destination-log"
+      name                  = "example-destination-log"
     }
 
     event_hub {
       event_hub_id = azurerm_eventhub.example.id
-      name         = "test-destination-eventhub"
+      name         = "example-destination-eventhub"
     }
 
     storage_blob {
       storage_account_id = azurerm_storage_account.example.id
       container_name     = azurerm_storage_container.example.name
-      name               = "test-destination-storage"
+      name               = "example-destination-storage"
     }
 
     azure_monitor_metrics {
-      name = "test-destination-metrics"
+      name = "example-destination-metrics"
     }
   }
 
   data_flow {
     streams      = ["Microsoft-InsightsMetrics"]
-    destinations = ["test-destination-metrics"]
+    destinations = ["example-destination-metrics"]
   }
 
   data_flow {
     streams      = ["Microsoft-InsightsMetrics", "Microsoft-Syslog", "Microsoft-Perf"]
-    destinations = ["test-destination-log"]
+    destinations = ["example-destination-log"]
   }
 
   data_flow {
@@ -123,20 +131,21 @@ resource "azurerm_monitor_data_collection_rule" "example" {
     syslog {
       facility_names = ["*"]
       log_levels     = ["*"]
-      name           = "test-datasource-syslog"
+      name           = "example-datasource-syslog"
+      streams        = ["Microsoft-Syslog"]
     }
 
     iis_log {
       streams         = ["Microsoft-W3CIISLog"]
-      name            = "test-datasource-iis"
-      log_directories = ["C:\\\\Logs\\\\W3SVC1"]
+      name            = "example-datasource-iis"
+      log_directories = ["C:\\Logs\\W3SVC1"]
     }
 
     log_file {
-      name          = "test-datasource-logfile"
+      name          = "example-datasource-logfile"
       format        = "text"
       streams       = ["Custom-MyTableRawData"]
-      file_patterns = ["C:\\\\JavaLogs\\\\*.log"]
+      file_patterns = ["C:\\JavaLogs\\*.log"]
       settings {
         text {
           record_start_timestamp_format = "ISO 8601"
@@ -148,27 +157,26 @@ resource "azurerm_monitor_data_collection_rule" "example" {
       streams                       = ["Microsoft-Perf", "Microsoft-InsightsMetrics"]
       sampling_frequency_in_seconds = 60
       counter_specifiers            = ["Processor(*)\\% Processor Time"]
-      name                          = "test-datasource-perfcounter"
+      name                          = "example-datasource-perfcounter"
     }
 
     windows_event_log {
       streams        = ["Microsoft-WindowsEvent"]
       x_path_queries = ["*![System/Level=1]"]
-      name           = "test-datasource-wineventlog"
+      name           = "example-datasource-wineventlog"
     }
 
     extension {
       streams            = ["Microsoft-WindowsEvent"]
-      input_data_sources = ["test-datasource-wineventlog"]
-      extension_name     = "test-extension-name"
+      input_data_sources = ["example-datasource-wineventlog"]
+      extension_name     = "example-extension-name"
       extension_json = jsonencode({
         a = 1
         b = "hello"
       })
-      name = "test-datasource-extension"
+      name = "example-datasource-extension"
     }
   }
-
 
   stream_declaration {
     stream_name = "Custom-MyTableRawData"
@@ -225,7 +233,9 @@ The following arguments are supported:
 
 * `identity` - (Optional) An `identity` block as defined below.
 
-* `kind` - (Optional) The kind of the Data Collection Rule. Possible values are `Linux`, `Windows`,and `AgentDirectToStore`. A rule of kind `Linux` does not allow for `windows_event_log` data sources. And a rule of kind `Windows` does not allow for `syslog` data sources. If kind is not specified, all kinds of data sources are allowed.
+* `kind` - (Optional) The kind of the Data Collection Rule. Possible values are `Linux`, `Windows`, `AgentDirectToStore` and `WorkspaceTransforms`. A rule of kind `Linux` does not allow for `windows_event_log` data sources. And a rule of kind `Windows` does not allow for `syslog` data sources. If kind is not specified, all kinds of data sources are allowed.
+
+~> **NOTE** Once `kind` has been set, changing it forces a new Data Collection Rule to be created.
 
 * `stream_declaration` - (Optional) A `stream_declaration` block as defined below.
 
@@ -257,7 +267,7 @@ A `data_flow` block supports the following:
 
 * `destinations` - (Required) Specifies a list of destination names. A `azure_monitor_metrics` data source only allows for stream of kind `Microsoft-InsightsMetrics`.
 
-* `streams` - (Required) Specifies a list of streams. Possible values include but not limited to `Microsoft-Event`, `Microsoft-InsightsMetrics`, `Microsoft-Perf`, `Microsoft-Syslog`,and `Microsoft-WindowsEvent`.
+* `streams` - (Required) Specifies a list of streams. Possible values include but not limited to `Microsoft-Event`, `Microsoft-InsightsMetrics`, `Microsoft-Perf`, `Microsoft-Syslog`, `Microsoft-WindowsEvent`, and `Microsoft-PrometheusMetrics`.
 
 * `built_in_transform` - (Optional) The built-in transform to transform stream data.
 
@@ -470,6 +480,8 @@ A `storage_blob_direct` block supports the following:
 ---
 
 
+---
+
 A `storage_table_direct` block supports the following:
 
 * `table_name` - (Required) The Storage Table name.
@@ -490,7 +502,7 @@ A `stream_declaration` block supports the following:
 
 A `syslog` block supports the following:
 
-* `facility_names` - (Required) Specifies a list of facility names. Use a wildcard `*` to collect logs for all facility names. Possible values are `auth`, `authpriv`, `cron`, `daemon`, `kern`, `lpr`, `mail`, `mark`, `news`, `syslog`, `user`, `uucp`, `local0`, `local1`, `local2`, `local3`, `local4`, `local5`, `local6`, `local7`,and `*`.
+* `facility_names` - (Required) Specifies a list of facility names. Use a wildcard `*` to collect logs for all facility names. Possible values are `alert`, `*`, `audit`, `auth`, `authpriv`, `clock`, `cron`, `daemon`, `ftp`, `kern`, `local5`, `local4`, `local1`, `local7`, `local6`, `local3`, `local2`, `local0`, `lpr`, `mail`, `mark`, `news`, `nopri`, `ntp`, `syslog`, `user` and `uucp`.
 
 * `log_levels` - (Required) Specifies a list of log levels. Use a wildcard `*` to collect logs for all log levels. Possible values are `Debug`, `Info`, `Notice`, `Warning`, `Error`, `Critical`, `Alert`, `Emergency`,and `*`.
 

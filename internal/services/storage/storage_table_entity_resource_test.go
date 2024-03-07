@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package storage_test
 
 import (
@@ -10,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
-	"github.com/tombuildsstuff/giovanni/storage/2019-12-12/table/entities"
+	"github.com/tombuildsstuff/giovanni/storage/2020-08-04/table/entities"
 )
 
 type StorageTableEntityResource struct{}
@@ -70,7 +73,6 @@ func TestAccTableEntity_update(t *testing.T) {
 func TestAccTableEntity_update_typed(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_storage_table_entity", "test")
 	r := StorageTableEntityResource{}
-
 	data.ResourceTest(t, r, []acceptance.TestStep{
 		{
 			Config: r.basic(data),
@@ -86,6 +88,30 @@ func TestAccTableEntity_update_typed(t *testing.T) {
 			),
 		},
 		data.ImportStep(),
+		{
+			Config: r.updated_typedInt64(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		{
+			Config: r.updated_typedDouble(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		{
+			Config: r.updated_typedString(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		{
+			Config: r.updated_typedBoolean(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
 	})
 }
 
@@ -191,6 +217,89 @@ resource "azurerm_storage_table_entity" "test" {
   entity = {
     Foo              = 123
     "Foo@odata.type" = "Edm.Int32"
+    Test             = "Updated"
+  }
+}
+`, template, data.RandomInteger, data.RandomInteger)
+}
+
+func (r StorageTableEntityResource) updated_typedInt64(data acceptance.TestData) string {
+	template := r.template(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_storage_table_entity" "test" {
+  storage_account_name = azurerm_storage_account.test.name
+  table_name           = azurerm_storage_table.test.name
+
+  partition_key = "test_partition%d"
+  row_key       = "test_row%d"
+  entity = {
+    Foo              = 123
+    "Foo@odata.type" = "Edm.Int64"
+    Test             = "Updated"
+  }
+}
+`, template, data.RandomInteger, data.RandomInteger)
+}
+
+func (r StorageTableEntityResource) updated_typedDouble(data acceptance.TestData) string {
+	template := r.template(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_storage_table_entity" "test" {
+  storage_account_name = azurerm_storage_account.test.name
+  table_name           = azurerm_storage_table.test.name
+
+  partition_key = "test_partition%d"
+  row_key       = "test_row%d"
+  entity = {
+    Foo              = 123.123
+    "Foo@odata.type" = "Edm.Double"
+    Test             = "Updated"
+  }
+}
+`, template, data.RandomInteger, data.RandomInteger)
+}
+
+func (r StorageTableEntityResource) updated_typedString(data acceptance.TestData) string {
+	template := r.template(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_storage_table_entity" "test" {
+  storage_account_name = azurerm_storage_account.test.name
+  table_name           = azurerm_storage_table.test.name
+
+  partition_key = "test_partition%d"
+  row_key       = "test_row%d"
+  entity = {
+    Foo              = "123.123"
+    "Foo@odata.type" = "Edm.String"
+    Test             = "Updated"
+  }
+  lifecycle {
+    ignore_changes = [entity]
+  }
+}
+`, template, data.RandomInteger, data.RandomInteger)
+}
+
+func (r StorageTableEntityResource) updated_typedBoolean(data acceptance.TestData) string {
+	template := r.template(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_storage_table_entity" "test" {
+  storage_account_name = azurerm_storage_account.test.name
+  table_name           = azurerm_storage_table.test.name
+
+  partition_key = "test_partition%d"
+  row_key       = "test_row%d"
+  entity = {
+    Foo              = "true"
+    "Foo@odata.type" = "Edm.Boolean"
     Test             = "Updated"
   }
 }

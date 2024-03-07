@@ -20,7 +20,7 @@ type GetOperationResponse struct {
 // Get ...
 func (c SAPVirtualInstancesClient) Get(ctx context.Context, id SapVirtualInstanceId) (result GetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c SAPVirtualInstancesClient) Get(ctx context.Context, id SapVirtualInstanc
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model SAPVirtualInstance
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

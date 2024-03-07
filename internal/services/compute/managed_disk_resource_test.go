@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package compute_test
 
 import (
@@ -7,7 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2022-03-02/disks"
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2023-04-02/disks"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2015-04-01/activitylogs"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -162,6 +168,40 @@ func TestAccManagedDisk_update(t *testing.T) {
 				check.That(data.ResourceName).Key("tags.environment").HasValue("acctest"),
 				check.That(data.ResourceName).Key("disk_size_gb").HasValue("2"),
 				check.That(data.ResourceName).Key("storage_account_type").HasValue(string(disks.DiskStorageAccountTypesPremiumLRS)),
+			),
+		},
+	})
+}
+
+func TestAccManagedDisk_optimizedFrequentAttach(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_managed_disk", "test")
+	r := ManagedDiskResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.optimizedFrequentAttach(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		{
+			Config: r.empty(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+	})
+}
+
+func TestAccManagedDisk_performancePlus(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_managed_disk", "test")
+	r := ManagedDiskResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.performancePlus(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
 			),
 		},
 	})
@@ -712,6 +752,28 @@ func TestAccManagedDisk_onlineLiveResize(t *testing.T) {
 	})
 }
 
+func TestAccManagedDisk_detachFromVM(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_managed_disk", "test")
+	r := ManagedDiskResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.detachFromVm(data, 4000),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+		{
+			Config: r.detachFromVm(data, 5000),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep(),
+	})
+}
+
 func TestAccManagedDisk_premiumV2WithIOpsReadWriteAndMBpsReadWrite(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_managed_disk", "test")
 	r := ManagedDiskResource{}
@@ -757,7 +819,7 @@ func TestAccManagedDisk_premiumV2WithIOpsReadOnlyAndMBpsReadOnly(t *testing.T) {
 }
 
 func (ManagedDiskResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
-	id, err := disks.ParseDiskID(state.ID)
+	id, err := commonids.ParseManagedDiskID(state.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -789,6 +851,61 @@ resource "azurerm_managed_disk" "test" {
   create_option        = "Empty"
   disk_size_gb         = "1"
 
+  tags = {
+    environment = "acctest"
+    cost-center = "ops"
+  }
+}
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger)
+}
+
+func (ManagedDiskResource) optimizedFrequentAttach(data acceptance.TestData) string {
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-%d"
+  location = "%s"
+}
+
+resource "azurerm_managed_disk" "test" {
+  name                              = "acctestd-%d"
+  location                          = azurerm_resource_group.test.location
+  resource_group_name               = azurerm_resource_group.test.name
+  storage_account_type              = "Standard_LRS"
+  create_option                     = "Empty"
+  disk_size_gb                      = "1"
+  optimized_frequent_attach_enabled = true
+
+  tags = {
+    environment = "acctest"
+    cost-center = "ops"
+  }
+}
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger)
+}
+
+func (ManagedDiskResource) performancePlus(data acceptance.TestData) string {
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-%d"
+  location = "%s"
+}
+
+resource "azurerm_managed_disk" "test" {
+  name                     = "acctestd-%d"
+  location                 = azurerm_resource_group.test.location
+  resource_group_name      = azurerm_resource_group.test.name
+  storage_account_type     = "Premium_LRS"
+  create_option            = "Empty"
+  disk_size_gb             = "1024"
+  performance_plus_enabled = true
   tags = {
     environment = "acctest"
     cost-center = "ops"
@@ -894,8 +1011,8 @@ resource "azurerm_virtual_machine" "test" {
 
   storage_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 
@@ -1037,8 +1154,8 @@ provider "azurerm" {
 data "azurerm_platform_image" "test" {
   location  = "%s"
   publisher = "Canonical"
-  offer     = "UbuntuServer"
-  sku       = "16.04-LTS"
+  offer     = "0001-com-ubuntu-server-jammy"
+  sku       = "22_04-lts"
 }
 
 resource "azurerm_resource_group" "test" {
@@ -1068,8 +1185,8 @@ provider "azurerm" {
 data "azurerm_platform_image" "test" {
   location  = "%s"
   publisher = "Canonical"
-  offer     = "UbuntuServer"
-  sku       = "16.04-LTS"
+  offer     = "0001-com-ubuntu-server-jammy"
+  sku       = "22_04-lts"
 }
 
 resource "azurerm_resource_group" "test" {
@@ -1116,8 +1233,8 @@ resource "azurerm_linux_virtual_machine" "test" {
 
   source_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 }
@@ -1736,8 +1853,8 @@ resource "azurerm_linux_virtual_machine" "test" {
 
   source_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 }
@@ -2014,8 +2131,8 @@ provider "azurerm" {
 data "azurerm_platform_image" "test" {
   location  = "%s"
   publisher = "Canonical"
-  offer     = "UbuntuServer"
-  sku       = "18_04-LTS-gen2"
+  offer     = "0001-com-ubuntu-server-jammy"
+  sku       = "22_04-lts-gen2"
 }
 
 resource "azurerm_resource_group" "test" {
@@ -2461,8 +2578,8 @@ resource "azurerm_linux_virtual_machine" "test" {
 
   source_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 }
@@ -2485,27 +2602,113 @@ resource "azurerm_virtual_machine_data_disk_attachment" "test" {
 `, data.RandomInteger, data.Locations.Primary, diskSizeGB)
 }
 
+func (ManagedDiskResource) detachFromVm(data acceptance.TestData, diskSizeGB int) string {
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+locals {
+  random_integer   = %[1]d
+  primary_location = %[2]q
+  first_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+wWK73dCr+jgQOAxNsHAnNNNMEMWOHYEccp6wJm2gotpr9katuF/ZAdou5AaW1C61slRkHRkpRRX9FA9CYBiitZgvCCz+3nWNN7l/Up54Zps/pHWGZLHNJZRYyAB6j5yVLMVHIHriY49d/GZTZVNB8GoJv9Gakwc/fuEZYYl4YDFiGMBP///TzlI4jhiJzjKnEvqPFki5p2ZRJqcbCiF4pJrxUQR/RXqVFQdbRLZgYfJ8xGB878RENq3yQ39d8dVOkq4edbkzwcUmwwwkYVPIoDGsYLaRHnG+To7FvMeyO7xDVQkMKzopTQV8AuKpyvpqu0a9pWOMaiCyDytO7GGN you@me.com"
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestRG-${local.random_integer}"
+  location = local.primary_location
+}
+
+resource "azurerm_virtual_network" "test" {
+  name                = "acctestnw-${local.random_integer}"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+}
+
+resource "azurerm_subnet" "test" {
+  name                 = "internal"
+  resource_group_name  = azurerm_resource_group.test.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
+resource "azurerm_network_interface" "test" {
+  name                = "acctestnic-${local.random_integer}"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.test.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "test" {
+  name                = "acctestVM-${local.random_integer}"
+  resource_group_name = azurerm_resource_group.test.name
+  location            = azurerm_resource_group.test.location
+  size                = "Standard_D2s_v3"
+  admin_username      = "adminuser"
+  network_interface_ids = [
+    azurerm_network_interface.test.id,
+  ]
+
+  admin_ssh_key {
+    username   = "adminuser"
+    public_key = local.first_public_key
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_managed_disk" "test" {
+  name                 = "acctestd-${local.random_integer}"
+  location             = azurerm_resource_group.test.location
+  resource_group_name  = azurerm_resource_group.test.name
+  storage_account_type = "Premium_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = %[3]d
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "test" {
+  managed_disk_id    = azurerm_managed_disk.test.id
+  virtual_machine_id = azurerm_linux_virtual_machine.test.id
+  lun                = "10"
+  caching            = "None"
+}
+`, data.RandomInteger, data.Locations.Primary, diskSizeGB)
+}
+
 func (ManagedDiskResource) checkLinuxVirtualMachineWasNotRestarted(ctx context.Context, client *clients.Client, state *pluginsdk.InstanceState) error {
 	activityLogsClient := client.Monitor.ActivityLogsClient
 	filter := fmt.Sprintf("eventTimestamp ge '%s' and resourceUri eq '%s'", time.Now().Add(-1*time.Hour).Format(time.RFC3339), state.ID)
-	logs, err := activityLogsClient.ListComplete(ctx, filter, "")
+	subscriptionId := commonids.NewSubscriptionID(client.Account.SubscriptionId)
+	opts := activitylogs.DefaultListOperationOptions()
+	opts.Filter = pointer.To(filter)
+	logs, err := activityLogsClient.ListComplete(ctx, subscriptionId, opts)
 	if err != nil {
 		return fmt.Errorf("retrieving activity logs for Virtual Machine %q: %+v", state.ID, err)
 	}
 
 	wasShutDown := false
-	for logs.NotDone() {
-		val := logs.Value()
-		if val.Authorization == nil || val.Authorization.Action == nil {
-			return fmt.Errorf("parsing activity log for Virtual Machine %q: `model.Authorization` or `model.Authorization.Action` was nil", state.ID)
-		}
-		if strings.EqualFold(*val.Authorization.Action, "Microsoft.Compute/virtualMachines/stop/action") {
-			wasShutDown = true
-			break
-		}
-
-		if err := logs.NextWithContext(ctx); err != nil {
-			return fmt.Errorf("listing the next page of results: %+v", err)
+	for _, logEntry := range logs.Items {
+		if logEntry.Authorization != nil && logEntry.Authorization.Action != nil {
+			if strings.EqualFold(*logEntry.Authorization.Action, "Microsoft.Compute/virtualMachines/powerOff/action") {
+				wasShutDown = true
+				break
+			}
 		}
 	}
 

@@ -20,7 +20,7 @@ type PrivateLinkResourcesGetOperationResponse struct {
 // PrivateLinkResourcesGet ...
 func (c AccountsClient) PrivateLinkResourcesGet(ctx context.Context, id PrivateLinkResourceId) (result PrivateLinkResourcesGetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c AccountsClient) PrivateLinkResourcesGet(ctx context.Context, id PrivateL
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model PrivateLinkResource
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -172,20 +175,6 @@ func schemaFeatures(supportLegacyTestSuite bool) *pluginsdk.Schema {
 			},
 		},
 
-		"network": {
-			Type:     pluginsdk.TypeList,
-			Optional: true,
-			MaxItems: 1,
-			Elem: &pluginsdk.Resource{
-				Schema: map[string]*pluginsdk.Schema{
-					"relaxed_locking": {
-						Type:     pluginsdk.TypeBool,
-						Required: true,
-					},
-				},
-			},
-		},
-
 		"template_deployment": {
 			Type:     pluginsdk.TypeList,
 			Optional: true,
@@ -237,9 +226,15 @@ func schemaFeatures(supportLegacyTestSuite bool) *pluginsdk.Schema {
 						Optional: true,
 						Default:  false,
 					},
+					"reimage_on_manual_upgrade": {
+						Type:     pluginsdk.TypeBool,
+						Optional: true,
+						Default:  true,
+					},
 					"roll_instances_when_required": {
 						Type:     pluginsdk.TypeBool,
-						Required: true,
+						Optional: true,
+						Default:  true,
 					},
 					"scale_to_zero_before_deletion": {
 						Type:     pluginsdk.TypeBool,
@@ -272,6 +267,36 @@ func schemaFeatures(supportLegacyTestSuite bool) *pluginsdk.Schema {
 			Elem: &pluginsdk.Resource{
 				Schema: map[string]*pluginsdk.Schema{
 					"expand_without_downtime": {
+						Type:     pluginsdk.TypeBool,
+						Optional: true,
+						Default:  true,
+					},
+				},
+			},
+		},
+
+		"subscription": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"prevent_cancellation_on_destroy": {
+						Type:     pluginsdk.TypeBool,
+						Optional: true,
+						Default:  false,
+					},
+				},
+			},
+		},
+
+		"postgresql_flexible_server": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"restart_server_on_configuration_value_change": {
 						Type:     pluginsdk.TypeBool,
 						Optional: true,
 						Default:  true,
@@ -434,6 +459,9 @@ func expandFeatures(input []interface{}) features.UserFeatures {
 		items := raw.([]interface{})
 		if len(items) > 0 {
 			scaleSetRaw := items[0].(map[string]interface{})
+			if v, ok := scaleSetRaw["reimage_on_manual_upgrade"]; ok {
+				featuresMap.VirtualMachineScaleSet.ReimageOnManualUpgrade = v.(bool)
+			}
 			if v, ok := scaleSetRaw["roll_instances_when_required"]; ok {
 				featuresMap.VirtualMachineScaleSet.RollInstancesWhenRequired = v.(bool)
 			}
@@ -462,6 +490,26 @@ func expandFeatures(input []interface{}) features.UserFeatures {
 			managedDiskRaw := items[0].(map[string]interface{})
 			if v, ok := managedDiskRaw["expand_without_downtime"]; ok {
 				featuresMap.ManagedDisk.ExpandWithoutDowntime = v.(bool)
+			}
+		}
+	}
+
+	if raw, ok := val["subscription"]; ok {
+		items := raw.([]interface{})
+		if len(items) > 0 {
+			subscriptionRaw := items[0].(map[string]interface{})
+			if v, ok := subscriptionRaw["prevent_cancellation_on_destroy"]; ok {
+				featuresMap.Subscription.PreventCancellationOnDestroy = v.(bool)
+			}
+		}
+	}
+
+	if raw, ok := val["postgresql_flexible_server"]; ok {
+		items := raw.([]interface{})
+		if len(items) > 0 {
+			subscriptionRaw := items[0].(map[string]interface{})
+			if v, ok := subscriptionRaw["restart_server_on_configuration_value_change"]; ok {
+				featuresMap.PostgresqlFlexibleServer.RestartServerOnConfigurationValueChange = v.(bool)
 			}
 		}
 	}

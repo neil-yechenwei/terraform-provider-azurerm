@@ -21,7 +21,7 @@ type CreateOperationResponse struct {
 // Create ...
 func (c SapLandscapeMonitorClient) Create(ctx context.Context, id MonitorId, input SapLandscapeMonitor) (result CreateOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusCreated,
 			http.StatusOK,
@@ -49,7 +49,10 @@ func (c SapLandscapeMonitorClient) Create(ctx context.Context, id MonitorId, inp
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model SapLandscapeMonitor
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

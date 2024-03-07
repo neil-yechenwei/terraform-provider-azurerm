@@ -18,12 +18,13 @@ type CreateOperationResponse struct {
 	Poller       pollers.Poller
 	HttpResponse *http.Response
 	OData        *odata.OData
+	Model        *SAPApplicationServerInstance
 }
 
 // Create ...
 func (c SAPApplicationServerInstancesClient) Create(ctx context.Context, id ApplicationInstanceId, input SAPApplicationServerInstance) (result CreateOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusCreated,
 			http.StatusOK,

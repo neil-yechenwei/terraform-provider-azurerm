@@ -10,7 +10,7 @@ import (
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
 
-var _ resourceids.ResourceId = DatabaseInstanceId{}
+var _ resourceids.ResourceId = &DatabaseInstanceId{}
 
 // DatabaseInstanceId is a struct representing the Resource ID for a Database Instance
 type DatabaseInstanceId struct {
@@ -32,29 +32,15 @@ func NewDatabaseInstanceID(subscriptionId string, resourceGroupName string, sapV
 
 // ParseDatabaseInstanceID parses 'input' into a DatabaseInstanceId
 func ParseDatabaseInstanceID(input string) (*DatabaseInstanceId, error) {
-	parser := resourceids.NewParserFromResourceIdType(DatabaseInstanceId{})
+	parser := resourceids.NewParserFromResourceIdType(&DatabaseInstanceId{})
 	parsed, err := parser.Parse(input, false)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := DatabaseInstanceId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.SapVirtualInstanceName, ok = parsed.Parsed["sapVirtualInstanceName"]; !ok {
-		return nil, fmt.Errorf("the segment 'sapVirtualInstanceName' was not found in the resource id %q", input)
-	}
-
-	if id.DatabaseInstanceName, ok = parsed.Parsed["databaseInstanceName"]; !ok {
-		return nil, fmt.Errorf("the segment 'databaseInstanceName' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
@@ -63,32 +49,40 @@ func ParseDatabaseInstanceID(input string) (*DatabaseInstanceId, error) {
 // ParseDatabaseInstanceIDInsensitively parses 'input' case-insensitively into a DatabaseInstanceId
 // note: this method should only be used for API response data and not user input
 func ParseDatabaseInstanceIDInsensitively(input string) (*DatabaseInstanceId, error) {
-	parser := resourceids.NewParserFromResourceIdType(DatabaseInstanceId{})
+	parser := resourceids.NewParserFromResourceIdType(&DatabaseInstanceId{})
 	parsed, err := parser.Parse(input, true)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := DatabaseInstanceId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.SapVirtualInstanceName, ok = parsed.Parsed["sapVirtualInstanceName"]; !ok {
-		return nil, fmt.Errorf("the segment 'sapVirtualInstanceName' was not found in the resource id %q", input)
-	}
-
-	if id.DatabaseInstanceName, ok = parsed.Parsed["databaseInstanceName"]; !ok {
-		return nil, fmt.Errorf("the segment 'databaseInstanceName' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
+}
+
+func (id *DatabaseInstanceId) FromParseResult(input resourceids.ParseResult) error {
+	var ok bool
+
+	if id.SubscriptionId, ok = input.Parsed["subscriptionId"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "subscriptionId", input)
+	}
+
+	if id.ResourceGroupName, ok = input.Parsed["resourceGroupName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "resourceGroupName", input)
+	}
+
+	if id.SapVirtualInstanceName, ok = input.Parsed["sapVirtualInstanceName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "sapVirtualInstanceName", input)
+	}
+
+	if id.DatabaseInstanceName, ok = input.Parsed["databaseInstanceName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "databaseInstanceName", input)
+	}
+
+	return nil
 }
 
 // ValidateDatabaseInstanceID checks that 'input' can be parsed as a Database Instance ID

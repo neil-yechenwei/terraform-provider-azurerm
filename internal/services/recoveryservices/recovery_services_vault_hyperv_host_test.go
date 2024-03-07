@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package recoveryservices_test
 
 import (
@@ -5,11 +8,13 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/virtualmachines"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2022-10-01/replicationrecoveryservicesproviders"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
@@ -61,14 +66,17 @@ func (r HyperVHostTestResource) Exists(ctx context.Context, clients *clients.Cli
 }
 
 func (HyperVHostTestResource) virtualMachineExists(ctx context.Context, client *clients.Client, state *pluginsdk.InstanceState) error {
-	id, err := parse.VirtualMachineID(state.ID)
+	id, err := virtualmachines.ParseVirtualMachineID(state.ID)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.Compute.VMClient.Get(ctx, id.ResourceGroup, id.Name, "")
+	ctx2, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	defer cancel()
+
+	resp, err := client.Compute.VirtualMachinesClient.Get(ctx2, *id, virtualmachines.DefaultGetOperationOptions())
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.WasNotFound(resp.HttpResponse) {
 			return fmt.Errorf("%s does not exist", *id)
 		}
 
@@ -79,19 +87,17 @@ func (HyperVHostTestResource) virtualMachineExists(ctx context.Context, client *
 }
 
 func (HyperVHostTestResource) rebootVirtualMachine(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) error {
-	client := clients.Compute.VMClient
-	id, err := parse.VirtualMachineID(state.ID)
+	ctx2, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	defer cancel()
+
+	client := clients.Compute.VirtualMachinesClient
+	id, err := virtualmachines.ParseVirtualMachineID(state.ID)
 	if err != nil {
 		return err
 	}
 
-	future, err := client.Restart(ctx, id.ResourceGroup, id.Name)
-	if err != nil {
-		return fmt.Errorf("restart %s: %+v", id, err)
-	}
-
-	if err := future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for restart of %s: %+v", id, err)
+	if err := client.RestartThenPoll(ctx2, *id); err != nil {
+		return fmt.Errorf("restarting %s: %+v", id, err)
 	}
 
 	return nil

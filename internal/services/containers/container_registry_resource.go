@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package containers
 
 import (
@@ -22,10 +25,10 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/containers/migration"
 	containerValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/containers/validate"
 	keyVaultValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
-	networkValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
@@ -62,11 +65,9 @@ func resourceContainerRegistry() *pluginsdk.Resource {
 		CustomizeDiff: pluginsdk.CustomizeDiffShim(func(ctx context.Context, d *pluginsdk.ResourceDiff, v interface{}) error {
 			sku := d.Get("sku").(string)
 
-			hasGeoReplications := false
 			geoReplications := d.Get("georeplications").([]interface{})
-			hasGeoReplicationsApplied := hasGeoReplications || len(geoReplications) > 0
 			// if locations have been specified for geo-replication then, the SKU has to be Premium
-			if hasGeoReplicationsApplied && !strings.EqualFold(sku, string(registries.SkuNamePremium)) {
+			if len(geoReplications) > 0 && !strings.EqualFold(sku, string(registries.SkuNamePremium)) {
 				return fmt.Errorf("ACR geo-replication can only be applied when using the Premium Sku.")
 			}
 
@@ -315,24 +316,13 @@ func resourceContainerRegistryUpdate(d *pluginsdk.ResourceData, meta interface{}
 		Tags:     tags.Expand(d.Get("tags").(map[string]interface{})),
 	}
 
-	var hasGeoReplicationLocationsChanges bool
-	var hasNewGeoReplicationLocations bool
-	oldGeoReplicationLocations := make([]interface{}, 0)
-	newGeoReplicationLocations := make([]interface{}, 0)
-
 	// geo replication is only supported by Premium Sku
-	hasGeoReplicationsApplied := hasNewGeoReplicationLocations || len(newReplications) > 0
-	if hasGeoReplicationsApplied && !strings.EqualFold(sku, string(registries.SkuNamePremium)) {
+	if len(newReplications) > 0 && !strings.EqualFold(sku, string(registries.SkuNamePremium)) {
 		return fmt.Errorf("ACR geo-replication can only be applied when using the Premium Sku.")
 	}
 
 	if hasGeoReplicationsChanges {
 		err := applyGeoReplicationLocations(ctx, meta, *id, expandReplications(oldReplications), expandReplications(newReplications))
-		if err != nil {
-			return fmt.Errorf("applying geo replications for %s: %+v", id, err)
-		}
-	} else if hasGeoReplicationLocationsChanges {
-		err := applyGeoReplicationLocations(ctx, meta, *id, expandReplicationsFromLocations(oldGeoReplicationLocations), expandReplicationsFromLocations(newGeoReplicationLocations))
 		if err != nil {
 			return fmt.Errorf("applying geo replications for %s: %+v", id, err)
 		}
@@ -429,7 +419,7 @@ func applyGeoReplicationLocations(ctx context.Context, meta interface{}, registr
 		// each properties are non-nil. Whilst we are still doing nil check here in case.
 		if oprop, nprop := oldRepl.Properties, newRepl.Properties; oprop != nil && nprop != nil {
 			// zoneRedundency can't be updated in place
-			if oprop.ZoneRedundancy != nprop.ZoneRedundancy {
+			if ov, nv := oprop.ZoneRedundancy, nprop.ZoneRedundancy; ov != nil && nv != nil && *ov != *nv {
 				needUpdate = true
 				needReplace = true
 			}
@@ -541,7 +531,7 @@ func resourceContainerRegistryRead(d *pluginsdk.ResourceData, meta interface{}) 
 			return fmt.Errorf("setting `identity`: %+v", err)
 		}
 
-		d.Set("sku", model.Sku.Tier)
+		d.Set("sku", string(pointer.From(model.Sku.Tier)))
 
 		if props := model.Properties; props != nil {
 			d.Set("admin_enabled", props.AdminUserEnabled)
@@ -567,12 +557,12 @@ func resourceContainerRegistryRead(d *pluginsdk.ResourceData, meta interface{}) 
 			d.Set("zone_redundancy_enabled", *props.ZoneRedundancy == registries.ZoneRedundancyEnabled)
 			d.Set("anonymous_pull_enabled", props.AnonymousPullEnabled)
 			d.Set("data_endpoint_enabled", props.DataEndpointEnabled)
-			d.Set("network_rule_bypass_option", props.NetworkRuleBypassOptions)
+			d.Set("network_rule_bypass_option", string(pointer.From(props.NetworkRuleBypassOptions)))
 
 			if *props.AdminUserEnabled {
 				credsResp, errList := client.ListCredentials(ctx, *id)
 				if errList != nil {
-					return fmt.Errorf("retrieving redentials for %s: %s", *id, errList)
+					return fmt.Errorf("retrieving credentials for %s: %s", *id, errList)
 				}
 
 				if credsModel := credsResp.Model; credsModel != nil {
@@ -740,18 +730,6 @@ func expandExportPolicy(enabled bool) *registries.ExportPolicy {
 	return &exportPolicy
 }
 
-func expandReplicationsFromLocations(p []interface{}) []replications.Replication {
-	reps := make([]replications.Replication, 0)
-	for _, value := range p {
-		location := azure.NormalizeLocation(value)
-		reps = append(reps, replications.Replication{
-			Location: location,
-			Name:     &location,
-		})
-	}
-	return reps
-}
-
 func expandReplications(p []interface{}) []replications.Replication {
 	reps := make([]replications.Replication, 0)
 	if p == nil {
@@ -897,7 +875,7 @@ func flattenExportPolicy(p *registries.Policies) bool {
 }
 
 func resourceContainerRegistrySchema() map[string]*pluginsdk.Schema {
-	return map[string]*pluginsdk.Schema{
+	schema := map[string]*pluginsdk.Schema{
 		"name": {
 			Type:         pluginsdk.TypeString,
 			Required:     true,
@@ -1043,6 +1021,7 @@ func resourceContainerRegistrySchema() map[string]*pluginsdk.Schema {
 					},
 
 					"virtual_network": {
+						Deprecated: " This is only used exclusively for service endpoints (which is a feature being deprecated). Users are expected to use Private Endpoints instead",
 						Type:       pluginsdk.TypeSet,
 						Optional:   true,
 						ConfigMode: pluginsdk.SchemaConfigModeAttr,
@@ -1058,7 +1037,7 @@ func resourceContainerRegistrySchema() map[string]*pluginsdk.Schema {
 								"subnet_id": {
 									Type:         pluginsdk.TypeString,
 									Required:     true,
-									ValidateFunc: networkValidate.SubnetID,
+									ValidateFunc: commonids.ValidateSubnetID,
 								},
 							},
 						},
@@ -1147,4 +1126,10 @@ func resourceContainerRegistrySchema() map[string]*pluginsdk.Schema {
 
 		"tags": commonschema.Tags(),
 	}
+
+	if features.FourPointOhBeta() {
+		delete(schema["network_rule_set"].Elem.(*pluginsdk.Resource).Schema, "virtual_network")
+	}
+
+	return schema
 }

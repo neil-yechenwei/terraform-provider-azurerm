@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package storage_test
 
 import (
@@ -6,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-azure-helpers/lang/response"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/storage/2022-05-01/localusers"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/storage/2023-01-01/localusers"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -36,6 +39,20 @@ func TestAccLocalUser_sshKeyOnly(t *testing.T) {
 	r := LocalUserResource{}
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.sshKeyOnly(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep("ssh_authorized_key"),
+		{
+			Config: r.sshKeyOnlyUpdate(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep("ssh_authorized_key"),
 		{
 			Config: r.sshKeyOnly(data),
 			Check: acceptance.ComposeTestCheckFunc(
@@ -75,6 +92,13 @@ func TestAccLocalUser_passwordAndSSHKey(t *testing.T) {
 			),
 		},
 		data.ImportStep("ssh_authorized_key"),
+		{
+			Config: r.passwordOnly(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				check.That(data.ResourceName).ExistsInAzure(r),
+			),
+		},
+		data.ImportStep("password"),
 	})
 }
 
@@ -145,7 +169,7 @@ func TestAccLocalUser_requiresImport(t *testing.T) {
 }
 
 func (r LocalUserResource) Exists(ctx context.Context, clients *clients.Client, state *pluginsdk.InstanceState) (*bool, error) {
-	client := clients.Storage.LocalUsersClient
+	client := clients.Storage.ResourceManager.LocalUsers
 
 	id, err := localusers.ParseLocalUserID(state.ID)
 	if err != nil {
@@ -186,6 +210,27 @@ resource "azurerm_storage_account_local_user" "test" {
   ssh_key_enabled    = true
   ssh_authorized_key {
     description = "key1"
+    key         = local.first_public_key
+  }
+}
+`, template)
+}
+
+func (r LocalUserResource) sshKeyOnlyUpdate(data acceptance.TestData) string {
+	template := r.template(data)
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_storage_account_local_user" "test" {
+  name               = "user"
+  storage_account_id = azurerm_storage_account.test.id
+  ssh_key_enabled    = true
+  ssh_authorized_key {
+    description = "key1"
+    key         = local.first_public_key
+  }
+  ssh_authorized_key {
+    description = "key2"
     key         = local.first_public_key
   }
 }

@@ -12,6 +12,15 @@ import (
 type Codec interface {
 }
 
+// RawCodecImpl is returned when the Discriminated Value
+// doesn't match any of the defined types
+// NOTE: this should only be used when a type isn't defined for this type of Object (as a workaround)
+// and is used only for Deserialization (e.g. this cannot be used as a Request Payload).
+type RawCodecImpl struct {
+	Type   string
+	Values map[string]interface{}
+}
+
 func unmarshalCodecImplementation(input []byte) (Codec, error) {
 	if input == nil {
 		return nil, nil
@@ -91,6 +100,22 @@ func unmarshalCodecImplementation(input []byte) (Codec, error) {
 		return out, nil
 	}
 
+	if strings.EqualFold(value, "#Microsoft.Media.JpgImage") {
+		var out JpgImage
+		if err := json.Unmarshal(input, &out); err != nil {
+			return nil, fmt.Errorf("unmarshaling into JpgImage: %+v", err)
+		}
+		return out, nil
+	}
+
+	if strings.EqualFold(value, "#Microsoft.Media.PngImage") {
+		var out PngImage
+		if err := json.Unmarshal(input, &out); err != nil {
+			return nil, fmt.Errorf("unmarshaling into PngImage: %+v", err)
+		}
+		return out, nil
+	}
+
 	if strings.EqualFold(value, "#Microsoft.Media.Video") {
 		var out Video
 		if err := json.Unmarshal(input, &out); err != nil {
@@ -99,10 +124,6 @@ func unmarshalCodecImplementation(input []byte) (Codec, error) {
 		return out, nil
 	}
 
-	type RawCodecImpl struct {
-		Type   string                 `json:"-"`
-		Values map[string]interface{} `json:"-"`
-	}
 	out := RawCodecImpl{
 		Type:   value,
 		Values: temp,

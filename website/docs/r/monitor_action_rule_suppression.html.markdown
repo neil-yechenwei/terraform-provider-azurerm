@@ -8,7 +8,9 @@ description: |-
 
 # azurerm_monitor_action_rule_suppression
 
-Manages an Monitor Action Rule which type is suppression.
+Manages a Monitor Action Rule which type is suppression.
+
+!> **NOTE:** This resource has been deprecated in version 3.0 of the AzureRM provider and will be removed in version 4.0. Please use [`azurerm_monitor_alert_processing_rule_suppression`](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_alert_processing_rule_suppression) resource instead.
 
 ## Example Usage
 
@@ -103,7 +105,7 @@ The `condition` block supports the following:
 
 * `monitor` - (Optional) A `monitor` block as defined below.
 
-* `monitor_service` - (Optional) A `monitor_service` as block defined below.
+* `monitor_service` - (Optional) A `monitor_service` block as defined below.
 
 * `severity` - (Optional) A `severity` block as defined below.
 

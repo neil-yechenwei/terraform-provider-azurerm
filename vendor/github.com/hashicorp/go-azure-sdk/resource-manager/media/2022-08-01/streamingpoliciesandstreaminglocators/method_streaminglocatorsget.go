@@ -20,7 +20,7 @@ type StreamingLocatorsGetOperationResponse struct {
 // StreamingLocatorsGet ...
 func (c StreamingPoliciesAndStreamingLocatorsClient) StreamingLocatorsGet(ctx context.Context, id StreamingLocatorId) (result StreamingLocatorsGetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c StreamingPoliciesAndStreamingLocatorsClient) StreamingLocatorsGet(ctx co
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model StreamingLocator
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

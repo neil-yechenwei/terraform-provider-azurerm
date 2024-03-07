@@ -10,7 +10,7 @@ import (
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
 
-var _ resourceids.ResourceId = ProviderShareSubscriptionId{}
+var _ resourceids.ResourceId = &ProviderShareSubscriptionId{}
 
 // ProviderShareSubscriptionId is a struct representing the Resource ID for a Provider Share Subscription
 type ProviderShareSubscriptionId struct {
@@ -34,33 +34,15 @@ func NewProviderShareSubscriptionID(subscriptionId string, resourceGroupName str
 
 // ParseProviderShareSubscriptionID parses 'input' into a ProviderShareSubscriptionId
 func ParseProviderShareSubscriptionID(input string) (*ProviderShareSubscriptionId, error) {
-	parser := resourceids.NewParserFromResourceIdType(ProviderShareSubscriptionId{})
+	parser := resourceids.NewParserFromResourceIdType(&ProviderShareSubscriptionId{})
 	parsed, err := parser.Parse(input, false)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := ProviderShareSubscriptionId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.AccountName, ok = parsed.Parsed["accountName"]; !ok {
-		return nil, fmt.Errorf("the segment 'accountName' was not found in the resource id %q", input)
-	}
-
-	if id.ShareName, ok = parsed.Parsed["shareName"]; !ok {
-		return nil, fmt.Errorf("the segment 'shareName' was not found in the resource id %q", input)
-	}
-
-	if id.ProviderShareSubscriptionId, ok = parsed.Parsed["providerShareSubscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'providerShareSubscriptionId' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
@@ -69,36 +51,44 @@ func ParseProviderShareSubscriptionID(input string) (*ProviderShareSubscriptionI
 // ParseProviderShareSubscriptionIDInsensitively parses 'input' case-insensitively into a ProviderShareSubscriptionId
 // note: this method should only be used for API response data and not user input
 func ParseProviderShareSubscriptionIDInsensitively(input string) (*ProviderShareSubscriptionId, error) {
-	parser := resourceids.NewParserFromResourceIdType(ProviderShareSubscriptionId{})
+	parser := resourceids.NewParserFromResourceIdType(&ProviderShareSubscriptionId{})
 	parsed, err := parser.Parse(input, true)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := ProviderShareSubscriptionId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.AccountName, ok = parsed.Parsed["accountName"]; !ok {
-		return nil, fmt.Errorf("the segment 'accountName' was not found in the resource id %q", input)
-	}
-
-	if id.ShareName, ok = parsed.Parsed["shareName"]; !ok {
-		return nil, fmt.Errorf("the segment 'shareName' was not found in the resource id %q", input)
-	}
-
-	if id.ProviderShareSubscriptionId, ok = parsed.Parsed["providerShareSubscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'providerShareSubscriptionId' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
+}
+
+func (id *ProviderShareSubscriptionId) FromParseResult(input resourceids.ParseResult) error {
+	var ok bool
+
+	if id.SubscriptionId, ok = input.Parsed["subscriptionId"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "subscriptionId", input)
+	}
+
+	if id.ResourceGroupName, ok = input.Parsed["resourceGroupName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "resourceGroupName", input)
+	}
+
+	if id.AccountName, ok = input.Parsed["accountName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "accountName", input)
+	}
+
+	if id.ShareName, ok = input.Parsed["shareName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "shareName", input)
+	}
+
+	if id.ProviderShareSubscriptionId, ok = input.Parsed["providerShareSubscriptionId"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "providerShareSubscriptionId", input)
+	}
+
+	return nil
 }
 
 // ValidateProviderShareSubscriptionID checks that 'input' can be parsed as a Provider Share Subscription ID

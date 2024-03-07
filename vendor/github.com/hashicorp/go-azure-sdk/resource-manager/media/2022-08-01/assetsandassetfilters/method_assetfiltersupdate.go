@@ -20,7 +20,7 @@ type AssetFiltersUpdateOperationResponse struct {
 // AssetFiltersUpdate ...
 func (c AssetsAndAssetFiltersClient) AssetFiltersUpdate(ctx context.Context, id AssetFilterId, input AssetFilter) (result AssetFiltersUpdateOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -47,7 +47,10 @@ func (c AssetsAndAssetFiltersClient) AssetFiltersUpdate(ctx context.Context, id 
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model AssetFilter
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 
