@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
@@ -93,12 +94,12 @@ func (r WorkloadsSAPApplicationServerInstanceResource) Create() sdk.ResourceFunc
 				return metadata.ResourceRequiresImport(r.ResourceType(), id)
 			}
 
-			parameters := &sapapplicationserverinstances.SAPApplicationServerInstance{
+			parameters := sapapplicationserverinstances.SAPApplicationServerInstance{
 				Location: location.Normalize(model.Location),
-				Tags:     &model.Tags,
+				Tags:     pointer.To(model.Tags),
 			}
 
-			if err := client.CreateThenPoll(ctx, id, *parameters); err != nil {
+			if err := client.CreateThenPoll(ctx, id, parameters); err != nil {
 				return fmt.Errorf("creating %s: %+v", id, err)
 			}
 
@@ -124,13 +125,13 @@ func (r WorkloadsSAPApplicationServerInstanceResource) Update() sdk.ResourceFunc
 				return fmt.Errorf("decoding: %+v", err)
 			}
 
-			parameters := &sapapplicationserverinstances.UpdateSAPApplicationInstanceRequest{}
+			parameters := sapapplicationserverinstances.UpdateSAPApplicationInstanceRequest{}
 
 			if metadata.ResourceData.HasChange("tags") {
-				parameters.Tags = &model.Tags
+				parameters.Tags = pointer.To(model.Tags)
 			}
 
-			if err := client.UpdateThenPoll(ctx, *id, *parameters); err != nil {
+			if err := client.UpdateThenPoll(ctx, *id, parameters); err != nil {
 				return fmt.Errorf("updating %s: %+v", *id, err)
 			}
 
@@ -159,20 +160,13 @@ func (r WorkloadsSAPApplicationServerInstanceResource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("retrieving %s: %+v", *id, err)
 			}
 
-			model := resp.Model
-			if model == nil {
-				return fmt.Errorf("retrieving %s: model was nil", id)
-			}
-
-			state := WorkloadsSAPApplicationServerInstanceModel{
-				Name:                 id.ApplicationInstanceName,
-				ResourceGroupName:    id.ResourceGroupName,
-				Location:             location.Normalize(model.Location),
-				SAPVirtualInstanceId: sapapplicationserverinstances.NewSapVirtualInstanceID(id.SubscriptionId, id.ResourceGroupName, id.SapVirtualInstanceName).ID(),
-			}
-
-			if model.Tags != nil {
-				state.Tags = *model.Tags
+			state := WorkloadsSAPApplicationServerInstanceModel{}
+			if model := resp.Model; model != nil {
+				state.Name = id.ApplicationInstanceName
+				state.ResourceGroupName = id.ResourceGroupName
+				state.Location = location.Normalize(model.Location)
+				state.SAPVirtualInstanceId = sapapplicationserverinstances.NewSapVirtualInstanceID(id.SubscriptionId, id.ResourceGroupName, id.SapVirtualInstanceName).ID()
+				state.Tags = pointer.From(model.Tags)
 			}
 
 			return metadata.Encode(&state)
@@ -182,7 +176,7 @@ func (r WorkloadsSAPApplicationServerInstanceResource) Read() sdk.ResourceFunc {
 
 func (r WorkloadsSAPApplicationServerInstanceResource) Delete() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
-		Timeout: 60 * time.Minute,
+		Timeout: 5 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
 			client := metadata.Client.Workloads.SAPApplicationServerInstances
 
