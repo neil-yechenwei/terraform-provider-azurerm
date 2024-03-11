@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package nginx
 
 import (
@@ -9,7 +12,7 @@ import (
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/nginx/2022-08-01/nginxdeployment"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/nginx/2024-01-01-preview/nginxdeployment"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
@@ -42,12 +45,15 @@ type DeploymentModel struct {
 	Sku                    string                                     `tfschema:"sku"`
 	ManagedResourceGroup   string                                     `tfschema:"managed_resource_group"`
 	Location               string                                     `tfschema:"location"`
+	Capacity               int64                                      `tfschema:"capacity"`
 	DiagnoseSupportEnabled bool                                       `tfschema:"diagnose_support_enabled"`
+	Email                  string                                     `tfschema:"email"`
 	IpAddress              string                                     `tfschema:"ip_address"`
 	LoggingStorageAccount  []LoggingStorageAccount                    `tfschema:"logging_storage_account"`
 	FrontendPublic         []FrontendPublic                           `tfschema:"frontend_public"`
 	FrontendPrivate        []FrontendPrivate                          `tfschema:"frontend_private"`
 	NetworkInterface       []NetworkInterface                         `tfschema:"network_interface"`
+	UpgradeChannel         string                                     `tfschema:"automatic_upgrade_channel"`
 	Tags                   map[string]string                          `tfschema:"tags"`
 }
 
@@ -71,6 +77,7 @@ func (m DeploymentResource) Arguments() map[string]*pluginsdk.Schema {
 			// docs: <https://docs.nginx.com/nginx-for-azure/billing/overview/>
 			Type:     pluginsdk.TypeString,
 			Required: true,
+			ForceNew: true,
 			ValidateFunc: validation.StringInSlice(
 				[]string{
 					"publicpreview_Monthly_gmz7xq9ge3py",
@@ -78,8 +85,7 @@ func (m DeploymentResource) Arguments() map[string]*pluginsdk.Schema {
 				}, false),
 		},
 
-		// only UserIdentity supported, but api defined as SystemAndUserAssigned
-		// issue link: https://github.com/Azure/azure-rest-api-specs/issues/20914
+		// only one type of identity is supported.
 		"identity": commonschema.SystemAssignedUserAssignedIdentityOptional(),
 
 		"managed_resource_group": {
@@ -92,10 +98,23 @@ func (m DeploymentResource) Arguments() map[string]*pluginsdk.Schema {
 
 		"location": commonschema.Location(),
 
+		"capacity": {
+			Type:         pluginsdk.TypeInt,
+			Optional:     true,
+			Default:      20,
+			ValidateFunc: validation.IntPositive,
+		},
+
 		"diagnose_support_enabled": {
 			Type:         pluginsdk.TypeBool,
 			Optional:     true,
 			ValidateFunc: nil,
+		},
+
+		"email": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.StringIsNotEmpty,
 		},
 
 		"logging_storage_account": {
@@ -176,6 +195,17 @@ func (m DeploymentResource) Arguments() map[string]*pluginsdk.Schema {
 			},
 		},
 
+		"automatic_upgrade_channel": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			Default:  "stable",
+			ValidateFunc: validation.StringInSlice(
+				[]string{
+					"stable",
+					"preview",
+				}, false),
+		},
+
 		"tags": commonschema.Tags(),
 	}
 }
@@ -219,7 +249,7 @@ func (m DeploymentResource) Create() sdk.ResourceFunc {
 
 			if !response.WasNotFound(existing.HttpResponse) {
 				if err != nil {
-					return fmt.Errorf("retreiving %s: %v", id, err)
+					return fmt.Errorf("retrieving %s: %v", id, err)
 				}
 				return meta.ResourceRequiresImport(m.ResourceType(), id)
 			}
@@ -279,11 +309,29 @@ func (m DeploymentResource) Create() sdk.ResourceFunc {
 				prop.NetworkProfile.NetworkInterfaceConfiguration.SubnetId = pointer.FromString(model.NetworkInterface[0].SubnetId)
 			}
 
+			if model.Capacity > 0 {
+				prop.ScalingProperties = &nginxdeployment.NginxDeploymentScalingProperties{
+					Capacity: pointer.FromInt64(model.Capacity),
+				}
+			}
+
+			if model.Email != "" {
+				prop.UserProfile = &nginxdeployment.NginxDeploymentUserProfile{
+					PreferredEmail: pointer.FromString(model.Email),
+				}
+			}
+
+			if model.UpgradeChannel != "" {
+				prop.AutoUpgradeProfile = &nginxdeployment.AutoUpgradeProfile{
+					UpgradeChannel: model.UpgradeChannel,
+				}
+			}
+
 			req.Properties = prop
 
 			req.Identity, err = identity.ExpandSystemAndUserAssignedMapFromModel(model.Identity)
 			if err != nil {
-				return fmt.Errorf("expanding user identities: %+v", err)
+				return fmt.Errorf("expanding identities: %+v", err)
 			}
 
 			err = client.DeploymentsCreateOrUpdateThenPoll(ctx, id, req)
@@ -374,6 +422,18 @@ func (m DeploymentResource) Read() sdk.ResourceFunc {
 						}
 					}
 
+					if scaling := props.ScalingProperties; scaling != nil {
+						output.Capacity = pointer.ToInt64(props.ScalingProperties.Capacity)
+					}
+
+					if userProfile := props.UserProfile; userProfile != nil && userProfile.PreferredEmail != nil {
+						output.Email = pointer.ToString(props.UserProfile.PreferredEmail)
+					}
+
+					if props.AutoUpgradeProfile != nil {
+						output.UpgradeChannel = props.AutoUpgradeProfile.UpgradeChannel
+					}
+
 					flattenedIdentity, err := identity.FlattenSystemAndUserAssignedMapToModel(model.Identity)
 					if err != nil {
 						return fmt.Errorf("flattening `identity`: %v", err)
@@ -391,6 +451,8 @@ func (m DeploymentResource) Update() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
 		Timeout: time.Minute * 30,
 		Func: func(ctx context.Context, meta sdk.ResourceMetaData) error {
+			client := meta.Client.Nginx.NginxDeployment
+
 			id, err := nginxdeployment.ParseNginxDeploymentID(meta.ResourceData.Id())
 			if err != nil {
 				return err
@@ -411,7 +473,7 @@ func (m DeploymentResource) Update() sdk.ResourceFunc {
 
 			if meta.ResourceData.HasChange("identity") {
 				if req.Identity, err = identity.ExpandSystemAndUserAssignedMapFromModel(model.Identity); err != nil {
-					return fmt.Errorf("expanding user identities: %+v", err)
+					return fmt.Errorf("expanding identities: %+v", err)
 				}
 			}
 
@@ -429,14 +491,28 @@ func (m DeploymentResource) Update() sdk.ResourceFunc {
 				req.Properties.EnableDiagnosticsSupport = pointer.FromBool(model.DiagnoseSupportEnabled)
 			}
 
-			res, err := meta.Client.Nginx.NginxDeployment.DeploymentsUpdate(ctx, *id, req)
-			if err != nil {
+			if meta.ResourceData.HasChange("capacity") && model.Capacity > 0 {
+				req.Properties.ScalingProperties = &nginxdeployment.NginxDeploymentScalingProperties{
+					Capacity: pointer.FromInt64(model.Capacity),
+				}
+			}
+
+			if meta.ResourceData.HasChange("email") {
+				req.Properties.UserProfile = &nginxdeployment.NginxDeploymentUserProfile{
+					PreferredEmail: pointer.FromString(model.Email),
+				}
+			}
+
+			if meta.ResourceData.HasChange("automatic_upgrade_channel") {
+				req.Properties.AutoUpgradeProfile = &nginxdeployment.AutoUpgradeProfile{
+					UpgradeChannel: model.UpgradeChannel,
+				}
+			}
+
+			if err := client.DeploymentsUpdateThenPoll(ctx, *id, req); err != nil {
 				return fmt.Errorf("updating %s: %v", id, err)
 			}
 
-			if err = res.Poller.PollUntilDone(); err != nil {
-				return fmt.Errorf("polling update %s: %v", id, err)
-			}
 			return nil
 		},
 	}
@@ -446,20 +522,17 @@ func (m DeploymentResource) Delete() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
 		Timeout: 30 * time.Minute,
 		Func: func(ctx context.Context, meta sdk.ResourceMetaData) error {
+			client := meta.Client.Nginx.NginxDeployment
 			id, err := nginxdeployment.ParseNginxDeploymentID(meta.ResourceData.Id())
 			if err != nil {
 				return err
 			}
 			meta.Logger.Infof("deleting %s", id)
 
-			client := meta.Client.Nginx.NginxDeployment
-			result, err := client.DeploymentsDelete(ctx, *id)
-			if err != nil {
+			if err := client.DeploymentsDeleteThenPoll(ctx, *id); err != nil {
 				return fmt.Errorf("deleting %s: %v", id, err)
 			}
-			if err := result.Poller.PollUntilDone(); err != nil {
-				return fmt.Errorf("waiting delete %s: %v", id, err)
-			}
+
 			return nil
 		},
 	}

@@ -31,11 +31,6 @@ resource "azurerm_subscription_cost_management_view" "example" {
       name        = "totalCost"
       column_name = "Cost"
     }
-
-    totalCost {
-      name     = "Cost"
-      function = "Sum"
-    }
   }
 }
 ```
@@ -97,8 +92,6 @@ A `grouping` block supports the following:
 ---
 
 A `kpi` block supports the following:
-
-* `enabled` - (Required) Should a KPI be enabled?
 
 * `type` - (Required) KPI type. Possible values are `Budget` and `Forecast`.
 

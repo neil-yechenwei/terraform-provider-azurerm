@@ -21,7 +21,7 @@ type AssetsListStreamingLocatorsOperationResponse struct {
 // AssetsListStreamingLocators ...
 func (c AssetsAndAssetFiltersClient) AssetsListStreamingLocators(ctx context.Context, id AssetId) (result AssetsListStreamingLocatorsOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -44,7 +44,10 @@ func (c AssetsAndAssetFiltersClient) AssetsListStreamingLocators(ctx context.Con
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model ListStreamingLocatorsResponse
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package resource
 
 import (
@@ -239,6 +242,10 @@ func resourceGroupTemplateDeploymentResourceUpdate(d *pluginsdk.ResourceData, me
 		deployment.Properties.TemplateLink = &resources.TemplateLink{
 			ID: utils.String(d.Get("template_spec_version_id").(string)),
 		}
+
+		if d.Get("template_spec_version_id").(string) != "" {
+			deployment.Properties.Template = nil
+		}
 	}
 
 	if d.HasChange("tags") {
@@ -356,7 +363,7 @@ func resourceGroupTemplateDeploymentResourceDelete(d *pluginsdk.ResourceData, me
 	if deleteItemsInTemplate {
 		resourceClient := meta.(*clients.Client).Resource
 		log.Printf("[DEBUG] Removing items provisioned by the Template Deployment %q (Resource Group %q)..", id.DeploymentName, id.ResourceGroup)
-		if err := deleteItemsProvisionedByTemplate(ctx, resourceClient, *template.Properties); err != nil {
+		if err := deleteItemsProvisionedByTemplate(ctx, resourceClient, *template.Properties, id.SubscriptionId); err != nil {
 			return fmt.Errorf("removing items provisioned by this Template Deployment: %+v", err)
 		}
 		log.Printf("[DEBUG] Removed items provisioned by the Template Deployment %q (Resource Group %q)..", id.DeploymentName, id.ResourceGroup)

@@ -49,7 +49,7 @@ func (o ListOperationOptions) ToQuery() *client.QueryParams {
 // List ...
 func (c ExportsClient) List(ctx context.Context, id commonids.ScopeId, options ListOperationOptions) (result ListOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -73,7 +73,10 @@ func (c ExportsClient) List(ctx context.Context, id commonids.ScopeId, options L
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model ExportListResult
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

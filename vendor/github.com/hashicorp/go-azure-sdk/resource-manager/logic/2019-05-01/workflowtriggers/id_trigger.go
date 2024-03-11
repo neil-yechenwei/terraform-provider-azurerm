@@ -10,7 +10,7 @@ import (
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
 
-var _ resourceids.ResourceId = TriggerId{}
+var _ resourceids.ResourceId = &TriggerId{}
 
 // TriggerId is a struct representing the Resource ID for a Trigger
 type TriggerId struct {
@@ -32,29 +32,15 @@ func NewTriggerID(subscriptionId string, resourceGroupName string, workflowName 
 
 // ParseTriggerID parses 'input' into a TriggerId
 func ParseTriggerID(input string) (*TriggerId, error) {
-	parser := resourceids.NewParserFromResourceIdType(TriggerId{})
+	parser := resourceids.NewParserFromResourceIdType(&TriggerId{})
 	parsed, err := parser.Parse(input, false)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := TriggerId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.WorkflowName, ok = parsed.Parsed["workflowName"]; !ok {
-		return nil, fmt.Errorf("the segment 'workflowName' was not found in the resource id %q", input)
-	}
-
-	if id.TriggerName, ok = parsed.Parsed["triggerName"]; !ok {
-		return nil, fmt.Errorf("the segment 'triggerName' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
@@ -63,32 +49,40 @@ func ParseTriggerID(input string) (*TriggerId, error) {
 // ParseTriggerIDInsensitively parses 'input' case-insensitively into a TriggerId
 // note: this method should only be used for API response data and not user input
 func ParseTriggerIDInsensitively(input string) (*TriggerId, error) {
-	parser := resourceids.NewParserFromResourceIdType(TriggerId{})
+	parser := resourceids.NewParserFromResourceIdType(&TriggerId{})
 	parsed, err := parser.Parse(input, true)
 	if err != nil {
 		return nil, fmt.Errorf("parsing %q: %+v", input, err)
 	}
 
-	var ok bool
 	id := TriggerId{}
-
-	if id.SubscriptionId, ok = parsed.Parsed["subscriptionId"]; !ok {
-		return nil, fmt.Errorf("the segment 'subscriptionId' was not found in the resource id %q", input)
-	}
-
-	if id.ResourceGroupName, ok = parsed.Parsed["resourceGroupName"]; !ok {
-		return nil, fmt.Errorf("the segment 'resourceGroupName' was not found in the resource id %q", input)
-	}
-
-	if id.WorkflowName, ok = parsed.Parsed["workflowName"]; !ok {
-		return nil, fmt.Errorf("the segment 'workflowName' was not found in the resource id %q", input)
-	}
-
-	if id.TriggerName, ok = parsed.Parsed["triggerName"]; !ok {
-		return nil, fmt.Errorf("the segment 'triggerName' was not found in the resource id %q", input)
+	if err := id.FromParseResult(*parsed); err != nil {
+		return nil, err
 	}
 
 	return &id, nil
+}
+
+func (id *TriggerId) FromParseResult(input resourceids.ParseResult) error {
+	var ok bool
+
+	if id.SubscriptionId, ok = input.Parsed["subscriptionId"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "subscriptionId", input)
+	}
+
+	if id.ResourceGroupName, ok = input.Parsed["resourceGroupName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "resourceGroupName", input)
+	}
+
+	if id.WorkflowName, ok = input.Parsed["workflowName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "workflowName", input)
+	}
+
+	if id.TriggerName, ok = input.Parsed["triggerName"]; !ok {
+		return resourceids.NewSegmentNotSpecifiedError(id, "triggerName", input)
+	}
+
+	return nil
 }
 
 // ValidateTriggerID checks that 'input' can be parsed as a Trigger ID

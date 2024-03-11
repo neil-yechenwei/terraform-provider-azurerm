@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package monitor
 
 import (
@@ -430,7 +433,7 @@ func resourceMonitorMetricAlertCreateUpdate(d *pluginsdk.ResourceData, meta inte
 		if existing.Model == nil || existing.Model.Properties.Criteria == nil {
 			return fmt.Errorf("unexpected nil properties of Monitor %s", id)
 		}
-		_, isLegacy = existing.Model.Properties.Criteria.(metricalerts.MetricAlertMultipleResourceMultipleMetricCriteria)
+		_, isLegacy = existing.Model.Properties.Criteria.(metricalerts.MetricAlertSingleResourceMultipleMetricCriteria)
 
 	}
 
@@ -601,7 +604,7 @@ func expandMonitorMetricAlertCriteria(d *pluginsdk.ResourceData, isLegacy bool) 
 }
 
 func expandMonitorMetricAlertSingleResourceMultiMetricCriteria(input []interface{}) metricalerts.MetricAlertCriteria {
-	criteria := make([]metricalerts.MultiMetricCriteria, 0)
+	criteria := make([]metricalerts.MetricCriteria, 0)
 	for i, item := range input {
 		v := item.(map[string]interface{})
 		dimensions := expandMonitorMetricDimension(v["dimension"].([]interface{}))
@@ -647,14 +650,8 @@ func expandMonitorMetricAlertMultiResourceMultiMetricForDynamicMetricCriteria(in
 	for i, item := range input {
 		v := item.(map[string]interface{})
 		dimensions := expandMonitorMetricDimension(v["dimension"].([]interface{}))
-		var ignoreDataBefore *date.Time
-		if v := v["ignore_data_before"].(string); v != "" {
-			// Guaranteed in schema validation func.
-			t, _ := time.Parse(time.RFC3339, v)
-			ignoreDataBefore = &date.Time{Time: t}
-		}
 
-		criteria = append(criteria, metricalerts.DynamicMetricCriteria{
+		dynamicMetricCriteria := metricalerts.DynamicMetricCriteria{
 			Name:             fmt.Sprintf("Metric%d", i+1),
 			MetricNamespace:  utils.String(v["metric_namespace"].(string)),
 			MetricName:       v["metric_name"].(string),
@@ -666,9 +663,17 @@ func expandMonitorMetricAlertMultiResourceMultiMetricForDynamicMetricCriteria(in
 				NumberOfEvaluationPeriods: float64(v["evaluation_total_count"].(int)),
 				MinFailingPeriodsToAlert:  float64(v["evaluation_failure_count"].(int)),
 			},
-			IgnoreDataBefore:     pointer.To(ignoreDataBefore.String()),
 			SkipMetricValidation: utils.Bool(v["skip_metric_validation"].(bool)),
-		})
+		}
+
+		if datetime := v["ignore_data_before"].(string); datetime != "" {
+			// Guaranteed in schema validation func.
+			t, _ := time.Parse(time.RFC3339, datetime)
+			ignoreDataBefore := &date.Time{Time: t}
+			dynamicMetricCriteria.IgnoreDataBefore = pointer.To(ignoreDataBefore.String())
+		}
+
+		criteria = append(criteria, dynamicMetricCriteria)
 	}
 	return &metricalerts.MetricAlertMultipleResourceMultipleMetricCriteria{
 		AllOf: &criteria,
@@ -734,11 +739,11 @@ func flattenMonitorMetricAlertCriteria(input metricalerts.MetricAlertCriteria) [
 	}
 }
 
-func flattenMonitorMetricAlertSingleResourceMultiMetricCriteria(input *[]metricalerts.MultiMetricCriteria) []interface{} {
+func flattenMonitorMetricAlertSingleResourceMultiMetricCriteria(input *[]metricalerts.MetricCriteria) []interface{} {
 	if input == nil || len(*input) == 0 {
 		return nil
 	}
-	criteria := (*input)[0].(metricalerts.MetricCriteria)
+	criteria := (*input)[0]
 	metricName := criteria.MetricName
 	metricNamespace := criteria.MetricNamespace
 	timeAggregation := criteria.TimeAggregation

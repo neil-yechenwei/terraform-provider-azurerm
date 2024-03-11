@@ -20,7 +20,7 @@ type TransformsGetOperationResponse struct {
 // TransformsGet ...
 func (c EncodingsClient) TransformsGet(ctx context.Context, id TransformId) (result TransformsGetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c EncodingsClient) TransformsGet(ctx context.Context, id TransformId) (res
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model Transform
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

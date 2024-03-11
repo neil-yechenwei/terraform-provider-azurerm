@@ -27,11 +27,17 @@ resource "azurerm_mobile_network" "example" {
 }
 
 data "azurerm_user_assigned_identity" "example" {
-  name = "example-identity"
+  name                = "name_of_user_assigned_identity"
+  resource_group_name = "name_of_resource_group"
+}
+
+data "azurerm_key_vault" "example" {
+  name                = "example-kv"
+  resource_group_name = "some-resource-group"
 }
 
 data "azurerm_key_vault_key" "example" {
-  name         = "some-key"
+  name         = "example-key"
   key_vault_id = data.azurerm_key_vault.example.id
 }
 
@@ -77,7 +83,7 @@ An `identity` block supports the following:
 
 * `type` - (Required) Specifies the type of Managed Service Identity. Possible value is `UserAssigned`.
 
-* `identity_ids` - (Optional) A list of IDs for User Assigned Managed Identity resources to be assigned.
+* `identity_ids` - (Required) A list of IDs for User Assigned Managed Identity resources to be assigned.
 
 
 ## Attributes Reference

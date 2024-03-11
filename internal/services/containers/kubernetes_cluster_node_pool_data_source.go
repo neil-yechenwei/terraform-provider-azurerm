@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package containers
 
 import (
@@ -5,12 +8,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/zones"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-02-02-preview/agentpools"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-02-02-preview/managedclusters"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/containerservice/2023-06-02-preview/agentpools"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/containers/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
@@ -19,7 +23,7 @@ import (
 )
 
 func dataSourceKubernetesClusterNodePool() *pluginsdk.Resource {
-	return &pluginsdk.Resource{
+	dataSource := &pluginsdk.Resource{
 		Read: dataSourceKubernetesClusterNodePoolRead,
 
 		Timeouts: &pluginsdk.ResourceTimeout{
@@ -40,18 +44,6 @@ func dataSourceKubernetesClusterNodePool() *pluginsdk.Resource {
 			},
 
 			"resource_group_name": commonschema.ResourceGroupNameForDataSource(),
-
-			// TODO 4.0: change this from enable_* to *_enabled
-			"enable_auto_scaling": {
-				Type:     pluginsdk.TypeBool,
-				Computed: true,
-			},
-
-			// TODO 4.0: change this from enable_* to *_enabled
-			"enable_node_public_ip": {
-				Type:     pluginsdk.TypeBool,
-				Computed: true,
-			},
 
 			"eviction_policy": {
 				Type:     pluginsdk.TypeString,
@@ -156,6 +148,28 @@ func dataSourceKubernetesClusterNodePool() *pluginsdk.Resource {
 			"zones": commonschema.ZonesMultipleComputed(),
 		},
 	}
+
+	if features.FourPointOhBeta() {
+		dataSource.Schema["auto_scaling_enabled"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Computed: true,
+		}
+		dataSource.Schema["node_public_ip_enabled"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Computed: true,
+		}
+	} else {
+		dataSource.Schema["enable_auto_scaling"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Computed: true,
+		}
+		dataSource.Schema["enable_node_public_ip"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeBool,
+			Computed: true,
+		}
+	}
+
+	return dataSource
 }
 
 func dataSourceKubernetesClusterNodePoolRead(d *pluginsdk.ResourceData, meta interface{}) error {
@@ -165,7 +179,7 @@ func dataSourceKubernetesClusterNodePoolRead(d *pluginsdk.ResourceData, meta int
 	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	clusterId := managedclusters.NewManagedClusterID(subscriptionId, d.Get("resource_group_name").(string), d.Get("kubernetes_cluster_name").(string))
+	clusterId := commonids.NewKubernetesClusterID(subscriptionId, d.Get("resource_group_name").(string), d.Get("kubernetes_cluster_name").(string))
 
 	// if the parent cluster doesn't exist then the node pool won't
 	cluster, err := clustersClient.Get(ctx, clusterId)
@@ -196,8 +210,13 @@ func dataSourceKubernetesClusterNodePoolRead(d *pluginsdk.ResourceData, meta int
 		props := model.Properties
 		d.Set("zones", zones.FlattenUntyped(props.AvailabilityZones))
 
-		d.Set("enable_auto_scaling", props.EnableAutoScaling)
-		d.Set("enable_node_public_ip", props.EnableNodePublicIP)
+		if features.FourPointOhBeta() {
+			d.Set("auto_scaling_enabled", props.EnableAutoScaling)
+			d.Set("node_public_ip_enabled", props.EnableNodePublicIP)
+		} else {
+			d.Set("enable_auto_scaling", props.EnableAutoScaling)
+			d.Set("enable_node_public_ip", props.EnableNodePublicIP)
+		}
 
 		evictionPolicy := ""
 		if props.ScaleSetEvictionPolicy != nil && *props.ScaleSetEvictionPolicy != "" {

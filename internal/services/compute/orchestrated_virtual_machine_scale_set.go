@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package compute
 
 import (
@@ -5,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/network/2023-09-01/applicationsecuritygroups"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	azValidate "github.com/hashicorp/terraform-provider-azurerm/helpers/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/compute/validate"
@@ -12,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
-	"github.com/tombuildsstuff/kermit/sdk/compute/2022-08-01/compute"
+	"github.com/tombuildsstuff/kermit/sdk/compute/2023-03-01/compute"
 )
 
 func OrchestratedVirtualMachineScaleSetOSProfileSchema() *pluginsdk.Schema {
@@ -60,8 +65,7 @@ func OrchestratedVirtualMachineScaleSetWindowsConfigurationSchema() *pluginsdk.S
 
 				"computer_name_prefix": computerPrefixWindowsSchema(),
 
-				// I am only commenting this out as this is going to be supported in the next release of the API in October 2021
-				// "additional_unattend_content": additionalUnattendContentSchema(),
+				"additional_unattend_content": additionalUnattendContentSchema(),
 
 				// TODO 4.0: change this from enable_* to *_enabled
 				"enable_automatic_updates": {
@@ -340,7 +344,7 @@ func orchestratedVirtualMachineScaleSetIPConfigurationSchema() *pluginsdk.Schema
 					Optional: true,
 					Elem: &pluginsdk.Schema{
 						Type:         pluginsdk.TypeString,
-						ValidateFunc: networkValidate.ApplicationSecurityGroupID,
+						ValidateFunc: applicationsecuritygroups.ValidateApplicationSecurityGroupID,
 					},
 					Set:      pluginsdk.HashString,
 					MaxItems: 20,
@@ -364,7 +368,7 @@ func orchestratedVirtualMachineScaleSetIPConfigurationSchema() *pluginsdk.Schema
 				"subnet_id": {
 					Type:         pluginsdk.TypeString,
 					Optional:     true,
-					ValidateFunc: networkValidate.SubnetID,
+					ValidateFunc: commonids.ValidateSubnetID,
 				},
 
 				"version": {
@@ -520,13 +524,15 @@ func OrchestratedVirtualMachineScaleSetDataDiskSchema() *pluginsdk.Schema {
 
 				"disk_size_gb": {
 					Type:         pluginsdk.TypeInt,
-					Required:     true,
+					Optional:     true,
+					Computed:     true,
 					ValidateFunc: validation.IntBetween(1, 32767),
 				},
 
 				"lun": {
 					Type:         pluginsdk.TypeInt,
-					Required:     true,
+					Optional:     true,
+					Computed:     true,
 					ValidateFunc: validation.IntBetween(0, 2000), // TODO: confirm upper bounds
 				},
 
@@ -549,16 +555,21 @@ func OrchestratedVirtualMachineScaleSetDataDiskSchema() *pluginsdk.Schema {
 					Optional: true,
 					Default:  false,
 				},
+
+				// TODO rename `ultra_ssd_disk_iops_read_write` to `disk_iops_read_write` in 4.0
 				"ultra_ssd_disk_iops_read_write": {
-					Type:     pluginsdk.TypeInt,
-					Optional: true,
-					Computed: true,
+					Type:         pluginsdk.TypeInt,
+					Optional:     true,
+					ValidateFunc: validation.IntAtLeast(1),
+					Computed:     true,
 				},
 
+				// TODO rename `ultra_ssd_disk_mbps_read_write` to `disk_mbps_read_write` in 4.0
 				"ultra_ssd_disk_mbps_read_write": {
-					Type:     pluginsdk.TypeInt,
-					Optional: true,
-					Computed: true,
+					Type:         pluginsdk.TypeInt,
+					Optional:     true,
+					ValidateFunc: validation.IntAtLeast(1),
+					Computed:     true,
 				},
 			},
 		},
@@ -920,8 +931,9 @@ func expandOrchestratedVirtualMachineScaleSetOsProfileWithWindowsConfiguration(i
 			osProfile.Secrets = expandWindowsSecrets(secrets)
 		}
 
-		// I am only commenting this out as this is going to be supported in the next release of the API in October 2021
-		// winConfig.AdditionalUnattendContent = expandWindowsConfigurationAdditionalUnattendContent(input["additional_unattend_content"].([]interface{}))
+		if additionalUnattendContents := input["additional_unattend_content"].([]interface{}); len(additionalUnattendContents) > 0 {
+			winConfig.AdditionalUnattendContent = expandWindowsConfigurationAdditionalUnattendContent(input["additional_unattend_content"].([]interface{}))
+		}
 		winConfig.EnableAutomaticUpdates = utils.Bool(input["enable_automatic_updates"].(bool))
 		winConfig.ProvisionVMAgent = utils.Bool(input["provision_vm_agent"].(bool))
 		winRmListenersRaw := input["winrm_listener"].(*pluginsdk.Set).List()
@@ -988,25 +1000,24 @@ func expandOrchestratedVirtualMachineScaleSetOsProfileWithLinuxConfiguration(inp
 	return &osProfile
 }
 
-// I am only commenting this out as this is going to be supported in the next release of the API version 2021-10-01
-// func expandWindowsConfigurationAdditionalUnattendContent(input []interface{}) *[]compute.AdditionalUnattendContent {
-// 	output := make([]compute.AdditionalUnattendContent, 0)
+func expandWindowsConfigurationAdditionalUnattendContent(input []interface{}) *[]compute.AdditionalUnattendContent {
+	output := make([]compute.AdditionalUnattendContent, 0)
 
-// 	for _, v := range input {
-// 		raw := v.(map[string]interface{})
+	for _, v := range input {
+		raw := v.(map[string]interface{})
 
-// 		output = append(output, compute.AdditionalUnattendContent{
-// 			SettingName: compute.SettingNames(raw["setting"].(string)),
-// 			Content:     utils.String(raw["content"].(string)),
+		output = append(output, compute.AdditionalUnattendContent{
+			SettingName: compute.SettingNames(raw["setting"].(string)),
+			Content:     utils.String(raw["content"].(string)),
 
-// 			// no other possible values
-// 			PassName:      compute.PassNamesOobeSystem,
-// 			ComponentName: compute.ComponentNamesMicrosoftWindowsShellSetup,
-// 		})
-// 	}
+			// no other possible values
+			PassName:      compute.PassNamesOobeSystem,
+			ComponentName: compute.ComponentNamesMicrosoftWindowsShellSetup,
+		})
+	}
 
-// 	return &output
-// }
+	return &output
+}
 
 func ExpandOrchestratedVirtualMachineScaleSetNetworkInterface(input []interface{}) (*[]compute.VirtualMachineScaleSetNetworkConfiguration, error) {
 	output := make([]compute.VirtualMachineScaleSetNetworkConfiguration, 0)
@@ -1260,15 +1271,22 @@ func ExpandOrchestratedVirtualMachineScaleSetDataDisk(input []interface{}, ultra
 	for _, v := range input {
 		raw := v.(map[string]interface{})
 
+		storageAccountType := compute.StorageAccountTypes(raw["storage_account_type"].(string))
 		disk := compute.VirtualMachineScaleSetDataDisk{
-			Caching:    compute.CachingTypes(raw["caching"].(string)),
-			DiskSizeGB: utils.Int32(int32(raw["disk_size_gb"].(int))),
-			Lun:        utils.Int32(int32(raw["lun"].(int))),
+			Caching: compute.CachingTypes(raw["caching"].(string)),
 			ManagedDisk: &compute.VirtualMachineScaleSetManagedDiskParameters{
-				StorageAccountType: compute.StorageAccountTypes(raw["storage_account_type"].(string)),
+				StorageAccountType: storageAccountType,
 			},
 			WriteAcceleratorEnabled: utils.Bool(raw["write_accelerator_enabled"].(bool)),
 			CreateOption:            compute.DiskCreateOptionTypes(raw["create_option"].(string)),
+		}
+
+		if dataDiskSize := raw["disk_size_gb"].(int); dataDiskSize > 0 {
+			disk.DiskSizeGB = utils.Int32(int32(dataDiskSize))
+		}
+
+		if lun := raw["lun"].(int); lun >= 0 {
+			disk.Lun = utils.Int32(int32(lun))
 		}
 
 		if id := raw["disk_encryption_set_id"].(string); id != "" {
@@ -1278,13 +1296,12 @@ func ExpandOrchestratedVirtualMachineScaleSetDataDisk(input []interface{}, ultra
 		}
 
 		var iops int
-		if diskIops, ok := raw["disk_iops_read_write"]; ok && diskIops.(int) > 0 {
+		if diskIops, ok := raw["ultra_ssd_disk_iops_read_write"]; ok && diskIops.(int) > 0 {
 			iops = diskIops.(int)
-		} else if ssdIops, ok := raw["ultra_ssd_disk_iops_read_write"]; ok && ssdIops.(int) > 0 {
-			iops = ssdIops.(int)
 		}
-		if iops > 0 && !ultraSSDEnabled {
-			return nil, fmt.Errorf("disk_iops_read_write and ultra_ssd_disk_iops_read_write are only available for UltraSSD disks")
+
+		if iops > 0 && !ultraSSDEnabled && storageAccountType != compute.StorageAccountTypesPremiumV2LRS {
+			return nil, fmt.Errorf("`ultra_ssd_disk_iops_read_write` can only be set when `storage_account_type` is set to `PremiumV2_LRS` or `UltraSSD_LRS`")
 		}
 
 		// Do not set value unless value is greater than 0 - issue 15516
@@ -1293,13 +1310,12 @@ func ExpandOrchestratedVirtualMachineScaleSetDataDisk(input []interface{}, ultra
 		}
 
 		var mbps int
-		if diskMbps, ok := raw["disk_mbps_read_write"]; ok && diskMbps.(int) > 0 {
+		if diskMbps, ok := raw["ultra_ssd_disk_mbps_read_write"]; ok && diskMbps.(int) > 0 {
 			mbps = diskMbps.(int)
-		} else if ssdMbps, ok := raw["ultra_ssd_disk_mbps_read_write"]; ok && ssdMbps.(int) > 0 {
-			mbps = ssdMbps.(int)
 		}
-		if mbps > 0 && !ultraSSDEnabled {
-			return nil, fmt.Errorf("disk_mbps_read_write and ultra_ssd_disk_mbps_read_write are only available for UltraSSD disks")
+
+		if mbps > 0 && !ultraSSDEnabled && storageAccountType != compute.StorageAccountTypesPremiumV2LRS {
+			return nil, fmt.Errorf("`ultra_ssd_disk_mbps_read_write` can only be set when `storage_account_type` is set to `PremiumV2_LRS` or `UltraSSD_LRS`")
 		}
 
 		// Do not set value unless value is greater than 0 - issue 15516
@@ -1694,10 +1710,9 @@ func flattenOrchestratedVirtualMachineScaleSetWindowsConfiguration(input *comput
 		output["computer_name_prefix"] = *v
 	}
 
-	// I am only commenting this out as this is going to be supported in the next release of the API in October 2021
-	// if v := winConfig.AdditionalUnattendContent; v != nil {
-	// 	output["additional_unattend_content"] = flattenWindowsConfigurationAdditionalUnattendContent(winConfig)
-	// }
+	if v := winConfig.AdditionalUnattendContent; v != nil {
+		output["additional_unattend_content"] = flattenWindowsConfigurationAdditionalUnattendContent(winConfig, d)
+	}
 
 	if v := winConfig.EnableAutomaticUpdates; v != nil {
 		output["enable_automatic_updates"] = *v
@@ -1900,24 +1915,38 @@ func FlattenOrchestratedVirtualMachineScaleSetDataDisk(input *[]compute.VirtualM
 	return output
 }
 
-// I am only commenting this out as this is going to be supported in the next release of the API in October 2021
-// func flattenWindowsConfigurationAdditionalUnattendContent(input *compute.WindowsConfiguration) []interface{} {
-// 	if input == nil {
-// 		return []interface{}{}
-// 	}
+func flattenWindowsConfigurationAdditionalUnattendContent(input *compute.WindowsConfiguration, d *pluginsdk.ResourceData) []interface{} {
+	if input == nil {
+		return []interface{}{}
+	}
 
-// 	output := make([]interface{}, 0)
-// 	for _, v := range *input.AdditionalUnattendContent {
-// 		// content isn't returned by the API since it's sensitive data so we need to look it up later
-// 		// where we can pull it out of the state file.
-// 		output = append(output, map[string]interface{}{
-// 			"content": "",
-// 			"setting": string(v.SettingName),
-// 		})
-// 	}
+	existing := make([]interface{}, 0)
+	if v, ok := d.GetOk("os_profile.0.windows_configuration.0.additional_unattend_content"); ok {
+		existing = v.([]interface{})
+	}
 
-// 	return output
-// }
+	output := make([]interface{}, 0)
+	for i, v := range *input.AdditionalUnattendContent {
+		// content isn't returned by the API since it's sensitive data so we need to pull from the state file.
+		content := ""
+		if len(existing) > i {
+			existingVal := existing[i]
+			existingRaw, ok := existingVal.(map[string]interface{})
+			if ok {
+				contentRaw, ok := existingRaw["content"]
+				if ok {
+					content = contentRaw.(string)
+				}
+			}
+		}
+		output = append(output, map[string]interface{}{
+			"content": content,
+			"setting": string(v.SettingName),
+		})
+	}
+
+	return output
+}
 
 func FlattenOrchestratedVirtualMachineScaleSetOSDisk(input *compute.VirtualMachineScaleSetOSDisk) []interface{} {
 	if input == nil {

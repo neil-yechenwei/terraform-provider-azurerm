@@ -18,12 +18,13 @@ type StartInstanceOperationResponse struct {
 	Poller       pollers.Poller
 	HttpResponse *http.Response
 	OData        *odata.OData
+	Model        *OperationStatusResult
 }
 
 // StartInstance ...
 func (c SAPCentralInstancesClient) StartInstance(ctx context.Context, id CentralInstanceId) (result StartInstanceOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusAccepted,
 			http.StatusOK,

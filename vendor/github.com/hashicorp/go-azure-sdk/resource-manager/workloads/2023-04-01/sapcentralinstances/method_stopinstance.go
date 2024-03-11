@@ -18,12 +18,13 @@ type StopInstanceOperationResponse struct {
 	Poller       pollers.Poller
 	HttpResponse *http.Response
 	OData        *odata.OData
+	Model        *OperationStatusResult
 }
 
 // StopInstance ...
 func (c SAPCentralInstancesClient) StopInstance(ctx context.Context, id CentralInstanceId, input StopRequest) (result StopInstanceOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusAccepted,
 			http.StatusOK,

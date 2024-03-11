@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package monitor
 
 import (
@@ -98,6 +101,7 @@ func resourceMonitorScheduledQueryRulesAlert() *pluginsdk.Resource {
 			"data_source_id": {
 				Type:         pluginsdk.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: azure.ValidateResourceID,
 			},
 			"auto_mitigation_enabled": {
@@ -353,16 +357,10 @@ func resourceMonitorScheduledQueryRulesAlertRead(d *pluginsdk.ResourceData, meta
 			d.Set("time_window", schedule.TimeWindowInMinutes)
 		}
 
-		if props.Source.AuthorizedResources != nil {
-			d.Set("authorized_resource_ids", utils.FlattenStringSlice(props.Source.AuthorizedResources))
-		}
-
+		d.Set("authorized_resource_ids", utils.FlattenStringSlice(props.Source.AuthorizedResources))
 		d.Set("data_source_id", props.Source.DataSourceId)
-
-		if props.Source.Query != nil {
-			d.Set("query", props.Source.Query)
-		}
-		d.Set("query_type", props.Source.QueryType)
+		d.Set("query", props.Source.Query)
+		d.Set("query_type", string(pointer.From(props.Source.QueryType)))
 
 		if err = d.Set("tags", utils.FlattenPtrMapStringString(model.Tags)); err != nil {
 			return err

@@ -83,7 +83,7 @@ resource "azurerm_data_factory_flowlet_data_flow" "example" {
     }
 
     linked_service {
-      name = azurerm_data_factory_linked_custom_service.test.name
+      name = azurerm_data_factory_linked_custom_service.example.name
     }
   }
 
@@ -95,7 +95,7 @@ resource "azurerm_data_factory_flowlet_data_flow" "example" {
     }
 
     linked_service {
-      name = azurerm_data_factory_linked_custom_service.test.name
+      name = azurerm_data_factory_linked_custom_service.example.name
     }
   }
 
@@ -116,13 +116,13 @@ EOT
 
 resource "azurerm_data_factory_flowlet_data_flow" "example1" {
   name            = "example"
-  data_factory_id = azurerm_data_factory.test.id
+  data_factory_id = azurerm_data_factory.example.id
 
   source {
     name = "source1"
 
     linked_service {
-      name = azurerm_data_factory_linked_custom_service.test.name
+      name = azurerm_data_factory_linked_custom_service.example.name
     }
   }
 
@@ -130,7 +130,7 @@ resource "azurerm_data_factory_flowlet_data_flow" "example1" {
     name = "sink1"
 
     linked_service {
-      name = azurerm_data_factory_linked_custom_service.test.name
+      name = azurerm_data_factory_linked_custom_service.example.name
     }
   }
 
@@ -151,13 +151,13 @@ EOT
 
 resource "azurerm_data_factory_flowlet_data_flow" "example2" {
   name            = "example"
-  data_factory_id = azurerm_data_factory.test.id
+  data_factory_id = azurerm_data_factory.example.id
 
   source {
     name = "source1"
 
     linked_service {
-      name = azurerm_data_factory_linked_custom_service.test.name
+      name = azurerm_data_factory_linked_custom_service.example.name
     }
   }
 
@@ -165,7 +165,7 @@ resource "azurerm_data_factory_flowlet_data_flow" "example2" {
     name = "sink1"
 
     linked_service {
-      name = azurerm_data_factory_linked_custom_service.test.name
+      name = azurerm_data_factory_linked_custom_service.example.name
     }
   }
 
@@ -199,9 +199,9 @@ The following arguments are supported:
 
 * `folder` - (Optional) The folder that this Data Flow is in. If not specified, the Data Flow will appear at the root level.
 
-* `source` - (Required) One or more `source` blocks as defined below.
+* `source` - (Optional) One or more `source` blocks as defined below.
 
-* `sink` - (Required) One or more `sink` blocks as defined below.
+* `sink` - (Optional) One or more `sink` blocks as defined below.
 
 * `script` - (Optional) The script for the Data Factory Flowlet Data Flow.
 

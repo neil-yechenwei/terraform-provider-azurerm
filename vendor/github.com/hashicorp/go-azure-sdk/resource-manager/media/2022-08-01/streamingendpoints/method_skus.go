@@ -21,7 +21,7 @@ type SkusOperationResponse struct {
 // Skus ...
 func (c StreamingEndpointsClient) Skus(ctx context.Context, id StreamingEndpointId) (result SkusOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -44,7 +44,10 @@ func (c StreamingEndpointsClient) Skus(ctx context.Context, id StreamingEndpoint
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model StreamingEndpointSkuInfoListResult
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

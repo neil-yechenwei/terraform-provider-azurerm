@@ -21,7 +21,7 @@ type StreamingLocatorsListPathsOperationResponse struct {
 // StreamingLocatorsListPaths ...
 func (c StreamingPoliciesAndStreamingLocatorsClient) StreamingLocatorsListPaths(ctx context.Context, id StreamingLocatorId) (result StreamingLocatorsListPathsOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -44,7 +44,10 @@ func (c StreamingPoliciesAndStreamingLocatorsClient) StreamingLocatorsListPaths(
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model ListPathsResponse
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

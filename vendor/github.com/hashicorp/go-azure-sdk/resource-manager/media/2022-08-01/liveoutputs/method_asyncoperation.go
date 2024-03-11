@@ -20,7 +20,7 @@ type AsyncOperationOperationResponse struct {
 // AsyncOperation ...
 func (c LiveOutputsClient) AsyncOperation(ctx context.Context, id LiveOutputOperationId) (result AsyncOperationOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c LiveOutputsClient) AsyncOperation(ctx context.Context, id LiveOutputOper
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model AsyncOperationResult
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

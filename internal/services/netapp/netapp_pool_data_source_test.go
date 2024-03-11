@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package netapp_test
 
 import (
@@ -23,6 +26,7 @@ func TestAccDataSourceNetAppPool_basic(t *testing.T) {
 				check.That(data.ResourceName).Key("account_name").Exists(),
 				check.That(data.ResourceName).Key("service_level").Exists(),
 				check.That(data.ResourceName).Key("size_in_tb").Exists(),
+				check.That(data.ResourceName).Key("encryption_type").Exists(),
 			),
 		},
 	})

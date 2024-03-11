@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package privatednsresolver
 
 import (
@@ -7,12 +10,12 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/dnsresolver/2022-07-01/dnsresolvers"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/dnsresolver/2022-07-01/inboundendpoints"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
-	networkValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 )
@@ -71,21 +74,20 @@ func (r PrivateDNSResolverInboundEndpointResource) Arguments() map[string]*plugi
 					"subnet_id": {
 						Type:         pluginsdk.TypeString,
 						Required:     true,
-						ValidateFunc: networkValidate.SubnetID,
+						ValidateFunc: commonids.ValidateSubnetID,
 					},
 
 					"private_ip_address": {
 						Type:     pluginsdk.TypeString,
+						Optional: true,
 						Computed: true,
 					},
 
 					"private_ip_allocation_method": {
-						Type:     pluginsdk.TypeString,
-						Optional: true,
-						Default:  string(inboundendpoints.IPAllocationMethodDynamic),
-						ValidateFunc: validation.StringInSlice([]string{
-							string(inboundendpoints.IPAllocationMethodDynamic),
-						}, false),
+						Type:         pluginsdk.TypeString,
+						Optional:     true,
+						Default:      string(inboundendpoints.IPAllocationMethodDynamic),
+						ValidateFunc: validation.StringInSlice(inboundendpoints.PossibleValuesForIPAllocationMethod(), false),
 					},
 				},
 			},
@@ -132,7 +134,10 @@ func (r PrivateDNSResolverInboundEndpointResource) Create() sdk.ResourceFunc {
 				Tags:       &model.Tags,
 			}
 
-			iPConfigurationsValue := expandIPConfigurationModel(model.IPConfigurations)
+			iPConfigurationsValue, err := expandIPConfigurationModel(model.IPConfigurations)
+			if err != nil {
+				return err
+			}
 
 			if iPConfigurationsValue != nil {
 				properties.Properties.IPConfigurations = *iPConfigurationsValue
@@ -175,7 +180,10 @@ func (r PrivateDNSResolverInboundEndpointResource) Update() sdk.ResourceFunc {
 			}
 
 			if metadata.ResourceData.HasChange("ip_configurations") {
-				iPConfigurationsValue := expandIPConfigurationModel(model.IPConfigurations)
+				iPConfigurationsValue, err := expandIPConfigurationModel(model.IPConfigurations)
+				if err != nil {
+					return err
+				}
 
 				if iPConfigurationsValue != nil {
 					properties.Properties.IPConfigurations = *iPConfigurationsValue
@@ -256,7 +264,7 @@ func (r PrivateDNSResolverInboundEndpointResource) Delete() sdk.ResourceFunc {
 			log.Printf("[DEBUG] waiting for %s to be deleted", id)
 			deadline, ok := ctx.Deadline()
 			if !ok {
-				return fmt.Errorf("context had no deadline")
+				return fmt.Errorf("internal-error: context had no deadline")
 			}
 			stateConf := &pluginsdk.StateChangeConf{
 				Pending:                   []string{"Pending"},
@@ -288,11 +296,19 @@ func dnsResolverInboundEndpointDeleteRefreshFunc(ctx context.Context, client *in
 	}
 }
 
-func expandIPConfigurationModel(inputList []IPConfigurationModel) *[]inboundendpoints.IPConfiguration {
+func expandIPConfigurationModel(inputList []IPConfigurationModel) (*[]inboundendpoints.IPConfiguration, error) {
 	var outputList []inboundendpoints.IPConfiguration
 	for _, v := range inputList {
 		input := v
 		output := inboundendpoints.IPConfiguration{}
+
+		if input.PrivateIPAllocationMethod == inboundendpoints.IPAllocationMethodDynamic && input.PrivateIPAddress != "" {
+			return nil, fmt.Errorf("`private_ip_address` cannot be set when `private_ip_allocation_method` is `Dynamic`")
+		}
+
+		if input.PrivateIPAllocationMethod == inboundendpoints.IPAllocationMethodStatic && input.PrivateIPAddress == "" {
+			return nil, fmt.Errorf("`private_ip_address` must be set when `private_ip_allocation_method` is `Static`")
+		}
 
 		if input.PrivateIPAllocationMethod != "" {
 			output.PrivateIPAllocationMethod = &input.PrivateIPAllocationMethod
@@ -309,7 +325,7 @@ func expandIPConfigurationModel(inputList []IPConfigurationModel) *[]inboundendp
 		outputList = append(outputList, output)
 	}
 
-	return &outputList
+	return &outputList, nil
 }
 
 func flattenIPConfigurationModel(inputList *[]inboundendpoints.IPConfiguration) []IPConfigurationModel {

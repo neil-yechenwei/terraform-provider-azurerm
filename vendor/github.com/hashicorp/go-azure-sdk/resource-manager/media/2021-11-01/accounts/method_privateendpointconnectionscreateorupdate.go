@@ -20,7 +20,7 @@ type PrivateEndpointConnectionsCreateOrUpdateOperationResponse struct {
 // PrivateEndpointConnectionsCreateOrUpdate ...
 func (c AccountsClient) PrivateEndpointConnectionsCreateOrUpdate(ctx context.Context, id PrivateEndpointConnectionId, input PrivateEndpointConnection) (result PrivateEndpointConnectionsCreateOrUpdateOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -47,7 +47,10 @@ func (c AccountsClient) PrivateEndpointConnectionsCreateOrUpdate(ctx context.Con
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model PrivateEndpointConnection
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

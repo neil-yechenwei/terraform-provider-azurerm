@@ -18,12 +18,13 @@ type DeleteOperationResponse struct {
 	Poller       pollers.Poller
 	HttpResponse *http.Response
 	OData        *odata.OData
+	Model        *OperationStatusResult
 }
 
 // Delete ...
 func (c SAPVirtualInstancesClient) Delete(ctx context.Context, id SapVirtualInstanceId) (result DeleteOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusAccepted,
 			http.StatusNoContent,

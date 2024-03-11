@@ -77,7 +77,7 @@ resource "azurerm_private_link_service" "example" {
   }
 
   load_balancer_frontend_ip_configuration_ids = [
-    azurerm_lb.example.frontend_ip_configuration.0.id,
+    azurerm_lb.example.frontend_ip_configuration[0].id,
   ]
 }
 
@@ -125,6 +125,68 @@ resource "azurerm_private_endpoint" "example" {
     is_manual_connection              = true
     request_message                   = "PL"
   }
+}
+```
+
+Using a Private Endpoint pointing to an *owned* Azure service, with proper DNS configuration:
+
+```hcl
+resource "azurerm_resource_group" "example" {
+  name     = "example-rg"
+  location = "West Europe"
+}
+
+resource "azurerm_storage_account" "example" {
+  name                     = "exampleaccount"
+  resource_group_name      = azurerm_resource_group.example.name
+  location                 = azurerm_resource_group.example.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_virtual_network" "example" {
+  name                = "virtnetname"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+}
+
+resource "azurerm_subnet" "example" {
+  name                 = "subnetname"
+  resource_group_name  = azurerm_resource_group.example.name
+  virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
+resource "azurerm_private_endpoint" "example" {
+  name                = "example-endpoint"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+  subnet_id           = azurerm_subnet.example.id
+
+  private_service_connection {
+    name                           = "example-privateserviceconnection"
+    private_connection_resource_id = azurerm_storage_account.example.id
+    subresource_names              = ["blob"]
+    is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = "example-dns-zone-group"
+    private_dns_zone_ids = [azurerm_private_dns_zone.example.id]
+  }
+}
+
+resource "azurerm_private_dns_zone" "example" {
+  name                = "privatelink.blob.core.windows.net"
+  resource_group_name = azurerm_resource_group.example.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "example" {
+  name                  = "example-link"
+  resource_group_name   = azurerm_resource_group.example.name
+  private_dns_zone_name = azurerm_private_dns_zone.example.name
+  virtual_network_id    = azurerm_virtual_network.example.id
 }
 ```
 
@@ -206,8 +268,6 @@ In addition to the Arguments listed above - the following Attributes are exporte
 
 * `ip_configuration` - A `ip_configuration` block as defined below.
 
-* `private_dns_zone_configs` - A `private_dns_zone_configs` block as defined below.
-
 ---
 
 A `network_interface` block exports:
@@ -262,12 +322,6 @@ An `ip_configuration` block exports:
 
 ---
 
-A `private_dns_zone_configs` block exports:
-
-* `record_sets` - A `record_sets` block as defined below.
-
----
-
 A `record_sets` block exports:
 
 * `name` - The name of the Private DNS Zone that the config belongs to.
@@ -287,7 +341,8 @@ A `record_sets` block exports:
 ## Example HCL Configurations
 
 * How to connect a `Private Endpoint` to a [Application Gateway](https://github.com/hashicorp/terraform-provider-azurerm/tree/main/examples/private-endpoint/application-gateway)
-* How to connect a `Private Endpoint` to a [Cosmos MongoDB](https://github.com/hashicorp/terraform-provider-azurerm/tree/main/examples/private-endpoint/cosmos-db)
+* How to connect a `Private Endpoint` to a [Cosmos MongoDB](https://github.com/hashicorp/terraform-provider-azurerm/tree/main/examples/private-endpoint/cosmos-db/mongodb)
+* How to connect a `Private Endpoint` to a [Cosmos PostgreSQL](https://github.com/hashicorp/terraform-provider-azurerm/tree/main/examples/private-endpoint/cosmos-db/postgresql)
 * How to connect a `Private Endpoint` to a [PostgreSQL Server](https://github.com/hashicorp/terraform-provider-azurerm/tree/main/examples/private-endpoint/postgresql)
 * How to connect a `Private Endpoint` to a [Private Link Service](https://github.com/hashicorp/terraform-provider-azurerm/tree/main/examples/private-endpoint/private-link-service)
 * How to connect a `Private Endpoint` to a [Private DNS Group](https://github.com/hashicorp/terraform-provider-azurerm/tree/main/examples/private-endpoint/private-dns-group)

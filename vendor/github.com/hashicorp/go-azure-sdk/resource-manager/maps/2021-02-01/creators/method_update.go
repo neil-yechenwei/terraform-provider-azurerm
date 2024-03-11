@@ -20,7 +20,7 @@ type UpdateOperationResponse struct {
 // Update ...
 func (c CreatorsClient) Update(ctx context.Context, id CreatorId, input CreatorUpdateParameters) (result UpdateOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -47,7 +47,10 @@ func (c CreatorsClient) Update(ctx context.Context, id CreatorId, input CreatorU
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model Creator
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

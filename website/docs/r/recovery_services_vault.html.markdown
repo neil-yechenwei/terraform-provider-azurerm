@@ -48,6 +48,8 @@ The following arguments are supported:
 
 * `immutability` - (Optional) Immutability Settings of vault, possible values include: `Locked`, `Unlocked` and `Disabled`.
 
+-> **Note:** Once `immutability` is set to `Locked`, changing it to other values forces a new Recovery Services Vault to be created.
+
 * `storage_mode_type` - (Optional) The storage type of the Recovery Services Vault. Possible values are `GeoRedundant`, `LocallyRedundant` and `ZoneRedundant`. Defaults to `GeoRedundant`.
 
 * `cross_region_restore_enabled` - (Optional) Is cross region restore enabled for this Vault? Only can be `true`, when `storage_mode_type` is `GeoRedundant`. Defaults to `false`.
@@ -61,6 +63,8 @@ The following arguments are supported:
 !> **Note:** Once Encryption with your own key has been Enabled it's not possible to Disable it.
 
 * `classic_vmware_replication_enabled` - (Optional) Whether to enable the Classic experience for VMware replication. If set to `false` VMware machines will be protected using the new stateless ASR replication appliance. Changing this forces a new resource to be created.
+
+* `monitoring` - (Optional) A `monitoring` block as defined below.
 
 ---
 
@@ -82,11 +86,19 @@ An `encryption` block supports the following:
 
 * `user_assigned_identity_id` - (Optional) Specifies the user assigned identity ID to be used.
 
-* `use_system_assigned_identity` - (Optional) Indicate that system assigned identity should be used or not. Defaults to `true`.
+* `use_system_assigned_identity` - (Optional) Indicate that system assigned identity should be used or not. Defaults to `true`. Must be set to `false` when `user_assigned_identity_id` is set.
 
 !> **Note:** `use_system_assigned_identity` only be able to set to `false` for **new** vaults. Any vaults containing existing items registered or attempted to be registered to it are not supported. Details can be found in [the document](https://learn.microsoft.com/en-us/azure/backup/encryption-at-rest-with-cmk?tabs=portal#before-you-start)
 
 !> **Note:** Once `infrastructure_encryption_enabled` has been set it's not possible to change it.
+
+---
+
+A `monitoring` block supports the following:
+
+* `alerts_for_all_job_failures_enabled` - (Optional) Enabling/Disabling built-in Azure Monitor alerts for security scenarios and job failure scenarios. Defaults to `true`.
+
+* `alerts_for_critical_operation_failures_enabled` - (Optional) Enabling/Disabling alerts from the older (classic alerts) solution. Defaults to `true`. More details could be found [here](https://learn.microsoft.com/en-us/azure/backup/monitoring-and-alerts-overview).
 
 ---
 

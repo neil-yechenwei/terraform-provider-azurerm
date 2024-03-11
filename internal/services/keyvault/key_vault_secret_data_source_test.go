@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package keyvault_test
 
 import (
@@ -99,8 +102,9 @@ data "azurerm_key_vault_secret" "test" {
 func (KeyVaultSecretDataSource) specifyOldVersion(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 
+
 data "azurerm_key_vault_secret" "test" {
- name          = "${local.secret_name}"
+  name         = "${local.secret_name}"
   key_vault_id = azurerm_key_vault.test.id
 }
 
@@ -117,6 +121,7 @@ data "azurerm_key_vault_secret" "test2" {
   version      = "${local.old_version}"
   depends_on   = [data.azurerm_key_vault_secret.test]
 }
+
 
 `, data.RandomString, KeyVaultSecretResource{}.basicUpdated(data))
 }

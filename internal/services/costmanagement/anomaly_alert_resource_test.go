@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package costmanagement_test
 
 import (
@@ -23,6 +26,17 @@ func TestAccResourceAnomalyAlert_update(t *testing.T) {
 		data.ApplyStep(testResource.updateConfig, testResource),
 		data.ImportStep(),
 		data.ApplyStep(testResource.basicConfig, testResource),
+		data.ImportStep(),
+	})
+}
+
+func TestAccResourceAnomalyAlert_complete(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_cost_anomaly_alert", "test")
+	testResource := AnomalyAlertResource{}
+	data.ResourceTest(t, testResource, []acceptance.TestStep{
+		data.ApplyStep(testResource.completeConfig, testResource),
+		data.ImportStep(),
+		data.ApplyStep(testResource.updateConfig, testResource),
 		data.ImportStep(),
 	})
 }
@@ -62,6 +76,25 @@ resource "azurerm_cost_anomaly_alert" "test" {
   email_subject   = "Hi"
   email_addresses = ["test@test.com", "test@hashicorp.developer"]
   message         = "Oops, cost anomaly"
+}
+`, data.RandomInteger, data.RandomInteger)
+}
+
+func (AnomalyAlertResource) completeConfig(data acceptance.TestData) string {
+	return fmt.Sprintf(`
+provider "azurerm" {
+  features {}
+}
+
+data "azurerm_subscription" "test" {}
+
+resource "azurerm_cost_anomaly_alert" "test" {
+  name            = "-acctest-%d"
+  display_name    = "acctest %d"
+  subscription_id = data.azurerm_subscription.test.id
+  email_subject   = "Hi"
+  email_addresses = ["test@test.com", "test@hashicorp.developer"]
+  message         = "Cost anomaly complete test"
 }
 `, data.RandomInteger, data.RandomInteger)
 }

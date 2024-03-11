@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package dataprotection
 
 import (
@@ -5,11 +8,12 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/dataprotection/2022-04-01/backupvaults"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/dataprotection/2023-05-01/backupvaults"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
@@ -24,11 +28,6 @@ func dataSourceDataProtectionBackupVault() *pluginsdk.Resource {
 		Timeouts: &pluginsdk.ResourceTimeout{
 			Read: pluginsdk.DefaultTimeout(5 * time.Minute),
 		},
-
-		Importer: pluginsdk.ImporterValidatingResourceId(func(id string) error {
-			_, err := backupvaults.ParseBackupVaultID(id)
-			return err
-		}),
 
 		Schema: map[string]*pluginsdk.Schema{
 			"name": {
@@ -85,12 +84,12 @@ func dataSourceDataProtectionBackupVaultRead(d *pluginsdk.ResourceData, meta int
 	d.Set("resource_group_name", id.ResourceGroupName)
 
 	if model := resp.Model; model != nil {
-		d.Set("location", location.NormalizeNilable(&model.Location))
+		d.Set("location", location.NormalizeNilable(model.Location))
 
 		props := model.Properties
 		if props.StorageSettings != nil && len(props.StorageSettings) > 0 {
-			d.Set("datastore_type", (props.StorageSettings)[0].DatastoreType)
-			d.Set("redundancy", (props.StorageSettings)[0].Type)
+			d.Set("datastore_type", string(pointer.From((props.StorageSettings)[0].DatastoreType)))
+			d.Set("redundancy", string(pointer.From((props.StorageSettings)[0].Type)))
 		}
 
 		if err = d.Set("identity", dataSourceFlattenBackupVaultDppIdentityDetails(model.Identity)); err != nil {

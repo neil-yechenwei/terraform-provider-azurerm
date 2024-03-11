@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package postgres
 
 import (
@@ -5,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2022-12-01/administrators"
@@ -20,7 +24,6 @@ func resourcePostgresqlFlexibleServerAdministrator() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
 		Create: resourcePostgresqlFlexibleServerAdministratorCreate,
 		Read:   resourcePostgresqlFlexibleServerAdministratorRead,
-		Update: nil,
 		Delete: resourcePostgresqlFlexibleServerAdministratorDelete,
 		Importer: pluginsdk.ImporterValidatingResourceId(func(id string) error {
 			_, err := administrators.ParseAdministratorID(id)
@@ -30,7 +33,6 @@ func resourcePostgresqlFlexibleServerAdministrator() *pluginsdk.Resource {
 		Timeouts: &pluginsdk.ResourceTimeout{
 			Create: pluginsdk.DefaultTimeout(30 * time.Minute),
 			Read:   pluginsdk.DefaultTimeout(5 * time.Minute),
-			Update: pluginsdk.DefaultTimeout(30 * time.Minute),
 			Delete: pluginsdk.DefaultTimeout(30 * time.Minute),
 		},
 
@@ -149,7 +151,7 @@ func resourcePostgresqlFlexibleServerAdministratorRead(d *pluginsdk.ResourceData
 		props := model.Properties
 		d.Set("object_id", props.ObjectId)
 		d.Set("principal_name", props.PrincipalName)
-		d.Set("principal_type", props.PrincipalType)
+		d.Set("principal_type", string(pointer.From(props.PrincipalType)))
 		d.Set("tenant_id", props.TenantId)
 	}
 

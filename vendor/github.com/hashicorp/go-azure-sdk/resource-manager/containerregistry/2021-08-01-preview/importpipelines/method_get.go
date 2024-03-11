@@ -20,7 +20,7 @@ type GetOperationResponse struct {
 // Get ...
 func (c ImportPipelinesClient) Get(ctx context.Context, id ImportPipelineId) (result GetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c ImportPipelinesClient) Get(ctx context.Context, id ImportPipelineId) (re
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model ImportPipeline
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

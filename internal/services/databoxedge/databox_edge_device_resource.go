@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package databoxedge
 
 import (
@@ -6,17 +9,17 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/databoxedge/2020-12-01/devices"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/databoxedge/2022-03-01/devices"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/databoxedge/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/databoxedge/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
-	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
 
 type DevicePropertiesModel struct {
@@ -164,7 +167,6 @@ func (r EdgeDeviceResource) Create() sdk.ResourceFunc {
 			}
 
 			id := devices.NewDataBoxEdgeDeviceID(subscriptionId, metaModel.ResourceGroupName, metaModel.Name)
-			// sdk method is Get(ctx context.Context, deviceName string, resourceGroupName string)
 			existing, err := client.Get(ctx, id)
 			if err != nil {
 				if !response.WasNotFound(existing.HttpResponse) {
@@ -181,12 +183,11 @@ func (r EdgeDeviceResource) Create() sdk.ResourceFunc {
 				Tags:     &metaModel.Tags,
 			}
 
-			if err := client.CreateOrUpdateThenPoll(ctx, id, dataBoxEdgeDevice); err != nil {
+			if _, err := client.CreateOrUpdate(ctx, id, dataBoxEdgeDevice); err != nil {
 				return fmt.Errorf("creating %s: %+v", id, err)
 			}
 
 			metadata.SetID(id)
-
 			return nil
 		},
 	}
@@ -298,8 +299,8 @@ func expandDeviceSku(input string) *devices.Sku {
 	}
 
 	return &devices.Sku{
-		Name: utils.ToPtr(devices.SkuName(v.Name)),
-		Tier: utils.ToPtr(devices.SkuTier(v.Tier)),
+		Name: pointer.To(devices.SkuName(v.Name)),
+		Tier: pointer.To(devices.SkuTier(v.Tier)),
 	}
 }
 

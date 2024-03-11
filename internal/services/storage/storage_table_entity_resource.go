@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package storage
 
 import (
@@ -13,7 +16,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/timeouts"
 	"github.com/hashicorp/terraform-provider-azurerm/utils"
-	"github.com/tombuildsstuff/giovanni/storage/2019-12-12/table/entities"
+	"github.com/tombuildsstuff/giovanni/storage/2020-08-04/table/entities"
 )
 
 func resourceStorageTableEntity() *pluginsdk.Resource {
@@ -236,10 +239,9 @@ func flattenEntity(entity map[string]interface{}) map[string]interface{} {
 				result[k] = fmt.Sprint(v)
 			case "Edm.Double":
 				result[k] = fmt.Sprintf("%f", v)
-			case "Edm.Int32":
-				fallthrough
-			case "Edm.Int64":
-				result[k] = fmt.Sprintf("%d", int64(v.(float64)))
+			case "Edm.Int32", "Edm.Int64":
+				// `v` returned as string for int 64
+				result[k] = fmt.Sprint(v)
 			case "Edm.String":
 				result[k] = v
 			default:
@@ -261,7 +263,8 @@ func flattenEntity(entity map[string]interface{}) map[string]interface{} {
 					result[k] = fmt.Sprintf("%d", int64(f64))
 					result[k+"@odata.type"] = "Edm.Int32"
 				} else {
-					result[k] = fmt.Sprintf("%f", v)
+					// fmt.Sprintf("%f", v) will return `123.123000` for `123.123`, have to use fmt.Sprint
+					result[k] = fmt.Sprint(v)
 					result[k+"@odata.type"] = "Edm.Double"
 				}
 			case string:

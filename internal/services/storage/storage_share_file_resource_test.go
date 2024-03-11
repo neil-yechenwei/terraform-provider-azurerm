@@ -1,9 +1,13 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package storage_test
 
 import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
@@ -112,6 +116,23 @@ func TestAccAzureRMStorageShareFile_withFile(t *testing.T) {
 			),
 		},
 		data.ImportStep("source"),
+	})
+}
+
+func TestAccAzureRMStorageShareFile_withEmptyFile(t *testing.T) {
+	sourceBlob, err := os.CreateTemp("", "")
+	if err != nil {
+		t.Fatalf("Failed to create local source blob file")
+	}
+
+	data := acceptance.BuildTestData(t, "azurerm_storage_share_file", "test")
+	r := StorageShareFileResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config:      r.withFile(data, sourceBlob.Name()),
+			ExpectError: regexp.MustCompile(`Error: file .* is empty`),
+		},
 	})
 }
 

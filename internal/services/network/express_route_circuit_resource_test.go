@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package network_test
 
 import (
@@ -37,6 +40,7 @@ func TestAccExpressRouteCircuit(t *testing.T) {
 		},
 		"PrivatePeering": {
 			"azurePrivatePeering":           testAccExpressRouteCircuitPeering_azurePrivatePeering,
+			"azurePrivatePeeringDataSource": testAccDataSourceExpressRouteCircuitPeering_privatePeering,
 			"azurePrivatePeeringWithUpdate": testAccExpressRouteCircuitPeering_azurePrivatePeeringWithCircuitUpdate,
 			"requiresImport":                testAccExpressRouteCircuitPeering_requiresImport,
 		},

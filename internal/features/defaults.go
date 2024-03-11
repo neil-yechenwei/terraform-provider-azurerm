@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package features
 
 func Default() UserFeatures {
@@ -47,8 +50,15 @@ func Default() UserFeatures {
 		},
 		VirtualMachineScaleSet: VirtualMachineScaleSetFeatures{
 			ForceDelete:               false,
+			ReimageOnManualUpgrade:    true,
 			RollInstancesWhenRequired: true,
 			ScaleToZeroOnDelete:       true,
+		},
+		Subscription: SubscriptionFeatures{
+			PreventCancellationOnDestroy: false,
+		},
+		PostgresqlFlexibleServer: PostgresqlFlexibleServerFeatures{
+			RestartServerOnConfigurationValueChange: true,
 		},
 	}
 }

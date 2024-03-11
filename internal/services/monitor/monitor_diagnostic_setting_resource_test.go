@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package monitor_test
 
 import (
@@ -657,7 +660,7 @@ resource "azurerm_elastic_cloud_elasticsearch" "test" {
   name                        = "acctest-elastic%[3]d"
   resource_group_name         = azurerm_resource_group.test.name
   location                    = azurerm_resource_group.test.location
-  sku_name                    = "ess-monthly-consumption_Monthly"
+  sku_name                    = "ess-consumption-2024_Monthly"
   elastic_cloud_email_address = "user@example.com"
 }
 

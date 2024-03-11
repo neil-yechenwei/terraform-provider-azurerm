@@ -57,9 +57,13 @@ In addition to the Arguments listed above - the following Attributes are exporte
 
 * `custom_domain_verification_id` - The identifier used by App Service to perform domain ownership verification via DNS TXT record.
 
+* `hosting_environment_id` - The ID of the App Service Environment used by App Service.
+
 * `default_hostname` - The Default Hostname of the Windows Web App.
 
 * `enabled` - Is the Windows Web App enabled?
+
+* `ftp_publish_basic_authentication_enabled` - Are the default FTP Basic Authentication publishing credentials enabled.
 
 * `https_only` - Does the Windows Web App require HTTPS connections.
 
@@ -79,6 +83,8 @@ In addition to the Arguments listed above - the following Attributes are exporte
 
 * `possible_outbound_ip_addresses` - The string representation of the list of Possible Outbound IP Addresses that could be used by this Windows Web App.
 
+* `public_network_access_enabled` - Is Public Network Access enabled for the Windows Web App.
+
 * `service_plan_id` - The ID of the Service Plan in which this Windows Web App resides.
 
 * `site_config` - A `site_config` block as defined below.
@@ -92,6 +98,8 @@ In addition to the Arguments listed above - the following Attributes are exporte
 * `tags` - A mapping of tags assigned to the Windows Web App.
 
 * `virtual_network_subnet_id` - The subnet id which the Windows Web App is vNet Integrated with.
+
+* `webdeploy_publish_basic_authentication_enabled` - Are the default WebDeploy Basic Authentication publishing credentials enabled.
 
 ---
 
@@ -129,11 +137,13 @@ An `application_stack` block exports the following:
 
 * `current_stack` - The Current Stack value of the Windows Web App.
 
-* `docker_container_name` - The name of the Docker Container in used.
+* `docker_image_name` - The docker image, including tag, used by this Windows Web App.
 
-* `docker_container_registry` - The Container Registry where the Docker Container is pulled from.
+* `docker_registry_url` - The URL of the container registry where the `docker_image_name` is located.
 
-* `docker_container_tag` - The Docker Container Tag of the Container in use.
+* `docker_registry_username` - The User Name to use for authentication against the registry to pull the image.
+
+* `docker_registry_password` - The User Name to use for authentication against the registry to pull the image.
 
 * `dotnet_version` - The version of .NET in use.
 
@@ -589,6 +599,8 @@ A `site_config` block exports the following:
 
 * `ip_restriction` - A `ip_restriction` block as defined above.
 
+* `ip_restriction_default_action` - The Default action for traffic that does not match any `ip_restriction` rule.
+
 * `load_balancing_mode` - The site Load Balancing Mode.
 
 * `local_mysql_enabled` - Is the Local MySQL enabled.
@@ -602,6 +614,8 @@ A `site_config` block exports the following:
 * `remote_debugging_version` - The Remote Debugging Version.
 
 * `scm_ip_restriction` - A `scm_ip_restriction` block as defined above.
+
+* `scm_ip_restriction_default_action` - The Default action for traffic that does not match any `scm_ip_restriction` rule.
 
 * `scm_minimum_tls_version` - The Minimum version of TLS for requests to SCM.
 
@@ -655,7 +669,7 @@ A `status_code` block exports the following:
 
 * `sub_status` - The Request Sub Status of the Status Code.
 
-* `win32_status` - The Win32 Status Code of the Request.
+* `win32_status_code` - The Win32 Status Code of the Request.
 
 ---
 

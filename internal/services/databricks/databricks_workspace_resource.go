@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package databricks
 
 import (
@@ -8,10 +11,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/databricks/2023-02-01/workspaces"
+	mlworkspace "github.com/hashicorp/go-azure-sdk/resource-manager/machinelearningservices/2023-10-01/workspaces"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/network/2023-09-01/loadbalancers"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -19,10 +25,6 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/databricks/validate"
 	keyVaultParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/parse"
 	keyVaultValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
-	loadBalancerParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/loadbalancer/parse"
-	loadBalancerValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/loadbalancer/validate"
-	machineLearningValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/machinelearning/validate"
-	networkValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/network/validate"
 	resourcesParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/resource/parse"
 	storageValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/storage/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
@@ -157,7 +159,7 @@ func resourceDatabricksWorkspace() *pluginsdk.Resource {
 				Type:         pluginsdk.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: loadBalancerValidate.LoadBalancerBackendAddressPoolID,
+				ValidateFunc: loadbalancers.ValidateLoadBalancerBackendAddressPoolID,
 			},
 
 			"custom_parameters": {
@@ -171,7 +173,7 @@ func resourceDatabricksWorkspace() *pluginsdk.Resource {
 							Type:         pluginsdk.TypeString,
 							ForceNew:     true,
 							Optional:     true,
-							ValidateFunc: machineLearningValidate.WorkspaceID,
+							ValidateFunc: mlworkspace.ValidateWorkspaceID,
 							AtLeastOneOf: workspaceCustomParametersString(),
 						},
 
@@ -230,7 +232,7 @@ func resourceDatabricksWorkspace() *pluginsdk.Resource {
 							Type:         pluginsdk.TypeString,
 							ForceNew:     true,
 							Optional:     true,
-							ValidateFunc: networkValidate.VirtualNetworkID,
+							ValidateFunc: commonids.ValidateVirtualNetworkID,
 							AtLeastOneOf: workspaceCustomParametersString(),
 						},
 
@@ -243,6 +245,7 @@ func resourceDatabricksWorkspace() *pluginsdk.Resource {
 							AtLeastOneOf: workspaceCustomParametersString(),
 						},
 
+						// Per Service Team: This field is actually changeable so the ForceNew is no longer required, however we agreed to not change the current behavior for consistency purposes
 						"storage_account_sku_name": {
 							Type:         pluginsdk.TypeString,
 							ForceNew:     true,
@@ -382,13 +385,13 @@ func resourceDatabricksWorkspaceCreateUpdate(d *pluginsdk.ResourceData, meta int
 	expandedTags := tags.Expand(d.Get("tags").(map[string]interface{}))
 
 	if backendPool != "" {
-		backendPoolId, err := loadBalancerParse.LoadBalancerBackendAddressPoolID(backendPool)
+		backendPoolId, err := loadbalancers.ParseLoadBalancerBackendAddressPoolID(backendPool)
 		if err != nil {
 			return err
 		}
 
 		// Generate the load balancer ID from the Backend Address Pool Id...
-		lbId := loadBalancerParse.NewLoadBalancerID(backendPoolId.SubscriptionId, backendPoolId.ResourceGroup, backendPoolId.LoadBalancerName)
+		lbId := loadbalancers.NewLoadBalancerID(backendPoolId.SubscriptionId, backendPoolId.ResourceGroupName, backendPoolId.LoadBalancerName)
 
 		backendPoolName = backendPoolId.BackendAddressPoolName
 		loadBalancerId = lbId.ID()
@@ -400,12 +403,13 @@ func resourceDatabricksWorkspaceCreateUpdate(d *pluginsdk.ResourceData, meta int
 		defer locks.UnlockByID(lbId.ID())
 
 		// check to make sure the load balancer exists as referred to by the Backend Address Pool...
-		lb, err := lbClient.Get(ctx, lbId.ResourceGroup, lbId.Name, "")
+		plbId := loadbalancers.ProviderLoadBalancerId{SubscriptionId: backendPoolId.SubscriptionId, ResourceGroupName: backendPoolId.ResourceGroupName, LoadBalancerName: backendPoolId.LoadBalancerName}
+		lb, err := lbClient.Get(ctx, plbId, loadbalancers.GetOperationOptions{})
 		if err != nil {
-			if utils.ResponseWasNotFound(lb.Response) {
-				return fmt.Errorf("load balancer %q for Backend Address Pool %q was not found", lbId, backendPoolId)
+			if response.WasNotFound(lb.HttpResponse) {
+				return fmt.Errorf("%s was not found", lbId)
 			}
-			return fmt.Errorf("failed to retrieve Load Balancer %q for Backend Address Pool %q: %+v", lbId, backendPoolId, err)
+			return fmt.Errorf("retrieving %s: %+v", lbId, err)
 		}
 	}
 
@@ -459,7 +463,8 @@ func resourceDatabricksWorkspaceCreateUpdate(d *pluginsdk.ResourceData, meta int
 		}
 
 		// make sure the key vault exists
-		keyVaultIdRaw, err := keyVaultsClient.KeyVaultIDFromBaseUrl(ctx, meta.(*clients.Client).Resource, key.KeyVaultBaseUrl)
+		subscriptionResourceId := commonids.NewSubscriptionID(id.SubscriptionId)
+		keyVaultIdRaw, err := keyVaultsClient.KeyVaultIDFromBaseUrl(ctx, subscriptionResourceId, key.KeyVaultBaseUrl)
 		if err != nil || keyVaultIdRaw == nil {
 			return fmt.Errorf("retrieving the Resource ID for the customer-managed keys for managed services Key Vault at URL %q: %+v", key.KeyVaultBaseUrl, err)
 		}
@@ -484,7 +489,8 @@ func resourceDatabricksWorkspaceCreateUpdate(d *pluginsdk.ResourceData, meta int
 		}
 
 		// make sure the key vault exists
-		keyVaultIdRaw, err := keyVaultsClient.KeyVaultIDFromBaseUrl(ctx, meta.(*clients.Client).Resource, key.KeyVaultBaseUrl)
+		subscriptionResourceId := commonids.NewSubscriptionID(id.SubscriptionId)
+		keyVaultIdRaw, err := keyVaultsClient.KeyVaultIDFromBaseUrl(ctx, subscriptionResourceId, key.KeyVaultBaseUrl)
 		if err != nil || keyVaultIdRaw == nil {
 			return fmt.Errorf("retrieving the Resource ID for the customer-managed keys for managed disk Key Vault at URL %q: %+v", key.KeyVaultBaseUrl, err)
 		}
@@ -674,7 +680,7 @@ func resourceDatabricksWorkspaceRead(d *pluginsdk.ResourceData, meta interface{}
 		}
 
 		if encryptKeyVaultURI != "" {
-			key, err := keyVaultParse.NewNestedItemID(encryptKeyVaultURI, "keys", encryptKeyName, encryptKeyVersion)
+			key, err := keyVaultParse.NewNestedItemID(encryptKeyVaultURI, keyVaultParse.NestedItemTypeKey, encryptKeyName, encryptKeyVersion)
 			if err == nil {
 				d.Set("managed_services_cmk_key_vault_key_id", key.ID())
 			}
@@ -696,7 +702,7 @@ func resourceDatabricksWorkspaceRead(d *pluginsdk.ResourceData, meta interface{}
 		}
 
 		if encryptDiskKeyVaultURI != "" {
-			key, err := keyVaultParse.NewNestedItemID(encryptDiskKeyVaultURI, "keys", encryptDiskKeyName, encryptDiskKeyVersion)
+			key, err := keyVaultParse.NewNestedItemID(encryptDiskKeyVaultURI, keyVaultParse.NestedItemTypeKey, encryptDiskKeyName, encryptDiskKeyVersion)
 			if err == nil {
 				d.Set("managed_disk_cmk_key_vault_key_id", key.ID())
 			}
@@ -823,10 +829,10 @@ func flattenWorkspaceCustomParameters(input *workspaces.WorkspaceCustomParameter
 		parameters["virtual_network_id"] = v.Value
 	}
 
-	lbId, err := loadBalancerParse.LoadBalancerIDInsensitively(loadBalancerId)
+	lbId, err := loadbalancers.ParseLoadBalancerIDInsensitively(loadBalancerId)
 
 	if err == nil {
-		backendId := loadBalancerParse.NewLoadBalancerBackendAddressPoolID(lbId.SubscriptionId, lbId.ResourceGroup, lbId.Name, backendName)
+		backendId := loadbalancers.NewLoadBalancerBackendAddressPoolID(lbId.SubscriptionId, lbId.ResourceGroupName, lbId.LoadBalancerName, backendName)
 		backendAddressPoolId = backendId.ID()
 	}
 

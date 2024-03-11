@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package kusto
 
 import (
@@ -6,14 +9,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/zones"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/kusto/2022-02-01/clusters"
-	newCluster "github.com/hashicorp/go-azure-sdk/resource-manager/kusto/2022-07-07/clusters"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/kusto/2023-08-15/clusters"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -41,7 +45,7 @@ func resourceKustoCluster() *pluginsdk.Resource {
 		}),
 
 		Importer: pluginsdk.ImporterValidatingResourceId(func(id string) error {
-			_, err := clusters.ParseClusterID(id)
+			_, err := commonids.ParseKustoClusterID(id)
 			return err
 		}),
 
@@ -75,9 +79,7 @@ func resourceKustoCluster() *pluginsdk.Resource {
 						"name": {
 							Type:     pluginsdk.TypeString,
 							Required: true,
-							// using API version later than 2022-07-07 to unblock user access to latest skus.
-							// next PR will to API version upgrade to version 2022-12-10 and align the api version in kusto.
-							ValidateFunc: validation.StringInSlice(newCluster.PossibleValuesForAzureSkuName(),
+							ValidateFunc: validation.StringInSlice(clusters.PossibleValuesForAzureSkuName(),
 								false),
 						},
 
@@ -150,7 +152,7 @@ func resourceKustoCluster() *pluginsdk.Resource {
 						"subnet_id": {
 							Type:         pluginsdk.TypeString,
 							Required:     true,
-							ValidateFunc: networkValidate.SubnetID,
+							ValidateFunc: commonids.ValidateSubnetID,
 						},
 						"engine_public_ip_id": {
 							Type:         pluginsdk.TypeString,
@@ -166,19 +168,10 @@ func resourceKustoCluster() *pluginsdk.Resource {
 				},
 			},
 
-			"language_extensions": {
-				Type:     pluginsdk.TypeSet,
-				Optional: true,
-				Elem: &pluginsdk.Schema{
-					Type:         pluginsdk.TypeString,
-					ValidateFunc: validation.StringInSlice(clusters.PossibleValuesForLanguageExtensionName(), false),
-				},
-			},
-
 			"engine": {
 				Type:         pluginsdk.TypeString,
 				Optional:     true,
-				ForceNew:     true,
+				Deprecated:   "This property has been deprecated as it will no longer be supported by the API. It will be removed in a future version of the provider.",
 				ValidateFunc: validation.StringInSlice(clusters.PossibleValuesForEngineType(), false),
 			},
 
@@ -248,9 +241,33 @@ func resourceKustoCluster() *pluginsdk.Resource {
 	}
 
 	if features.FourPointOhBeta() {
-		s.Schema["engine"].Default = string(clusters.EngineTypeVThree)
+		s.Schema["language_extensions"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"name": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringInSlice(clusters.PossibleValuesForLanguageExtensionName(), false),
+					},
+					"image": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringInSlice(clusters.PossibleValuesForLanguageExtensionImageName(), false),
+					},
+				},
+			},
+		}
 	} else {
-		s.Schema["engine"].Default = string(clusters.EngineTypeVTwo)
+		s.Schema["language_extensions"] = &pluginsdk.Schema{
+			Type:     pluginsdk.TypeSet,
+			Optional: true,
+			Elem: &pluginsdk.Schema{
+				Type:         pluginsdk.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"R", "PYTHON", "PYTHON_3.10.8"}, false),
+			},
+		}
 	}
 
 	return s
@@ -264,7 +281,7 @@ func resourceKustoClusterCreateUpdate(d *pluginsdk.ResourceData, meta interface{
 
 	log.Printf("[INFO] preparing arguments for Azure Kusto Cluster creation.")
 
-	id := clusters.NewClusterID(subscriptionId, d.Get("resource_group_name").(string), d.Get("name").(string))
+	id := commonids.NewKustoClusterID(subscriptionId, d.Get("resource_group_name").(string), d.Get("name").(string))
 	if d.IsNewResource() {
 		existing, err := client.Get(ctx, id)
 		if err != nil && !response.WasNotFound(existing.HttpResponse) {
@@ -276,39 +293,13 @@ func resourceKustoClusterCreateUpdate(d *pluginsdk.ResourceData, meta interface{
 		}
 	}
 
-	locks.ByName(id.ClusterName, "azurerm_kusto_cluster")
-	defer locks.UnlockByName(id.ClusterName, "azurerm_kusto_cluster")
+	locks.ByName(id.KustoClusterName, "azurerm_kusto_cluster")
+	defer locks.UnlockByName(id.KustoClusterName, "azurerm_kusto_cluster")
 
 	sku, err := expandKustoClusterSku(d.Get("sku").([]interface{}))
 	if err != nil {
 		return err
 	}
-
-	optimizedAutoScale := expandOptimizedAutoScale(d.Get("optimized_auto_scale").([]interface{}))
-
-	if optimizedAutoScale != nil && optimizedAutoScale.IsEnabled {
-		if sku.Capacity == nil {
-			return fmt.Errorf("sku.capacity could not be empty")
-		}
-		// Ensure that requested Capcity is always between min and max to support updating to not overlapping autoscale ranges
-		if *sku.Capacity < optimizedAutoScale.Minimum {
-			sku.Capacity = utils.Int64(optimizedAutoScale.Minimum)
-		}
-		if *sku.Capacity > optimizedAutoScale.Maximum {
-			sku.Capacity = utils.Int64(optimizedAutoScale.Maximum)
-		}
-
-		// Capacity must be set for the initial creation when using OptimizedAutoScaling but cannot be updated
-		if d.HasChange("sku.0.capacity") && !d.IsNewResource() {
-			return fmt.Errorf("cannot change `sku.capacity` when `optimized_auto_scaling.enabled` is set to `true`")
-		}
-
-		if optimizedAutoScale.Minimum > optimizedAutoScale.Maximum {
-			return fmt.Errorf("`optimized_auto_scaling.maximum_instances` must be >= `optimized_auto_scaling.minimum_instances`")
-		}
-	}
-
-	engine := clusters.EngineType(d.Get("engine").(string))
 
 	publicNetworkAccess := clusters.PublicNetworkAccessEnabled
 	if !d.Get("public_network_access_enabled").(bool) {
@@ -318,13 +309,11 @@ func resourceKustoClusterCreateUpdate(d *pluginsdk.ResourceData, meta interface{
 	publicIPType := clusters.PublicIPType(d.Get("public_ip_type").(string))
 
 	clusterProperties := clusters.ClusterProperties{
-		OptimizedAutoscale:     optimizedAutoScale,
 		EnableAutoStop:         utils.Bool(d.Get("auto_stop_enabled").(bool)),
 		EnableDiskEncryption:   utils.Bool(d.Get("disk_encryption_enabled").(bool)),
 		EnableDoubleEncryption: utils.Bool(d.Get("double_encryption_enabled").(bool)),
 		EnableStreamingIngest:  utils.Bool(d.Get("streaming_ingestion_enabled").(bool)),
 		EnablePurge:            utils.Bool(d.Get("purge_enabled").(bool)),
-		EngineType:             &engine,
 		PublicNetworkAccess:    &publicNetworkAccess,
 		PublicIPType:           &publicIPType,
 		TrustedExternalTenants: expandTrustedExternalTenants(d.Get("trusted_external_tenants").([]interface{})),
@@ -351,13 +340,21 @@ func resourceKustoClusterCreateUpdate(d *pluginsdk.ResourceData, meta interface{
 	}
 	clusterProperties.RestrictOutboundNetworkAccess = &restrictOutboundNetworkAccess
 
+	if features.FourPointOhBeta() {
+		if v, ok := d.GetOk("language_extensions"); ok {
+			extList := v.([]interface{})
+			clusterProperties.LanguageExtensions = expandKustoClusterLanguageExtensionList(extList)
+		}
+	} else {
+		clusterProperties.LanguageExtensions = expandKustoClusterLanguageExtensions(d)
+	}
+
 	expandedIdentity, err := identity.ExpandSystemAndUserAssignedMap(d.Get("identity").([]interface{}))
 	if err != nil {
 		return fmt.Errorf("expanding `identity`: %+v", err)
 	}
 
 	kustoCluster := clusters.Cluster{
-		Name:       utils.String(id.ClusterName),
 		Location:   location.Normalize(d.Get("location").(string)),
 		Identity:   expandedIdentity,
 		Sku:        *sku,
@@ -376,42 +373,29 @@ func resourceKustoClusterCreateUpdate(d *pluginsdk.ResourceData, meta interface{
 
 	d.SetId(id.ID())
 
-	if v, ok := d.GetOk("language_extensions"); ok {
-		languageExtensions := expandKustoClusterLanguageExtensions(v.(*pluginsdk.Set).List())
-
-		currentLanguageExtensions, err := client.ListLanguageExtensions(ctx, id)
-		if err != nil {
-			return fmt.Errorf("retrieving the language extensions on %s: %+v", id, err)
+	// optimized_auto_scale can't be updated when the sku is also being updated so we'll update it separately
+	// todo rework this when we split create/update
+	optimizedAutoScale := expandOptimizedAutoScale(d.Get("optimized_auto_scale").([]interface{}))
+	if optimizedAutoScale != nil && optimizedAutoScale.IsEnabled {
+		if sku.Capacity == nil {
+			return fmt.Errorf("sku.capacity could not be empty")
+		}
+		// Ensure that requested Capcity is always between min and max to support updating to not overlapping autoscale ranges
+		if *sku.Capacity < optimizedAutoScale.Minimum {
+			sku.Capacity = utils.Int64(optimizedAutoScale.Minimum)
+		}
+		if *sku.Capacity > optimizedAutoScale.Maximum {
+			sku.Capacity = utils.Int64(optimizedAutoScale.Maximum)
 		}
 
-		languageExtensionsToAdd := diffLanguageExtensions(*languageExtensions.Value, *currentLanguageExtensions.Model.Value)
-		if len(languageExtensionsToAdd) > 0 {
-			languageExtensionsListToAdd := clusters.LanguageExtensionsList{
-				Value: &languageExtensionsToAdd,
-			}
-
-			resp, err := client.AddLanguageExtensions(ctx, id, languageExtensionsListToAdd)
-			if err != nil {
-				return fmt.Errorf("adding language extensions to %s: %+v", id, err)
-			}
-			if err = resp.Poller.PollUntilDone(); err != nil {
-				return fmt.Errorf("waiting for the addition of language extensions on %s: %+v", id, err)
-			}
+		if optimizedAutoScale.Minimum > optimizedAutoScale.Maximum {
+			return fmt.Errorf("`optimized_auto_scaling.maximum_instances` must be >= `optimized_auto_scaling.minimum_instances`")
 		}
 
-		languageExtensionsToRemove := diffLanguageExtensions(*currentLanguageExtensions.Model.Value, *languageExtensions.Value)
-		if len(languageExtensionsToRemove) > 0 {
-			languageExtensionsListToRemove := clusters.LanguageExtensionsList{
-				Value: &languageExtensionsToRemove,
-			}
+		clusterProperties.OptimizedAutoscale = optimizedAutoScale
 
-			removeLanguageExtensionsFuture, err := client.RemoveLanguageExtensions(ctx, id, languageExtensionsListToRemove)
-			if err != nil {
-				return fmt.Errorf("removing language extensions from %s: %+v", id, err)
-			}
-			if err = removeLanguageExtensionsFuture.Poller.PollUntilDone(); err != nil {
-				return fmt.Errorf("waiting for the removal of language extensions from %s: %+v", id, err)
-			}
+		if err := client.CreateOrUpdateThenPoll(ctx, id, kustoCluster, clusters.CreateOrUpdateOperationOptions{}); err != nil {
+			return fmt.Errorf("creating/updating %s: %+v", id, err)
 		}
 	}
 
@@ -423,7 +407,7 @@ func resourceKustoClusterRead(d *pluginsdk.ResourceData, meta interface{}) error
 	ctx, cancel := timeouts.ForRead(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	id, err := clusters.ParseClusterID(d.Id())
+	id, err := commonids.ParseKustoClusterID(d.Id())
 	if err != nil {
 		return err
 	}
@@ -437,7 +421,7 @@ func resourceKustoClusterRead(d *pluginsdk.ResourceData, meta interface{}) error
 		return fmt.Errorf("retrieving %s: %+v", *id, err)
 	}
 
-	d.Set("name", id.ClusterName)
+	d.Set("name", id.KustoClusterName)
 	d.Set("resource_group_name", id.ResourceGroupName)
 
 	if model := resp.Model; model != nil {
@@ -477,11 +461,15 @@ func resourceKustoClusterRead(d *pluginsdk.ResourceData, meta interface{}) error
 			d.Set("streaming_ingestion_enabled", props.EnableStreamingIngest)
 			d.Set("purge_enabled", props.EnablePurge)
 			d.Set("virtual_network_configuration", flattenKustoClusterVNET(props.VirtualNetworkConfiguration))
-			d.Set("language_extensions", flattenKustoClusterLanguageExtensions(props.LanguageExtensions))
 			d.Set("uri", props.Uri)
 			d.Set("data_ingestion_uri", props.DataIngestionUri)
-			d.Set("engine", props.EngineType)
-			d.Set("public_ip_type", props.PublicIPType)
+			d.Set("public_ip_type", string(pointer.From(props.PublicIPType)))
+
+			if features.FourPointOhBeta() {
+				d.Set("language_extensions", flattenKustoClusterLanguageExtensionList(props.LanguageExtensions))
+			} else {
+				d.Set("language_extensions", flattenKustoClusterLanguageExtensions(props.LanguageExtensions))
+			}
 
 		}
 
@@ -498,7 +486,7 @@ func resourceKustoClusterDelete(d *pluginsdk.ResourceData, meta interface{}) err
 	ctx, cancel := timeouts.ForDelete(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	id, err := clusters.ParseClusterID(d.Id())
+	id, err := commonids.ParseKustoClusterID(d.Id())
 	if err != nil {
 		return err
 	}
@@ -595,23 +583,62 @@ func expandKustoClusterVNET(input []interface{}) *clusters.VirtualNetworkConfigu
 	}
 }
 
-func expandKustoClusterLanguageExtensions(input []interface{}) *clusters.LanguageExtensionsList {
-	if len(input) == 0 {
-		return nil
-	}
-
-	extensions := make([]clusters.LanguageExtension, 0)
-	for _, language := range input {
-		name := clusters.LanguageExtensionName(language.(string))
-		v := clusters.LanguageExtension{
-			LanguageExtensionName: &name,
+func expandKustoClusterLanguageExtensions(d *pluginsdk.ResourceData) *clusters.LanguageExtensionsList {
+	if v, ok := d.GetOk("language_extensions"); ok {
+		extList := v.(*pluginsdk.Set).List()
+		if len(extList) > 0 {
+			extensions := make([]clusters.LanguageExtension, 0)
+			for _, language := range extList {
+				name := language.(string)
+				lanExt := clusters.LanguageExtension{}
+				switch name {
+				case "R":
+					n := clusters.LanguageExtensionNameR
+					lanExt.LanguageExtensionName = &n
+					imageName := clusters.LanguageExtensionImageNameR
+					lanExt.LanguageExtensionImageName = &imageName
+				case "PYTHON":
+					n := clusters.LanguageExtensionNamePYTHON
+					lanExt.LanguageExtensionName = &n
+					imageName := clusters.LanguageExtensionImageNamePythonThreeSixFive
+					lanExt.LanguageExtensionImageName = &imageName
+				case "PYTHON_3.10.8":
+					n := clusters.LanguageExtensionNamePYTHON
+					lanExt.LanguageExtensionName = &n
+					imageName := clusters.LanguageExtensionImageNamePythonThreeOneZeroEight
+					lanExt.LanguageExtensionImageName = &imageName
+				default:
+					continue
+				}
+				extensions = append(extensions, lanExt)
+			}
+			return &clusters.LanguageExtensionsList{
+				Value: &extensions,
+			}
 		}
-		extensions = append(extensions, v)
+	}
+	return nil
+}
+
+func expandKustoClusterLanguageExtensionList(input []interface{}) *clusters.LanguageExtensionsList {
+	if len(input) > 0 {
+		extensions := make([]clusters.LanguageExtension, 0)
+		for _, ext := range input {
+			extMap := ext.(map[string]interface{})
+			name := clusters.LanguageExtensionName(extMap["name"].(string))
+			image := clusters.LanguageExtensionImageName(extMap["image"].(string))
+			lanExt := clusters.LanguageExtension{
+				LanguageExtensionName:      &name,
+				LanguageExtensionImageName: &image,
+			}
+			extensions = append(extensions, lanExt)
+		}
+		return &clusters.LanguageExtensionsList{
+			Value: &extensions,
+		}
 	}
 
-	return &clusters.LanguageExtensionsList{
-		Value: &extensions,
-	}
+	return nil
 }
 
 func flattenKustoClusterSku(sku *clusters.AzureSku) []interface{} {
@@ -652,29 +679,39 @@ func flattenKustoClusterLanguageExtensions(extensions *clusters.LanguageExtensio
 	output := make([]interface{}, 0)
 	if extensions.Value != nil {
 		for _, v := range *extensions.Value {
-			output = append(output, v.LanguageExtensionName)
+			if v.LanguageExtensionImageName != nil {
+				switch *v.LanguageExtensionImageName {
+				case clusters.LanguageExtensionImageNameR:
+					output = append(output, "R")
+				case clusters.LanguageExtensionImageNamePythonThreeSixFive:
+					output = append(output, "PYTHON")
+				case clusters.LanguageExtensionImageNamePythonThreeOneZeroEight:
+					output = append(output, "PYTHON_3.10.8")
+				}
+			}
 		}
 	}
 
 	return output
 }
 
-func diffLanguageExtensions(a, b []clusters.LanguageExtension) []clusters.LanguageExtension {
-	target := make(map[string]bool)
-	for _, x := range b {
-		if x.LanguageExtensionName != nil {
-			target[string(*x.LanguageExtensionName)] = true
+func flattenKustoClusterLanguageExtensionList(extensions *clusters.LanguageExtensionsList) []interface{} {
+	if extensions == nil {
+		return []interface{}{}
+	}
+
+	output := make([]interface{}, 0)
+	if extensions.Value != nil {
+		for _, v := range *extensions.Value {
+			output = append(
+				output,
+				map[string]interface{}{
+					"name":  string(*v.LanguageExtensionName),
+					"image": string(*v.LanguageExtensionImageName),
+				},
+			)
 		}
 	}
 
-	diff := make([]clusters.LanguageExtension, 0)
-	for _, x := range a {
-		if x.LanguageExtensionName != nil {
-			if _, ok := target[string(*x.LanguageExtensionName)]; !ok {
-				diff = append(diff, x)
-			}
-		}
-	}
-
-	return diff
+	return output
 }

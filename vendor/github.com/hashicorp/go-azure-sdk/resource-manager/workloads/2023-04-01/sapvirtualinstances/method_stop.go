@@ -18,12 +18,13 @@ type StopOperationResponse struct {
 	Poller       pollers.Poller
 	HttpResponse *http.Response
 	OData        *odata.OData
+	Model        *OperationStatusResult
 }
 
 // Stop ...
 func (c SAPVirtualInstancesClient) Stop(ctx context.Context, id SapVirtualInstanceId, input StopRequest) (result StopOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusAccepted,
 			http.StatusOK,

@@ -20,7 +20,7 @@ type MediaservicesGetOperationResponse struct {
 // MediaservicesGet ...
 func (c AccountsClient) MediaservicesGet(ctx context.Context, id MediaServiceId) (result MediaservicesGetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -43,7 +43,10 @@ func (c AccountsClient) MediaservicesGet(ctx context.Context, id MediaServiceId)
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model MediaService
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package storage
 
 import (
@@ -170,6 +173,10 @@ func resourceStorageShareFileCreate(d *pluginsdk.ResourceData, meta interface{})
 		info, err := file.Stat()
 		if err != nil {
 			return fmt.Errorf("'stat'-ing File %q (File Share %q / Account %q): %+v", fileName, storageShareID.Name, storageShareID.AccountName, err)
+		}
+
+		if info.Size() == 0 {
+			return fmt.Errorf("file %q (File Share %q / Account %q) is empty", fileName, storageShareID.Name, storageShareID.AccountName)
 		}
 
 		input.ContentLength = info.Size()

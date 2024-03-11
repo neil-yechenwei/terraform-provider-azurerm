@@ -21,7 +21,7 @@ type GetOperationResponse struct {
 // Get ...
 func (c SapLandscapeMonitorClient) Get(ctx context.Context, id MonitorId) (result GetOperationResponse, err error) {
 	opts := client.RequestOptions{
-		ContentType: "application/json",
+		ContentType: "application/json; charset=utf-8",
 		ExpectedStatusCodes: []int{
 			http.StatusOK,
 		},
@@ -44,7 +44,10 @@ func (c SapLandscapeMonitorClient) Get(ctx context.Context, id MonitorId) (resul
 		return
 	}
 
-	if err = resp.Unmarshal(&result.Model); err != nil {
+	var model SapLandscapeMonitor
+	result.Model = &model
+
+	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}
 
