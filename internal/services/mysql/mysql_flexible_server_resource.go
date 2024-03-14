@@ -49,10 +49,10 @@ func resourceMysqlFlexibleServer() *pluginsdk.Resource {
 			Delete: pluginsdk.DefaultTimeout(1 * time.Hour),
 		},
 
-		Importer: pluginsdk.ImporterValidatingResourceId(func(id string) error {
+		Importer: pluginsdk.ImporterValidatingResourceIdThen(func(id string) error {
 			_, err := servers.ParseFlexibleServerID(id)
 			return err
-		}),
+		}, mysqlFlexibleServerResourceImporter),
 
 		Schema: map[string]*pluginsdk.Schema{
 			"name": {
@@ -315,6 +315,36 @@ func resourceMysqlFlexibleServer() *pluginsdk.Resource {
 	}
 }
 
+func mysqlFlexibleServerResourceImporter(ctx context.Context, d *pluginsdk.ResourceData, meta interface{}) ([]*pluginsdk.ResourceData, error) {
+	client := meta.(*clients.Client).MySQL.FlexibleServers.Servers
+
+	id, err := servers.ParseFlexibleServerID(d.Id())
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Get(ctx, *id)
+	if err != nil {
+		return nil, err
+	}
+
+	createMode := servers.CreateModeDefault
+	if model := resp.Model; model != nil {
+		if props := model.Properties; props != nil {
+			if props.RestorePointInTime != nil {
+				createMode = servers.CreateModePointInTimeRestore
+			}
+
+			if props.ReplicationRole != nil && *props.ReplicationRole == servers.ReplicationRoleReplica {
+				createMode = servers.CreateModeReplica
+			}
+		}
+	}
+	d.Set("create_mode", string(createMode))
+
+	return []*pluginsdk.ResourceData{d}, nil
+}
+
 func resourceMysqlFlexibleServerCreate(d *pluginsdk.ResourceData, meta interface{}) error {
 	subscriptionId := meta.(*clients.Client).Account.SubscriptionId
 	client := meta.(*clients.Client).MySQL.FlexibleServers.Servers
@@ -506,7 +536,6 @@ func resourceMysqlFlexibleServerRead(d *pluginsdk.ResourceData, meta interface{}
 			d.Set("zone", props.AvailabilityZone)
 			d.Set("version", string(pointer.From(props.Version)))
 			d.Set("fqdn", props.FullyQualifiedDomainName)
-			d.Set("create_mode", d.Get("create_mode").(string))
 
 			if network := props.Network; network != nil {
 				d.Set("public_network_access_enabled", *network.PublicNetworkAccess == servers.EnableStatusEnumEnabled)
