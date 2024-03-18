@@ -6,9 +6,9 @@ package securitycenter_test
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/security/2023-10-01-preview/securityconnectors"
 	"testing"
 
+	"github.com/hashicorp/go-azure-sdk/resource-manager/security/2023-10-01-preview/securityconnectors"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -101,10 +101,13 @@ func (r SecurityCenterSecurityConnectorResource) Exists(ctx context.Context, cli
 
 func (r SecurityCenterSecurityConnectorResource) basic(data acceptance.TestData) string {
 	return fmt.Sprintf(`
-%s
-
 provider "azurerm" {
   features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestrg-securityconnector-%d"
+  location = "%s"
 }
 
 resource "azurerm_security_center_security_connector" "test" {
@@ -112,7 +115,7 @@ resource "azurerm_security_center_security_connector" "test" {
   resource_group_name = azurerm_resource_group.test.name
   location            = azurerm_resource_group.test.location
 }
-`, r.template(data), data.RandomInteger)
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger)
 }
 
 func (r SecurityCenterSecurityConnectorResource) requiresImport(data acceptance.TestData) string {
@@ -129,10 +132,13 @@ resource "azurerm_security_center_security_connector" "import" {
 
 func (r SecurityCenterSecurityConnectorResource) complete(data acceptance.TestData) string {
 	return fmt.Sprintf(`
-%s
-
 provider "azurerm" {
   features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestrg-securityconnector-%d"
+  location = "%s"
 }
 
 resource "azurerm_security_center_security_connector" "test" {
@@ -144,15 +150,18 @@ resource "azurerm_security_center_security_connector" "test" {
     Env = "Test"
   }
 }
-`, r.template(data), data.RandomInteger)
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger)
 }
 
 func (r SecurityCenterSecurityConnectorResource) update(data acceptance.TestData) string {
 	return fmt.Sprintf(`
-%s
-
 provider "azurerm" {
   features {}
+}
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestrg-securityconnector-%d"
+  location = "%s"
 }
 
 resource "azurerm_security_center_security_connector" "test" {
@@ -164,14 +173,5 @@ resource "azurerm_security_center_security_connector" "test" {
     Env = "Test2"
   }
 }
-`, r.template(data), data.RandomInteger)
-}
-
-func (r SecurityCenterSecurityConnectorResource) template(data acceptance.TestData) string {
-	return fmt.Sprintf(`
-resource "azurerm_resource_group" "test" {
-  name     = "acctestrg-securityconnector-%d"
-  location = "%s"
-}
-`, data.RandomInteger, data.Locations.Primary)
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger)
 }

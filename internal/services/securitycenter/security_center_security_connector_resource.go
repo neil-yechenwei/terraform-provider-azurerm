@@ -19,10 +19,12 @@ import (
 )
 
 type SecurityCenterSecurityConnectorModel struct {
-	Name              string            `tfschema:"name"`
-	ResourceGroupName string            `tfschema:"resource_group_name"`
-	Location          string            `tfschema:"location"`
-	Tags              map[string]string `tfschema:"tags"`
+	Name                string            `tfschema:"name"`
+	ResourceGroupName   string            `tfschema:"resource_group_name"`
+	Location            string            `tfschema:"location"`
+	EnvironmentName     string            `tfschema:"environment_name"`
+	HierarchyIdentifier string            `tfschema:"hierarchy_identifier"`
+	Tags                map[string]string `tfschema:"tags"`
 }
 
 var _ sdk.Resource = SecurityCenterSecurityConnectorResource{}
@@ -54,6 +56,18 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 		"resource_group_name": commonschema.ResourceGroupName(),
 
 		"location": commonschema.Location(),
+
+		"environment_name": {
+			Type:         pluginsdk.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForEnvironmentType(), false),
+		},
+
+		"hierarchy_identifier": {
+			Type:         pluginsdk.TypeString,
+			Required:     true,
+			ValidateFunc: validation.StringIsNotEmpty,
+		},
 
 		"tags": commonschema.Tags(),
 	}
@@ -88,9 +102,20 @@ func (r SecurityCenterSecurityConnectorResource) Create() sdk.ResourceFunc {
 			}
 
 			parameters := securityconnectors.SecurityConnector{
-				Location:   pointer.To(location.Normalize(model.Location)),
-				Properties: &securityconnectors.SecurityConnectorProperties{},
-				Tags:       pointer.To(model.Tags),
+				Location: pointer.To(location.Normalize(model.Location)),
+				Properties: &securityconnectors.SecurityConnectorProperties{
+					EnvironmentName:     pointer.To(securityconnectors.CloudName(model.EnvironmentName)),
+					HierarchyIdentifier: pointer.To(model.HierarchyIdentifier),
+				},
+				Tags: pointer.To(model.Tags),
+			}
+
+			if model.EnvironmentName == string(securityconnectors.EnvironmentTypeAzureDevOpsScope) {
+				parameters.Properties.EnvironmentData = securityconnectors.AzureDevOpsScopeEnvironmentData{}
+			} else if model.EnvironmentName == string(securityconnectors.EnvironmentTypeGithubScope) {
+				parameters.Properties.EnvironmentData = securityconnectors.GithubScopeEnvironmentData{}
+			} else if model.EnvironmentName == string(securityconnectors.EnvironmentTypeGitlabScope) {
+				parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
 			}
 
 			if _, err := client.CreateOrUpdate(ctx, id, parameters); err != nil {
@@ -128,6 +153,11 @@ func (r SecurityCenterSecurityConnectorResource) Read() sdk.ResourceFunc {
 				state.ResourceGroupName = id.ResourceGroupName
 				state.Location = location.Normalize(pointer.From(model.Location))
 				state.Tags = pointer.From(model.Tags)
+
+				if props := model.Properties; props != nil {
+					state.EnvironmentName = string(pointer.From(props.EnvironmentName))
+					state.HierarchyIdentifier = pointer.From(props.HierarchyIdentifier)
+				}
 			}
 
 			return metadata.Encode(&state)
@@ -151,7 +181,25 @@ func (r SecurityCenterSecurityConnectorResource) Update() sdk.ResourceFunc {
 				return fmt.Errorf("decoding: %+v", err)
 			}
 
-			parameters := securityconnectors.SecurityConnector{}
+			parameters := securityconnectors.SecurityConnector{
+				Properties: &securityconnectors.SecurityConnectorProperties{},
+			}
+
+			if metadata.ResourceData.HasChange("environment_name") {
+				parameters.Properties.EnvironmentName = pointer.To(securityconnectors.CloudName(model.EnvironmentName))
+
+				if model.EnvironmentName == string(securityconnectors.EnvironmentTypeAzureDevOpsScope) {
+					parameters.Properties.EnvironmentData = securityconnectors.AzureDevOpsScopeEnvironmentData{}
+				} else if model.EnvironmentName == string(securityconnectors.EnvironmentTypeGithubScope) {
+					parameters.Properties.EnvironmentData = securityconnectors.GithubScopeEnvironmentData{}
+				} else if model.EnvironmentName == string(securityconnectors.EnvironmentTypeGitlabScope) {
+					parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
+				}
+			}
+
+			if metadata.ResourceData.HasChange("hierarchy_identifier") {
+				parameters.Properties.HierarchyIdentifier = pointer.To(model.HierarchyIdentifier)
+			}
 
 			if metadata.ResourceData.HasChange("tags") {
 				parameters.Tags = pointer.To(model.Tags)
