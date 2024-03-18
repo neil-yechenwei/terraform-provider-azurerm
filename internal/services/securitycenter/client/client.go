@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-azure-sdk/resource-manager/security/2022-12-01-preview/defenderforstorage"
 	pricings_v2023_01_01 "github.com/hashicorp/go-azure-sdk/resource-manager/security/2023-01-01/pricings"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/security/2023-05-01/servervulnerabilityassessmentssettings"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/security/2023-10-01-preview/securityconnectors"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/common"
 )
 
@@ -28,6 +29,7 @@ type Client struct {
 	AutoProvisioningClient                     *security.AutoProvisioningSettingsClient
 	SettingClient                              *settings.SettingsClient
 	AutomationsClient                          *automations.AutomationsClient
+	SecurityConnectorsClient                   *securityconnectors.SecurityConnectorsClient
 	ServerVulnerabilityAssessmentClient        *security.ServerVulnerabilityAssessmentClient
 	ServerVulnerabilityAssessmentSettingClient *servervulnerabilityassessmentssettings.ServerVulnerabilityAssessmentsSettingsClient
 	DefenderForStorageClient                   *defenderforstorage.DefenderForStorageClient
@@ -81,6 +83,12 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 	}
 	o.Configure(AutomationsClient.Client, o.Authorizers.ResourceManager)
 
+	SecurityConnectorsClient, err := securityconnectors.NewSecurityConnectorsClientWithBaseURI(o.Environment.ResourceManager)
+	if err != nil {
+		return nil, fmt.Errorf("building Security Connector client : %+v", err)
+	}
+	o.Configure(SecurityConnectorsClient.Client, o.Authorizers.ResourceManager)
+
 	ServerVulnerabilityAssessmentClient := security.NewServerVulnerabilityAssessmentClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId, ascLocation)
 	o.ConfigureClient(&ServerVulnerabilityAssessmentClient.Client, o.ResourceManagerAuthorizer)
 
@@ -108,6 +116,7 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 		AutoProvisioningClient:                     &AutoProvisioningClient,
 		SettingClient:                              SettingClient,
 		AutomationsClient:                          AutomationsClient,
+		SecurityConnectorsClient:                   SecurityConnectorsClient,
 		ServerVulnerabilityAssessmentClient:        &ServerVulnerabilityAssessmentClient,
 		ServerVulnerabilityAssessmentSettingClient: ServerVulnerabilityAssessmentSettingClient,
 		DefenderForStorageClient:                   DefenderForStorageClient,
