@@ -19,25 +19,49 @@ import (
 )
 
 type SecurityCenterSecurityConnectorModel struct {
-	Name                string               `tfschema:"name"`
-	ResourceGroupName   string               `tfschema:"resource_group_name"`
-	Location            string               `tfschema:"location"`
-	EnvironmentName     string               `tfschema:"environment_name"`
-	HierarchyIdentifier string               `tfschema:"hierarchy_identifier"`
-	AwsEnvironmentData  []AwsEnvironmentData `tfschema:"aws_environment_data"`
-	Tags                map[string]string    `tfschema:"tags"`
+	Name                      string                      `tfschema:"name"`
+	ResourceGroupName         string                      `tfschema:"resource_group_name"`
+	Location                  string                      `tfschema:"location"`
+	EnvironmentName           string                      `tfschema:"environment_name"`
+	HierarchyIdentifier       string                      `tfschema:"hierarchy_identifier"`
+	AwsEnvironmentData        []AwsEnvironmentData        `tfschema:"aws_environment_data"`
+	GcpProjectEnvironmentData []GcpProjectEnvironmentData `tfschema:"gcp_project_environment_data"`
+	Tags                      map[string]string           `tfschema:"tags"`
 }
 
 type AwsEnvironmentData struct {
-	OrganizationalDataMaster                  []OrganizationalDataMaster `tfschema:"organizational_data_master"`
-	OrganizationalDataMemberParentHierarchyId string                     `tfschema:"organizational_data_member_parent_hierarchy_id"`
-	Regions                                   []string                   `tfschema:"regions"`
-	ScanInterval                              int                        `tfschema:"scan_interval"`
+	OrganizationalDataMaster                  []AwsOrganizationalDataMaster `tfschema:"organizational_data_master"`
+	OrganizationalDataMemberParentHierarchyId string                        `tfschema:"organizational_data_member_parent_hierarchy_id"`
+	Regions                                   []string                      `tfschema:"regions"`
+	ScanInterval                              int                           `tfschema:"scan_interval"`
 }
 
-type OrganizationalDataMaster struct {
+type AwsOrganizationalDataMaster struct {
 	StacksetName       string   `tfschema:"stackset_name"`
 	ExcludedAccountIds []string `tfschema:"excluded_account_ids"`
+}
+
+type GcpProjectEnvironmentData struct {
+	OrganizationalDataMaster []GcpOrganizationalDataMaster `tfschema:"organizational_data_master"`
+	OrganizationalDataMember []GcpOrganizationalDataMember `tfschema:"organizational_data_member"`
+	ProjectDetails           []GcpProjectDetails           `tfschema:"project_details"`
+	ScanInterval             int                           `tfschema:"scan_interval"`
+}
+
+type GcpOrganizationalDataMaster struct {
+	ExcludedProjectNumbers     []string `tfschema:"excluded_project_numbers"`
+	ServiceAccountEmailAddress string   `tfschema:"service_account_email_address"`
+	WorkloadIdentityProviderId string   `tfschema:"workload_identity_provider_id"`
+}
+
+type GcpOrganizationalDataMember struct {
+	ManagementProjectNumber string `tfschema:"management_project_number"`
+	ParentHierarchyId       string `tfschema:"parent_hierarchy_id"`
+}
+
+type GcpProjectDetails struct {
+	ProjectId     string `tfschema:"project_id"`
+	ProjectNumber string `tfschema:"project_number"`
 }
 
 var _ sdk.Resource = SecurityCenterSecurityConnectorResource{}
@@ -144,6 +168,95 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 			},
 		},
 
+		"gcp_project_environment_data": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"organizational_data_master": {
+						Type:     pluginsdk.TypeList,
+						Optional: true,
+						MaxItems: 1,
+						Elem: &pluginsdk.Resource{
+							Schema: map[string]*pluginsdk.Schema{
+								"excluded_project_numbers": {
+									Type:     pluginsdk.TypeList,
+									Optional: true,
+									Elem: &pluginsdk.Schema{
+										Type:         pluginsdk.TypeString,
+										ValidateFunc: validation.StringIsNotEmpty,
+									},
+								},
+
+								"service_account_email_address": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"workload_identity_provider_id": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+							},
+						},
+						ConflictsWith: []string{"gcp_project_environment_data.0.organizational_data_member"},
+					},
+
+					"organizational_data_member": {
+						Type:     pluginsdk.TypeList,
+						Optional: true,
+						MaxItems: 1,
+						Elem: &pluginsdk.Resource{
+							Schema: map[string]*pluginsdk.Schema{
+								"management_project_number": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"parent_hierarchy_id": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+							},
+						},
+						ConflictsWith: []string{"gcp_project_environment_data.0.organizational_data_master"},
+					},
+
+					"project_details": {
+						Type:     pluginsdk.TypeList,
+						Optional: true,
+						MaxItems: 1,
+						Elem: &pluginsdk.Resource{
+							Schema: map[string]*pluginsdk.Schema{
+								"project_id": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"project_number": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+							},
+						},
+					},
+
+					"scan_interval": {
+						Type:         pluginsdk.TypeInt,
+						Optional:     true,
+						ValidateFunc: validation.IntBetween(1, 24),
+					},
+				},
+			},
+		},
+
 		"tags": commonschema.Tags(),
 	}
 }
@@ -193,6 +306,8 @@ func (r SecurityCenterSecurityConnectorResource) Create() sdk.ResourceFunc {
 				parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
 			} else if model.EnvironmentName == string(securityconnectors.CloudNameAWS) {
 				parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
+			} else if model.EnvironmentName == string(securityconnectors.CloudNameGCP) {
+				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
 			}
 
 			if _, err := client.CreateOrUpdate(ctx, id, parameters); err != nil {
@@ -238,6 +353,10 @@ func (r SecurityCenterSecurityConnectorResource) Read() sdk.ResourceFunc {
 					if v, ok := props.EnvironmentData.(securityconnectors.AwsEnvironmentData); ok {
 						state.AwsEnvironmentData = flattenAwsEnvironmentData(v)
 					}
+
+					if v, ok := props.EnvironmentData.(securityconnectors.GcpProjectEnvironmentData); ok {
+						state.GcpProjectEnvironmentData = flattenGcpProjectEnvironmentData(v)
+					}
 				}
 			}
 
@@ -282,6 +401,8 @@ func (r SecurityCenterSecurityConnectorResource) Update() sdk.ResourceFunc {
 				parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
 			} else if model.EnvironmentName == string(securityconnectors.CloudNameAWS) {
 				parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
+			} else if model.EnvironmentName == string(securityconnectors.CloudNameGCP) {
+				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
 			}
 
 			if metadata.ResourceData.HasChange("tags") {
@@ -341,7 +462,7 @@ func expandAwsEnvironmentData(input []AwsEnvironmentData) *securityconnectors.Aw
 	return result
 }
 
-func expandAwsOrganizationalDataMaster(input []OrganizationalDataMaster) *securityconnectors.AwsOrganizationalDataMaster {
+func expandAwsOrganizationalDataMaster(input []AwsOrganizationalDataMaster) *securityconnectors.AwsOrganizationalDataMaster {
 	awsOrganizationalDataMaster := input[0]
 
 	result := &securityconnectors.AwsOrganizationalDataMaster{
@@ -355,6 +476,68 @@ func expandAwsOrganizationalDataMaster(input []OrganizationalDataMaster) *securi
 func expandAwsOrganizationalDataMember(input string) *securityconnectors.AwsOrganizationalDataMember {
 	result := &securityconnectors.AwsOrganizationalDataMember{
 		ParentHierarchyId: pointer.To(input),
+	}
+
+	return result
+}
+
+func expandGcpProjectEnvironmentData(input []GcpProjectEnvironmentData) *securityconnectors.GcpProjectEnvironmentData {
+	if len(input) == 0 {
+		return &securityconnectors.GcpProjectEnvironmentData{}
+	}
+
+	gcpProjectEnvironmentData := input[0]
+
+	result := &securityconnectors.GcpProjectEnvironmentData{
+		ProjectDetails: expandGcpProjectDetails(gcpProjectEnvironmentData.ProjectDetails),
+	}
+
+	if v := gcpProjectEnvironmentData.OrganizationalDataMaster; v != nil {
+		result.OrganizationalData = expandGcpProjectOrganizationalDataMaster(v)
+	} else if v := gcpProjectEnvironmentData.OrganizationalDataMember; v != nil {
+		result.OrganizationalData = expandGcpProjectOrganizationalDataMember(v)
+	}
+
+	if v := gcpProjectEnvironmentData.ScanInterval; v != 0 {
+		result.ScanInterval = pointer.To(int64(gcpProjectEnvironmentData.ScanInterval))
+	}
+
+	return result
+}
+
+func expandGcpProjectOrganizationalDataMaster(input []GcpOrganizationalDataMaster) *securityconnectors.GcpOrganizationalDataOrganization {
+	gcpProjectOrganizationalDataMaster := input[0]
+
+	result := &securityconnectors.GcpOrganizationalDataOrganization{
+		ExcludedProjectNumbers:     pointer.To(gcpProjectOrganizationalDataMaster.ExcludedProjectNumbers),
+		ServiceAccountEmailAddress: pointer.To(gcpProjectOrganizationalDataMaster.ServiceAccountEmailAddress),
+		WorkloadIdentityProviderId: pointer.To(gcpProjectOrganizationalDataMaster.WorkloadIdentityProviderId),
+	}
+
+	return result
+}
+
+func expandGcpProjectOrganizationalDataMember(input []GcpOrganizationalDataMember) *securityconnectors.GcpOrganizationalDataMember {
+	gcpProjectOrganizationalDataMember := input[0]
+
+	result := &securityconnectors.GcpOrganizationalDataMember{
+		ManagementProjectNumber: pointer.To(gcpProjectOrganizationalDataMember.ManagementProjectNumber),
+		ParentHierarchyId:       pointer.To(gcpProjectOrganizationalDataMember.ParentHierarchyId),
+	}
+
+	return result
+}
+
+func expandGcpProjectDetails(input []GcpProjectDetails) *securityconnectors.GcpProjectDetails {
+	if len(input) == 0 {
+		return nil
+	}
+
+	projectDetails := input[0]
+
+	result := &securityconnectors.GcpProjectDetails{
+		ProjectId:     pointer.To(projectDetails.ProjectId),
+		ProjectNumber: pointer.To(projectDetails.ProjectNumber),
 	}
 
 	return result
@@ -377,10 +560,10 @@ func flattenAwsEnvironmentData(input securityconnectors.AwsEnvironmentData) []Aw
 	return append(result, awsEnvironmentData)
 }
 
-func flattenAwsOrganizationalDataMaster(input securityconnectors.AwsOrganizationalDataMaster) []OrganizationalDataMaster {
-	result := make([]OrganizationalDataMaster, 0)
+func flattenAwsOrganizationalDataMaster(input securityconnectors.AwsOrganizationalDataMaster) []AwsOrganizationalDataMaster {
+	result := make([]AwsOrganizationalDataMaster, 0)
 
-	awsOrganizationalDataMaster := OrganizationalDataMaster{
+	awsOrganizationalDataMaster := AwsOrganizationalDataMaster{
 		ExcludedAccountIds: pointer.From(input.ExcludedAccountIds),
 		StacksetName:       pointer.From(input.StacksetName),
 	}
@@ -392,4 +575,58 @@ func flattenAwsOrganizationalDataMember(input securityconnectors.AwsOrganization
 	organizationalDataMemberParentHierarchyId := pointer.From(input.ParentHierarchyId)
 
 	return organizationalDataMemberParentHierarchyId
+}
+
+func flattenGcpProjectEnvironmentData(input securityconnectors.GcpProjectEnvironmentData) []GcpProjectEnvironmentData {
+	result := make([]GcpProjectEnvironmentData, 0)
+
+	gcpProjectEnvironmentData := GcpProjectEnvironmentData{
+		ScanInterval:   int(pointer.From(input.ScanInterval)),
+		ProjectDetails: flattenGcpProjectDetails(input.ProjectDetails),
+	}
+
+	if v, ok := input.OrganizationalData.(securityconnectors.GcpOrganizationalDataOrganization); ok {
+		gcpProjectEnvironmentData.OrganizationalDataMaster = flattenGcpProjectOrganizationalDataMaster(v)
+	} else if v, ok := input.OrganizationalData.(securityconnectors.GcpOrganizationalDataMember); ok {
+		gcpProjectEnvironmentData.OrganizationalDataMember = flattenGcpProjectOrganizationalDataMember(v)
+	}
+
+	return append(result, gcpProjectEnvironmentData)
+}
+
+func flattenGcpProjectOrganizationalDataMaster(input securityconnectors.GcpOrganizationalDataOrganization) []GcpOrganizationalDataMaster {
+	result := make([]GcpOrganizationalDataMaster, 0)
+
+	gcpOrganizationalDataMaster := GcpOrganizationalDataMaster{
+		ExcludedProjectNumbers:     pointer.From(input.ExcludedProjectNumbers),
+		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
+		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
+	}
+
+	return append(result, gcpOrganizationalDataMaster)
+}
+
+func flattenGcpProjectOrganizationalDataMember(input securityconnectors.GcpOrganizationalDataMember) []GcpOrganizationalDataMember {
+	result := make([]GcpOrganizationalDataMember, 0)
+
+	gcpOrganizationalDataMember := GcpOrganizationalDataMember{
+		ManagementProjectNumber: pointer.From(input.ManagementProjectNumber),
+		ParentHierarchyId:       pointer.From(input.ParentHierarchyId),
+	}
+
+	return append(result, gcpOrganizationalDataMember)
+}
+
+func flattenGcpProjectDetails(input *securityconnectors.GcpProjectDetails) []GcpProjectDetails {
+	result := make([]GcpProjectDetails, 0)
+	if input == nil {
+		return nil
+	}
+
+	gcpProjectDetails := GcpProjectDetails{
+		ProjectId:     pointer.From(input.ProjectId),
+		ProjectNumber: pointer.From(input.ProjectNumber),
+	}
+
+	return append(result, gcpProjectDetails)
 }
