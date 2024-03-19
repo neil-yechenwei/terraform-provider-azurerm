@@ -352,9 +352,7 @@ func (r SecurityCenterSecurityConnectorResource) Read() sdk.ResourceFunc {
 
 					if v, ok := props.EnvironmentData.(securityconnectors.AwsEnvironmentData); ok {
 						state.AwsEnvironmentData = flattenAwsEnvironmentData(v)
-					}
-
-					if v, ok := props.EnvironmentData.(securityconnectors.GcpProjectEnvironmentData); ok {
+					} else if v, ok := props.EnvironmentData.(securityconnectors.GcpProjectEnvironmentData); ok {
 						state.GcpProjectEnvironmentData = flattenGcpProjectEnvironmentData(v)
 					}
 				}
@@ -385,24 +383,24 @@ func (r SecurityCenterSecurityConnectorResource) Update() sdk.ResourceFunc {
 				Properties: &securityconnectors.SecurityConnectorProperties{},
 			}
 
-			if metadata.ResourceData.HasChange("environment_name") {
+			if metadata.ResourceData.HasChange("environment_name") || metadata.ResourceData.HasChange("aws_environment_data") || metadata.ResourceData.HasChange("gcp_project_environment_data") {
 				parameters.Properties.EnvironmentName = pointer.To(securityconnectors.CloudName(model.EnvironmentName))
+
+				if model.EnvironmentName == string(securityconnectors.CloudNameAzureDevOps) {
+					parameters.Properties.EnvironmentData = securityconnectors.AzureDevOpsScopeEnvironmentData{}
+				} else if model.EnvironmentName == string(securityconnectors.CloudNameGithub) {
+					parameters.Properties.EnvironmentData = securityconnectors.GithubScopeEnvironmentData{}
+				} else if model.EnvironmentName == string(securityconnectors.CloudNameGitLab) {
+					parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
+				} else if model.EnvironmentName == string(securityconnectors.CloudNameAWS) {
+					parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
+				} else if model.EnvironmentName == string(securityconnectors.CloudNameGCP) {
+					parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
+				}
 			}
 
 			if metadata.ResourceData.HasChange("hierarchy_identifier") {
 				parameters.Properties.HierarchyIdentifier = pointer.To(model.HierarchyIdentifier)
-			}
-
-			if model.EnvironmentName == string(securityconnectors.CloudNameAzureDevOps) {
-				parameters.Properties.EnvironmentData = securityconnectors.AzureDevOpsScopeEnvironmentData{}
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameGithub) {
-				parameters.Properties.EnvironmentData = securityconnectors.GithubScopeEnvironmentData{}
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameGitLab) {
-				parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameAWS) {
-				parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameGCP) {
-				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
 			}
 
 			if metadata.ResourceData.HasChange("tags") {
@@ -620,7 +618,7 @@ func flattenGcpProjectOrganizationalDataMember(input securityconnectors.GcpOrgan
 func flattenGcpProjectDetails(input *securityconnectors.GcpProjectDetails) []GcpProjectDetails {
 	result := make([]GcpProjectDetails, 0)
 	if input == nil {
-		return nil
+		return result
 	}
 
 	gcpProjectDetails := GcpProjectDetails{
