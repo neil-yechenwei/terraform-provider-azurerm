@@ -26,6 +26,7 @@ type SecurityCenterSecurityConnectorModel struct {
 	HierarchyIdentifier       string                      `tfschema:"hierarchy_identifier"`
 	AwsEnvironmentData        []AwsEnvironmentData        `tfschema:"aws_environment_data"`
 	GcpProjectEnvironmentData []GcpProjectEnvironmentData `tfschema:"gcp_project_environment_data"`
+	Offerings                 []Offering                  `tfschema:"offering"`
 	Tags                      map[string]string           `tfschema:"tags"`
 }
 
@@ -62,6 +63,21 @@ type GcpOrganizationalDataMember struct {
 type GcpProjectDetails struct {
 	ProjectId     string `tfschema:"project_id"`
 	ProjectNumber string `tfschema:"project_number"`
+}
+
+type Offering struct {
+	Type           string           `tfschema:"type"`
+	CspmMonitorAws []CspmMonitorAws `tfschema:"cspm_monitor_aws"`
+	CspmMonitorGcp []CspmMonitorGcp `tfschema:"cspm_monitor_gcp"`
+}
+
+type CspmMonitorAws struct {
+	NativeCloudConnectionCloudRoleArn string `tfschema:"native_cloud_connection_cloud_role_arn"`
+}
+
+type CspmMonitorGcp struct {
+	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
+	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
 }
 
 var _ sdk.Resource = SecurityCenterSecurityConnectorResource{}
@@ -276,6 +292,62 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 			ConflictsWith: []string{"aws_environment_data"},
 		},
 
+		"offering": {
+			Type:     pluginsdk.TypeList,
+			Required: true,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"type": {
+						Type:     pluginsdk.TypeInt,
+						Required: true,
+						ValidateFunc: validation.StringInSlice([]string{
+							string(securityconnectors.OfferingTypeCspmMonitorAws),
+							string(securityconnectors.OfferingTypeCspmMonitorAzureDevOps),
+							string(securityconnectors.OfferingTypeCspmMonitorGcp),
+							string(securityconnectors.OfferingTypeCspmMonitorGitLab),
+							string(securityconnectors.OfferingTypeCspmMonitorGithub),
+						}, false),
+					},
+
+					"cspm_monitor_aws": {
+						Type:     pluginsdk.TypeList,
+						Optional: true,
+						MaxItems: 1,
+						Elem: &pluginsdk.Resource{
+							Schema: map[string]*pluginsdk.Schema{
+								"native_cloud_connection_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+							},
+						},
+					},
+
+					"cspm_monitor_gcp": {
+						Type:     pluginsdk.TypeList,
+						Optional: true,
+						MaxItems: 1,
+						Elem: &pluginsdk.Resource{
+							Schema: map[string]*pluginsdk.Schema{
+								"service_account_email_address": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"workload_identity_provider_id": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+
 		"tags": commonschema.Tags(),
 	}
 }
@@ -313,6 +385,7 @@ func (r SecurityCenterSecurityConnectorResource) Create() sdk.ResourceFunc {
 				Properties: &securityconnectors.SecurityConnectorProperties{
 					EnvironmentName:     pointer.To(securityconnectors.CloudName(model.EnvironmentName)),
 					HierarchyIdentifier: pointer.To(model.HierarchyIdentifier),
+					Offerings:           expandOfferings(model.Offerings),
 				},
 				Tags: pointer.To(model.Tags),
 			}
@@ -400,6 +473,7 @@ func (r SecurityCenterSecurityConnectorResource) Read() sdk.ResourceFunc {
 				if props := model.Properties; props != nil {
 					state.EnvironmentName = string(pointer.From(props.EnvironmentName))
 					state.HierarchyIdentifier = pointer.From(props.HierarchyIdentifier)
+					state.Offerings = flattenOfferings(props.Offerings)
 
 					if v, ok := props.EnvironmentData.(securityconnectors.AwsEnvironmentData); ok {
 						state.AwsEnvironmentData = flattenAwsEnvironmentData(v)
@@ -448,6 +522,10 @@ func (r SecurityCenterSecurityConnectorResource) Update() sdk.ResourceFunc {
 				}
 
 				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
+			}
+
+			if metadata.ResourceData.HasChange("offering") {
+				parameters.Properties.Offerings = expandOfferings(model.Offerings)
 			}
 
 			if metadata.ResourceData.HasChange("tags") {
@@ -582,6 +660,56 @@ func expandGcpProjectDetails(input []GcpProjectDetails) *securityconnectors.GcpP
 	return result
 }
 
+func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
+	result := make([]securityconnectors.CloudOffering, 0)
+	if len(input) == 0 {
+		return &result
+	}
+
+	for _, item := range input {
+		if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorAzureDevOps) {
+			result = append(result, securityconnectors.CspmMonitorAzureDevOpsOffering{})
+		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorGithub) {
+			result = append(result, securityconnectors.CspmMonitorGithubOffering{})
+		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorGitLab) {
+			result = append(result, securityconnectors.CspmMonitorGitLabOffering{})
+		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorAws) {
+			cspmMonitorAwsOffering := securityconnectors.CspmMonitorAwsOffering{}
+
+			if v := item.CspmMonitorAws; len(v) != 0 {
+				cspmMonitorAws := v[0]
+
+				if cloudRoleArn := cspmMonitorAws.NativeCloudConnectionCloudRoleArn; cloudRoleArn != "" {
+					cspmMonitorAwsOffering.NativeCloudConnection = &securityconnectors.CspmMonitorAwsOfferingNativeCloudConnection{
+						CloudRoleArn: pointer.To(cloudRoleArn),
+					}
+				}
+			}
+
+			result = append(result, cspmMonitorAwsOffering)
+		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorGcp) {
+			cspmMonitorGcpOffering := securityconnectors.CspmMonitorGcpOffering{}
+
+			if v := item.CspmMonitorGcp; len(v) != 0 {
+				cspmMonitorGcp := v[0]
+				cspmMonitorGcpOffering.NativeCloudConnection = &securityconnectors.CspmMonitorGcpOfferingNativeCloudConnection{}
+
+				if serviceAccountEmailAddress := cspmMonitorGcp.ServiceAccountEmailAddress; serviceAccountEmailAddress != "" {
+					cspmMonitorGcpOffering.NativeCloudConnection.ServiceAccountEmailAddress = pointer.To(serviceAccountEmailAddress)
+				}
+
+				if workloadIdentityProviderId := cspmMonitorGcp.WorkloadIdentityProviderId; workloadIdentityProviderId != "" {
+					cspmMonitorGcpOffering.NativeCloudConnection.WorkloadIdentityProviderId = pointer.To(workloadIdentityProviderId)
+				}
+			}
+
+			result = append(result, cspmMonitorGcpOffering)
+		}
+	}
+
+	return &result
+}
+
 func flattenAwsEnvironmentData(input securityconnectors.AwsEnvironmentData) []AwsEnvironmentData {
 	result := make([]AwsEnvironmentData, 0)
 
@@ -668,4 +796,58 @@ func flattenGcpProjectDetails(input *securityconnectors.GcpProjectDetails) []Gcp
 	}
 
 	return append(result, gcpProjectDetails)
+}
+
+func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
+	result := make([]Offering, 0)
+	if input == nil {
+		return result
+	}
+
+	for _, item := range *input {
+		if _, ok := item.(securityconnectors.CspmMonitorAzureDevOpsOffering); ok {
+			result = append(result, Offering{
+				Type: string(securityconnectors.OfferingTypeCspmMonitorAzureDevOps),
+			})
+		} else if _, ok := item.(securityconnectors.CspmMonitorGithubOffering); ok {
+			result = append(result, Offering{
+				Type: string(securityconnectors.OfferingTypeCspmMonitorGithub),
+			})
+		} else if _, ok := item.(securityconnectors.CspmMonitorGitLabOffering); ok {
+			result = append(result, Offering{
+				Type: string(securityconnectors.OfferingTypeCspmMonitorGitLab),
+			})
+		} else if v, ok := item.(securityconnectors.CspmMonitorAwsOffering); ok {
+			cspmMonitorAwsOffering := Offering{
+				Type: string(securityconnectors.OfferingTypeCspmMonitorAws),
+			}
+
+			if nativeCloudConnection := v.NativeCloudConnection; nativeCloudConnection != nil {
+				cspmMonitorAwsOffering.CspmMonitorAws = []CspmMonitorAws{
+					{
+						NativeCloudConnectionCloudRoleArn: pointer.From(nativeCloudConnection.CloudRoleArn),
+					},
+				}
+			}
+
+			result = append(result, cspmMonitorAwsOffering)
+		} else if v, ok := item.(securityconnectors.CspmMonitorGcpOffering); ok {
+			cspmMonitorGcpOffering := Offering{
+				Type: string(securityconnectors.OfferingTypeCspmMonitorGcp),
+			}
+
+			if nativeCloudConnection := v.NativeCloudConnection; nativeCloudConnection != nil {
+				cspmMonitorGcpOffering.CspmMonitorGcp = []CspmMonitorGcp{
+					{
+						ServiceAccountEmailAddress: pointer.From(nativeCloudConnection.ServiceAccountEmailAddress),
+						WorkloadIdentityProviderId: pointer.From(nativeCloudConnection.WorkloadIdentityProviderId),
+					},
+				}
+			}
+
+			result = append(result, cspmMonitorGcpOffering)
+		}
+	}
+
+	return result
 }
