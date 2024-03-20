@@ -19,18 +19,23 @@ import (
 )
 
 type SecurityCenterSecurityConnectorModel struct {
-	Name                      string                      `tfschema:"name"`
-	ResourceGroupName         string                      `tfschema:"resource_group_name"`
-	Location                  string                      `tfschema:"location"`
-	EnvironmentName           string                      `tfschema:"environment_name"`
-	HierarchyIdentifier       string                      `tfschema:"hierarchy_identifier"`
-	AwsEnvironmentData        []AwsEnvironmentData        `tfschema:"aws_environment_data"`
-	GcpProjectEnvironmentData []GcpProjectEnvironmentData `tfschema:"gcp_project_environment_data"`
-	Offerings                 []Offering                  `tfschema:"offering"`
-	Tags                      map[string]string           `tfschema:"tags"`
+	Name                string            `tfschema:"name"`
+	ResourceGroupName   string            `tfschema:"resource_group_name"`
+	Location            string            `tfschema:"location"`
+	EnvironmentName     string            `tfschema:"environment_name"`
+	HierarchyIdentifier string            `tfschema:"hierarchy_identifier"`
+	EnvironmentData     []EnvironmentData `tfschema:"environment_data"`
+	Offerings           []Offering        `tfschema:"offering"`
+	Tags                map[string]string `tfschema:"tags"`
 }
 
-type AwsEnvironmentData struct {
+type EnvironmentData struct {
+	EnvironmentType string       `tfschema:"environment_type"`
+	AwsAccount      []AwsAccount `tfschema:"aws_account"`
+	GcpProject      []GcpProject `tfschema:"gcp_project"`
+}
+
+type AwsAccount struct {
 	OrganizationalDataMaster                  []AwsOrganizationalDataMaster `tfschema:"organizational_data_master"`
 	OrganizationalDataMemberParentHierarchyId string                        `tfschema:"organizational_data_member_parent_hierarchy_id"`
 	Regions                                   []string                      `tfschema:"regions"`
@@ -42,7 +47,7 @@ type AwsOrganizationalDataMaster struct {
 	ExcludedAccountIds []string `tfschema:"excluded_account_ids"`
 }
 
-type GcpProjectEnvironmentData struct {
+type GcpProject struct {
 	OrganizationalDataMaster []GcpOrganizationalDataMaster `tfschema:"organizational_data_master"`
 	OrganizationalDataMember []GcpOrganizationalDataMember `tfschema:"organizational_data_member"`
 	ProjectDetails           []GcpProjectDetails           `tfschema:"project_details"`
@@ -130,166 +135,182 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 			ValidateFunc: validation.StringIsNotEmpty,
 		},
 
-		"aws_environment_data": {
+		"environment_data": {
 			Type:     pluginsdk.TypeList,
-			Optional: true,
+			Required: true,
 			MaxItems: 1,
 			Elem: &pluginsdk.Resource{
 				Schema: map[string]*pluginsdk.Schema{
-					"organizational_data_master": {
+					"environment_type": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ForceNew:     true,
+						ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForEnvironmentType(), false),
+					},
+
+					"aws_account": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
 						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"stackset_name": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"excluded_account_ids": {
+								"organizational_data_master": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
 									ForceNew: true,
+									MaxItems: 1,
+									Elem: &pluginsdk.Resource{
+										Schema: map[string]*pluginsdk.Schema{
+											"stackset_name": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+
+											"excluded_account_ids": {
+												Type:     pluginsdk.TypeList,
+												Optional: true,
+												ForceNew: true,
+												Elem: &pluginsdk.Schema{
+													Type:         pluginsdk.TypeString,
+													ValidateFunc: validation.StringIsNotEmpty,
+												},
+											},
+										},
+									},
+									ConflictsWith: []string{"environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id"},
+								},
+
+								"organizational_data_member_parent_hierarchy_id": {
+									Type:          pluginsdk.TypeString,
+									Optional:      true,
+									ForceNew:      true,
+									ValidateFunc:  validation.StringIsNotEmpty,
+									ConflictsWith: []string{"environment_data.0.aws_account.0.organizational_data_master"},
+								},
+
+								"regions": {
+									Type:     pluginsdk.TypeList,
+									Optional: true,
 									Elem: &pluginsdk.Schema{
 										Type:         pluginsdk.TypeString,
 										ValidateFunc: validation.StringIsNotEmpty,
 									},
 								},
+
+								"scan_interval": {
+									Type:         pluginsdk.TypeInt,
+									Optional:     true,
+									Default:      4,
+									ValidateFunc: validation.IntBetween(1, 24),
+								},
 							},
 						},
-						ConflictsWith: []string{"aws_environment_data.0.organizational_data_member_parent_hierarchy_id"},
 					},
 
-					"organizational_data_member_parent_hierarchy_id": {
-						Type:          pluginsdk.TypeString,
-						Optional:      true,
-						ForceNew:      true,
-						ValidateFunc:  validation.StringIsNotEmpty,
-						ConflictsWith: []string{"aws_environment_data.0.organizational_data_master"},
-					},
-
-					"regions": {
-						Type:     pluginsdk.TypeList,
-						Optional: true,
-						Elem: &pluginsdk.Schema{
-							Type:         pluginsdk.TypeString,
-							ValidateFunc: validation.StringIsNotEmpty,
-						},
-					},
-
-					"scan_interval": {
-						Type:         pluginsdk.TypeInt,
-						Optional:     true,
-						Default:      4,
-						ValidateFunc: validation.IntBetween(1, 24),
-					},
-				},
-			},
-			ConflictsWith: []string{"gcp_project_environment_data"},
-		},
-
-		"gcp_project_environment_data": {
-			Type:     pluginsdk.TypeList,
-			Optional: true,
-			MaxItems: 1,
-			Elem: &pluginsdk.Resource{
-				Schema: map[string]*pluginsdk.Schema{
-					"organizational_data_master": {
+					"gcp_project": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
 						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"service_account_email_address": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"workload_identity_provider_id": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"excluded_project_numbers": {
+								"organizational_data_master": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
 									ForceNew: true,
-									Elem: &pluginsdk.Schema{
-										Type:         pluginsdk.TypeString,
-										ValidateFunc: validation.StringIsNotEmpty,
+									MaxItems: 1,
+									Elem: &pluginsdk.Resource{
+										Schema: map[string]*pluginsdk.Schema{
+											"service_account_email_address": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+
+											"workload_identity_provider_id": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+
+											"excluded_project_numbers": {
+												Type:     pluginsdk.TypeList,
+												Optional: true,
+												ForceNew: true,
+												Elem: &pluginsdk.Schema{
+													Type:         pluginsdk.TypeString,
+													ValidateFunc: validation.StringIsNotEmpty,
+												},
+											},
+										},
+									},
+									ConflictsWith: []string{"environment_data.0.gcp_project.0.organizational_data_member"},
+								},
+
+								"organizational_data_member": {
+									Type:     pluginsdk.TypeList,
+									Optional: true,
+									ForceNew: true,
+									MaxItems: 1,
+									Elem: &pluginsdk.Resource{
+										Schema: map[string]*pluginsdk.Schema{
+											"parent_hierarchy_id": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+
+											"management_project_number": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+										},
+									},
+									ConflictsWith: []string{"environment_data.0.gcp_project.0.organizational_data_master"},
+								},
+
+								"project_details": {
+									Type:     pluginsdk.TypeList,
+									Required: true,
+									MaxItems: 1,
+									Elem: &pluginsdk.Resource{
+										Schema: map[string]*pluginsdk.Schema{
+											"project_id": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+
+											"project_number": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+										},
 									},
 								},
-							},
-						},
-						ConflictsWith: []string{"gcp_project_environment_data.0.organizational_data_member"},
-					},
 
-					"organizational_data_member": {
-						Type:     pluginsdk.TypeList,
-						Optional: true,
-						ForceNew: true,
-						MaxItems: 1,
-						Elem: &pluginsdk.Resource{
-							Schema: map[string]*pluginsdk.Schema{
-								"parent_hierarchy_id": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"management_project_number": {
-									Type:         pluginsdk.TypeString,
+								"scan_interval": {
+									Type:         pluginsdk.TypeInt,
 									Optional:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
+									Default:      4,
+									ValidateFunc: validation.IntBetween(1, 24),
 								},
 							},
 						},
-						ConflictsWith: []string{"gcp_project_environment_data.0.organizational_data_master"},
-					},
-
-					"project_details": {
-						Type:     pluginsdk.TypeList,
-						Required: true,
-						MaxItems: 1,
-						Elem: &pluginsdk.Resource{
-							Schema: map[string]*pluginsdk.Schema{
-								"project_id": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"project_number": {
-									Type:         pluginsdk.TypeString,
-									Optional:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-							},
-						},
-					},
-
-					"scan_interval": {
-						Type:         pluginsdk.TypeInt,
-						Optional:     true,
-						Default:      4,
-						ValidateFunc: validation.IntBetween(1, 24),
 					},
 				},
 			},
-			ConflictsWith: []string{"aws_environment_data"},
 		},
 
 		"offering": {
@@ -386,52 +407,9 @@ func (r SecurityCenterSecurityConnectorResource) Create() sdk.ResourceFunc {
 					EnvironmentName:     pointer.To(securityconnectors.CloudName(model.EnvironmentName)),
 					HierarchyIdentifier: pointer.To(model.HierarchyIdentifier),
 					Offerings:           expandOfferings(model.Offerings),
+					EnvironmentData:     expandEnvironmentData(model.EnvironmentData),
 				},
 				Tags: pointer.To(model.Tags),
-			}
-
-			if model.EnvironmentName == string(securityconnectors.CloudNameAzureDevOps) {
-				if model.AwsEnvironmentData != nil {
-					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
-				}
-
-				if model.GcpProjectEnvironmentData != nil {
-					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
-				}
-
-				parameters.Properties.EnvironmentData = securityconnectors.AzureDevOpsScopeEnvironmentData{}
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameGithub) {
-				if model.AwsEnvironmentData != nil {
-					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
-				}
-
-				if model.GcpProjectEnvironmentData != nil {
-					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
-				}
-
-				parameters.Properties.EnvironmentData = securityconnectors.GithubScopeEnvironmentData{}
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameGitLab) {
-				if model.AwsEnvironmentData != nil {
-					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
-				}
-
-				if model.GcpProjectEnvironmentData != nil {
-					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
-				}
-
-				parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameAWS) {
-				if model.GcpProjectEnvironmentData != nil {
-					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
-				}
-
-				parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
-			} else if model.EnvironmentName == string(securityconnectors.CloudNameGCP) {
-				if model.AwsEnvironmentData != nil {
-					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
-				}
-
-				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
 			}
 
 			if _, err := client.CreateOrUpdate(ctx, id, parameters); err != nil {
@@ -474,12 +452,7 @@ func (r SecurityCenterSecurityConnectorResource) Read() sdk.ResourceFunc {
 					state.EnvironmentName = string(pointer.From(props.EnvironmentName))
 					state.HierarchyIdentifier = pointer.From(props.HierarchyIdentifier)
 					state.Offerings = flattenOfferings(props.Offerings)
-
-					if v, ok := props.EnvironmentData.(securityconnectors.AwsEnvironmentData); ok {
-						state.AwsEnvironmentData = flattenAwsEnvironmentData(v)
-					} else if v, ok := props.EnvironmentData.(securityconnectors.GcpProjectEnvironmentData); ok {
-						state.GcpProjectEnvironmentData = flattenGcpProjectEnvironmentData(v)
-					}
+					state.EnvironmentData = flattenEnvironmentData(props.EnvironmentData)
 				}
 			}
 
@@ -508,20 +481,8 @@ func (r SecurityCenterSecurityConnectorResource) Update() sdk.ResourceFunc {
 				Properties: &securityconnectors.SecurityConnectorProperties{},
 			}
 
-			if metadata.ResourceData.HasChange("aws_environment_data") {
-				if model.EnvironmentName != string(securityconnectors.CloudNameAWS) {
-					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
-				}
-
-				parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
-			}
-
-			if metadata.ResourceData.HasChange("gcp_project_environment_data") {
-				if model.EnvironmentName != string(securityconnectors.CloudNameGCP) {
-					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
-				}
-
-				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
+			if metadata.ResourceData.HasChange("environment_data") {
+				parameters.Properties.EnvironmentData = expandEnvironmentData(model.EnvironmentData)
 			}
 
 			if metadata.ResourceData.HasChange("offering") {
@@ -561,21 +522,44 @@ func (r SecurityCenterSecurityConnectorResource) Delete() sdk.ResourceFunc {
 	}
 }
 
-func expandAwsEnvironmentData(input []AwsEnvironmentData) *securityconnectors.AwsEnvironmentData {
+func expandEnvironmentData(input []EnvironmentData) *securityconnectors.EnvironmentData {
+	if len(input) == 0 {
+		return nil
+	}
+
+	environmentData := input[0]
+	var result securityconnectors.EnvironmentData
+
+	if environmentData.EnvironmentType == string(securityconnectors.EnvironmentTypeAzureDevOpsScope) {
+		result = securityconnectors.AzureDevOpsScopeEnvironmentData{}
+	} else if environmentData.EnvironmentType == string(securityconnectors.EnvironmentTypeGithubScope) {
+		result = securityconnectors.GithubScopeEnvironmentData{}
+	} else if environmentData.EnvironmentType == string(securityconnectors.EnvironmentTypeGitlabScope) {
+		result = securityconnectors.GitlabScopeEnvironmentData{}
+	} else if environmentData.EnvironmentType == string(securityconnectors.EnvironmentTypeAwsAccount) {
+		result = expandAwsAccount(environmentData.AwsAccount)
+	} else if environmentData.EnvironmentType == string(securityconnectors.EnvironmentTypeGcpProject) {
+		result = expandGcpProject(environmentData.GcpProject)
+	}
+
+	return &result
+}
+
+func expandAwsAccount(input []AwsAccount) *securityconnectors.AwsEnvironmentData {
 	if len(input) == 0 {
 		return &securityconnectors.AwsEnvironmentData{}
 	}
 
-	awsEnvironmentData := input[0]
+	awsAccount := input[0]
 
 	result := &securityconnectors.AwsEnvironmentData{
-		ScanInterval: pointer.To(int64(awsEnvironmentData.ScanInterval)),
-		Regions:      pointer.To(awsEnvironmentData.Regions),
+		ScanInterval: pointer.To(int64(awsAccount.ScanInterval)),
+		Regions:      pointer.To(awsAccount.Regions),
 	}
 
-	if v := awsEnvironmentData.OrganizationalDataMaster; v != nil {
+	if v := awsAccount.OrganizationalDataMaster; v != nil {
 		result.OrganizationalData = expandAwsOrganizationalDataMaster(v)
-	} else if v := awsEnvironmentData.OrganizationalDataMemberParentHierarchyId; v != "" {
+	} else if v := awsAccount.OrganizationalDataMemberParentHierarchyId; v != "" {
 		result.OrganizationalData = expandAwsOrganizationalDataMember(v)
 	}
 
@@ -601,21 +585,21 @@ func expandAwsOrganizationalDataMember(input string) *securityconnectors.AwsOrga
 	return result
 }
 
-func expandGcpProjectEnvironmentData(input []GcpProjectEnvironmentData) *securityconnectors.GcpProjectEnvironmentData {
+func expandGcpProject(input []GcpProject) *securityconnectors.GcpProjectEnvironmentData {
 	if len(input) == 0 {
 		return &securityconnectors.GcpProjectEnvironmentData{}
 	}
 
-	gcpProjectEnvironmentData := input[0]
+	gcpProject := input[0]
 
 	result := &securityconnectors.GcpProjectEnvironmentData{
-		ProjectDetails: expandGcpProjectDetails(gcpProjectEnvironmentData.ProjectDetails),
-		ScanInterval:   pointer.To(int64(gcpProjectEnvironmentData.ScanInterval)),
+		ProjectDetails: expandGcpProjectDetails(gcpProject.ProjectDetails),
+		ScanInterval:   pointer.To(int64(gcpProject.ScanInterval)),
 	}
 
-	if v := gcpProjectEnvironmentData.OrganizationalDataMaster; v != nil {
+	if v := gcpProject.OrganizationalDataMaster; v != nil {
 		result.OrganizationalData = expandGcpProjectOrganizationalDataMaster(v)
-	} else if v := gcpProjectEnvironmentData.OrganizationalDataMember; v != nil {
+	} else if v := gcpProject.OrganizationalDataMember; v != nil {
 		result.OrganizationalData = expandGcpProjectOrganizationalDataMember(v)
 	}
 
@@ -710,21 +694,55 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 	return &result
 }
 
-func flattenAwsEnvironmentData(input securityconnectors.AwsEnvironmentData) []AwsEnvironmentData {
-	result := make([]AwsEnvironmentData, 0)
+func flattenEnvironmentData(input securityconnectors.EnvironmentData) []EnvironmentData {
+	result := make([]EnvironmentData, 0)
 
-	awsEnvironmentData := AwsEnvironmentData{
+	if _, ok := input.(securityconnectors.AzureDevOpsScopeEnvironmentData); ok {
+		result = append(result, EnvironmentData{
+			EnvironmentType: string(securityconnectors.EnvironmentTypeAzureDevOpsScope),
+		})
+	} else if _, ok := input.(securityconnectors.GithubScopeEnvironmentData); ok {
+		result = append(result, EnvironmentData{
+			EnvironmentType: string(securityconnectors.EnvironmentTypeGithubScope),
+		})
+	} else if _, ok := input.(securityconnectors.GitlabScopeEnvironmentData); ok {
+		result = append(result, EnvironmentData{
+			EnvironmentType: string(securityconnectors.EnvironmentTypeGitlabScope),
+		})
+	} else if _, ok := input.(securityconnectors.AwsEnvironmentData); ok {
+		awsEnvironmentData := input.(securityconnectors.AwsEnvironmentData)
+
+		result = append(result, EnvironmentData{
+			EnvironmentType: string(securityconnectors.EnvironmentTypeAwsAccount),
+			AwsAccount:      flattenAwsAccount(awsEnvironmentData),
+		})
+	} else if _, ok := input.(securityconnectors.GcpProjectEnvironmentData); ok {
+		gcpEnvironmentData := input.(securityconnectors.GcpProjectEnvironmentData)
+
+		result = append(result, EnvironmentData{
+			EnvironmentType: string(securityconnectors.EnvironmentTypeGcpProject),
+			GcpProject:      flattenGcpProject(gcpEnvironmentData),
+		})
+	}
+
+	return result
+}
+
+func flattenAwsAccount(input securityconnectors.AwsEnvironmentData) []AwsAccount {
+	result := make([]AwsAccount, 0)
+
+	awsAccount := AwsAccount{
 		Regions:      pointer.From(input.Regions),
 		ScanInterval: int(pointer.From(input.ScanInterval)),
 	}
 
 	if v, ok := input.OrganizationalData.(securityconnectors.AwsOrganizationalDataMaster); ok {
-		awsEnvironmentData.OrganizationalDataMaster = flattenAwsOrganizationalDataMaster(v)
+		awsAccount.OrganizationalDataMaster = flattenAwsOrganizationalDataMaster(v)
 	} else if v, ok := input.OrganizationalData.(securityconnectors.AwsOrganizationalDataMember); ok {
-		awsEnvironmentData.OrganizationalDataMemberParentHierarchyId = flattenAwsOrganizationalDataMember(v)
+		awsAccount.OrganizationalDataMemberParentHierarchyId = flattenAwsOrganizationalDataMember(v)
 	}
 
-	return append(result, awsEnvironmentData)
+	return append(result, awsAccount)
 }
 
 func flattenAwsOrganizationalDataMaster(input securityconnectors.AwsOrganizationalDataMaster) []AwsOrganizationalDataMaster {
@@ -744,21 +762,21 @@ func flattenAwsOrganizationalDataMember(input securityconnectors.AwsOrganization
 	return organizationalDataMemberParentHierarchyId
 }
 
-func flattenGcpProjectEnvironmentData(input securityconnectors.GcpProjectEnvironmentData) []GcpProjectEnvironmentData {
-	result := make([]GcpProjectEnvironmentData, 0)
+func flattenGcpProject(input securityconnectors.GcpProjectEnvironmentData) []GcpProject {
+	result := make([]GcpProject, 0)
 
-	gcpProjectEnvironmentData := GcpProjectEnvironmentData{
+	gcpProject := GcpProject{
 		ScanInterval:   int(pointer.From(input.ScanInterval)),
 		ProjectDetails: flattenGcpProjectDetails(input.ProjectDetails),
 	}
 
 	if v, ok := input.OrganizationalData.(securityconnectors.GcpOrganizationalDataOrganization); ok {
-		gcpProjectEnvironmentData.OrganizationalDataMaster = flattenGcpProjectOrganizationalDataMaster(v)
+		gcpProject.OrganizationalDataMaster = flattenGcpProjectOrganizationalDataMaster(v)
 	} else if v, ok := input.OrganizationalData.(securityconnectors.GcpOrganizationalDataMember); ok {
-		gcpProjectEnvironmentData.OrganizationalDataMember = flattenGcpProjectOrganizationalDataMember(v)
+		gcpProject.OrganizationalDataMember = flattenGcpProjectOrganizationalDataMember(v)
 	}
 
-	return append(result, gcpProjectEnvironmentData)
+	return append(result, gcpProject)
 }
 
 func flattenGcpProjectOrganizationalDataMaster(input securityconnectors.GcpOrganizationalDataOrganization) []GcpOrganizationalDataMaster {
