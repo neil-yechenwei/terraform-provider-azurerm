@@ -97,6 +97,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 		"environment_name": {
 			Type:     pluginsdk.TypeString,
 			Required: true,
+			ForceNew: true,
 			ValidateFunc: validation.StringInSlice([]string{
 				string(securityconnectors.CloudNameAWS),
 				string(securityconnectors.CloudNameAzureDevOps),
@@ -109,6 +110,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 		"hierarchy_identifier": {
 			Type:         pluginsdk.TypeString,
 			Required:     true,
+			ForceNew:     true,
 			ValidateFunc: validation.StringIsNotEmpty,
 		},
 
@@ -121,18 +123,21 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"organizational_data_master": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
+						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
 								"stackset_name": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
+									Required:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"excluded_account_ids": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
+									ForceNew: true,
 									Elem: &pluginsdk.Schema{
 										Type:         pluginsdk.TypeString,
 										ValidateFunc: validation.StringIsNotEmpty,
@@ -146,6 +151,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"organizational_data_member_parent_hierarchy_id": {
 						Type:          pluginsdk.TypeString,
 						Optional:      true,
+						ForceNew:      true,
 						ValidateFunc:  validation.StringIsNotEmpty,
 						ConflictsWith: []string{"aws_environment_data.0.organizational_data_master"},
 					},
@@ -162,10 +168,12 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"scan_interval": {
 						Type:         pluginsdk.TypeInt,
 						Optional:     true,
+						Default:      4,
 						ValidateFunc: validation.IntBetween(1, 24),
 					},
 				},
 			},
+			ConflictsWith: []string{"gcp_project_environment_data"},
 		},
 
 		"gcp_project_environment_data": {
@@ -177,28 +185,32 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"organizational_data_master": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
+						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"excluded_project_numbers": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									Elem: &pluginsdk.Schema{
-										Type:         pluginsdk.TypeString,
-										ValidateFunc: validation.StringIsNotEmpty,
-									},
-								},
-
 								"service_account_email_address": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
+									Required:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"workload_identity_provider_id": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
+									Required:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"excluded_project_numbers": {
+									Type:     pluginsdk.TypeList,
+									Optional: true,
+									ForceNew: true,
+									Elem: &pluginsdk.Schema{
+										Type:         pluginsdk.TypeString,
+										ValidateFunc: validation.StringIsNotEmpty,
+									},
 								},
 							},
 						},
@@ -208,18 +220,21 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"organizational_data_member": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
+						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"management_project_number": {
+								"parent_hierarchy_id": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
+									Required:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"parent_hierarchy_id": {
+								"management_project_number": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 							},
@@ -229,19 +244,21 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 
 					"project_details": {
 						Type:     pluginsdk.TypeList,
-						Optional: true,
+						Required: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
 								"project_id": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
+									Required:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"project_number": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 							},
@@ -251,10 +268,12 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"scan_interval": {
 						Type:         pluginsdk.TypeInt,
 						Optional:     true,
+						Default:      4,
 						ValidateFunc: validation.IntBetween(1, 24),
 					},
 				},
 			},
+			ConflictsWith: []string{"aws_environment_data"},
 		},
 
 		"tags": commonschema.Tags(),
@@ -299,14 +318,46 @@ func (r SecurityCenterSecurityConnectorResource) Create() sdk.ResourceFunc {
 			}
 
 			if model.EnvironmentName == string(securityconnectors.CloudNameAzureDevOps) {
+				if model.AwsEnvironmentData != nil {
+					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
+				}
+
+				if model.GcpProjectEnvironmentData != nil {
+					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
+				}
+
 				parameters.Properties.EnvironmentData = securityconnectors.AzureDevOpsScopeEnvironmentData{}
 			} else if model.EnvironmentName == string(securityconnectors.CloudNameGithub) {
+				if model.AwsEnvironmentData != nil {
+					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
+				}
+
+				if model.GcpProjectEnvironmentData != nil {
+					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
+				}
+
 				parameters.Properties.EnvironmentData = securityconnectors.GithubScopeEnvironmentData{}
 			} else if model.EnvironmentName == string(securityconnectors.CloudNameGitLab) {
+				if model.AwsEnvironmentData != nil {
+					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
+				}
+
+				if model.GcpProjectEnvironmentData != nil {
+					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
+				}
+
 				parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
 			} else if model.EnvironmentName == string(securityconnectors.CloudNameAWS) {
+				if model.GcpProjectEnvironmentData != nil {
+					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
+				}
+
 				parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
 			} else if model.EnvironmentName == string(securityconnectors.CloudNameGCP) {
+				if model.AwsEnvironmentData != nil {
+					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
+				}
+
 				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
 			}
 
@@ -383,24 +434,20 @@ func (r SecurityCenterSecurityConnectorResource) Update() sdk.ResourceFunc {
 				Properties: &securityconnectors.SecurityConnectorProperties{},
 			}
 
-			if metadata.ResourceData.HasChange("environment_name") || metadata.ResourceData.HasChange("aws_environment_data") || metadata.ResourceData.HasChange("gcp_project_environment_data") {
-				parameters.Properties.EnvironmentName = pointer.To(securityconnectors.CloudName(model.EnvironmentName))
-
-				if model.EnvironmentName == string(securityconnectors.CloudNameAzureDevOps) {
-					parameters.Properties.EnvironmentData = securityconnectors.AzureDevOpsScopeEnvironmentData{}
-				} else if model.EnvironmentName == string(securityconnectors.CloudNameGithub) {
-					parameters.Properties.EnvironmentData = securityconnectors.GithubScopeEnvironmentData{}
-				} else if model.EnvironmentName == string(securityconnectors.CloudNameGitLab) {
-					parameters.Properties.EnvironmentData = securityconnectors.GitlabScopeEnvironmentData{}
-				} else if model.EnvironmentName == string(securityconnectors.CloudNameAWS) {
-					parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
-				} else if model.EnvironmentName == string(securityconnectors.CloudNameGCP) {
-					parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
+			if metadata.ResourceData.HasChange("aws_environment_data") {
+				if model.EnvironmentName != string(securityconnectors.CloudNameAWS) {
+					return fmt.Errorf("`aws_environment_data` only can be set when `environment_name` is `AWS`")
 				}
+
+				parameters.Properties.EnvironmentData = expandAwsEnvironmentData(model.AwsEnvironmentData)
 			}
 
-			if metadata.ResourceData.HasChange("hierarchy_identifier") {
-				parameters.Properties.HierarchyIdentifier = pointer.To(model.HierarchyIdentifier)
+			if metadata.ResourceData.HasChange("gcp_project_environment_data") {
+				if model.EnvironmentName != string(securityconnectors.CloudNameGCP) {
+					return fmt.Errorf("`gcp_project_environment_data` only can be set when `environment_name` is `GCP`")
+				}
+
+				parameters.Properties.EnvironmentData = expandGcpProjectEnvironmentData(model.GcpProjectEnvironmentData)
 			}
 
 			if metadata.ResourceData.HasChange("tags") {
@@ -444,17 +491,14 @@ func expandAwsEnvironmentData(input []AwsEnvironmentData) *securityconnectors.Aw
 	awsEnvironmentData := input[0]
 
 	result := &securityconnectors.AwsEnvironmentData{
-		Regions: pointer.To(awsEnvironmentData.Regions),
+		ScanInterval: pointer.To(int64(awsEnvironmentData.ScanInterval)),
+		Regions:      pointer.To(awsEnvironmentData.Regions),
 	}
 
 	if v := awsEnvironmentData.OrganizationalDataMaster; v != nil {
 		result.OrganizationalData = expandAwsOrganizationalDataMaster(v)
 	} else if v := awsEnvironmentData.OrganizationalDataMemberParentHierarchyId; v != "" {
 		result.OrganizationalData = expandAwsOrganizationalDataMember(v)
-	}
-
-	if v := awsEnvironmentData.ScanInterval; v != 0 {
-		result.ScanInterval = pointer.To(int64(awsEnvironmentData.ScanInterval))
 	}
 
 	return result
@@ -488,16 +532,13 @@ func expandGcpProjectEnvironmentData(input []GcpProjectEnvironmentData) *securit
 
 	result := &securityconnectors.GcpProjectEnvironmentData{
 		ProjectDetails: expandGcpProjectDetails(gcpProjectEnvironmentData.ProjectDetails),
+		ScanInterval:   pointer.To(int64(gcpProjectEnvironmentData.ScanInterval)),
 	}
 
 	if v := gcpProjectEnvironmentData.OrganizationalDataMaster; v != nil {
 		result.OrganizationalData = expandGcpProjectOrganizationalDataMaster(v)
 	} else if v := gcpProjectEnvironmentData.OrganizationalDataMember; v != nil {
 		result.OrganizationalData = expandGcpProjectOrganizationalDataMember(v)
-	}
-
-	if v := gcpProjectEnvironmentData.ScanInterval; v != 0 {
-		result.ScanInterval = pointer.To(int64(gcpProjectEnvironmentData.ScanInterval))
 	}
 
 	return result
