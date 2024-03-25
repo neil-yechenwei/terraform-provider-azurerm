@@ -111,9 +111,19 @@ resource "azurerm_resource_group" "test" {
 }
 
 resource "azurerm_security_center_security_connector" "test" {
-  name                = "acctest-securityconnector-%d"
-  resource_group_name = azurerm_resource_group.test.name
-  location            = azurerm_resource_group.test.location
+  name                 = "acctest-securityconnector-%d"
+  resource_group_name  = azurerm_resource_group.test.name
+  location             = azurerm_resource_group.test.location
+  environment_name     = "GCP"
+  hierarchy_identifier = ""
+
+  environment_data {
+    environment_type = "GcpProject"
+  }
+
+  offering {
+    type = "CspmMonitorGcp"
+  }
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger)
 }

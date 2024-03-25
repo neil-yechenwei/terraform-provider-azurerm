@@ -440,7 +440,6 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"aws_account": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
-						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
@@ -470,6 +469,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 										},
 									},
 									ConflictsWith: []string{"environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id"},
+									AtLeastOneOf:  []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
 								},
 
 								"organizational_data_member_parent_hierarchy_id": {
@@ -478,6 +478,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									ForceNew:      true,
 									ValidateFunc:  validation.StringIsNotEmpty,
 									ConflictsWith: []string{"environment_data.0.aws_account.0.organizational_data_master"},
+									AtLeastOneOf:  []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
 								},
 
 								"regions": {
@@ -486,6 +487,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									Elem: &pluginsdk.Schema{
 										Type:         pluginsdk.TypeString,
 										ValidateFunc: validation.StringIsNotEmpty,
+										AtLeastOneOf: []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
 									},
 								},
 
@@ -494,6 +496,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									Optional:     true,
 									Default:      4,
 									ValidateFunc: validation.IntBetween(1, 24),
+									AtLeastOneOf: []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
 								},
 							},
 						},
@@ -502,10 +505,32 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"gcp_project": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
-						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
+								"project_details": {
+									Type:     pluginsdk.TypeList,
+									Required: true,
+									MaxItems: 1,
+									Elem: &pluginsdk.Resource{
+										Schema: map[string]*pluginsdk.Schema{
+											"project_id": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+
+											"project_number": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+										},
+									},
+								},
+
 								"organizational_data_master": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
@@ -566,29 +591,6 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									ConflictsWith: []string{"environment_data.0.gcp_project.0.organizational_data_master"},
 								},
 
-								"project_details": {
-									Type:     pluginsdk.TypeList,
-									Required: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"project_id": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"project_number": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-										},
-									},
-								},
-
 								"scan_interval": {
 									Type:         pluginsdk.TypeInt,
 									Optional:     true,
@@ -608,8 +610,9 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 			Elem: &pluginsdk.Resource{
 				Schema: map[string]*pluginsdk.Schema{
 					"type": {
-						Type:     pluginsdk.TypeInt,
+						Type:     pluginsdk.TypeString,
 						Required: true,
+						ForceNew: true,
 						ValidateFunc: validation.StringInSlice([]string{
 							string(securityconnectors.OfferingTypeCspmMonitorAws),
 							string(securityconnectors.OfferingTypeCspmMonitorAzureDevOps),
@@ -1185,7 +1188,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"va_auto_provisioning ": {
+								"va_auto_provisioning": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
 									ForceNew: true,
@@ -1353,7 +1356,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"va_auto_provisioning ": {
+								"va_auto_provisioning": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
 									ForceNew: true,
@@ -1507,7 +1510,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									},
 								},
 
-								"mdc_containers_agentless_discovery_k8s ": {
+								"mdc_containers_agentless_discovery_k8s": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
 									ForceNew: true,
@@ -1665,7 +1668,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									},
 								},
 
-								"mdc_containers_agentless_discovery_k8s ": {
+								"mdc_containers_agentless_discovery_k8s": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
 									ForceNew: true,
@@ -1954,7 +1957,7 @@ func expandAwsAccount(input []AwsAccount) *securityconnectors.AwsEnvironmentData
 		Regions:      pointer.To(awsAccount.Regions),
 	}
 
-	if v := awsAccount.OrganizationalDataMaster; v != nil {
+	if v := awsAccount.OrganizationalDataMaster; len(v) != 0 {
 		result.OrganizationalData = expandAwsOrganizationalDataMaster(v)
 	} else if v := awsAccount.OrganizationalDataMemberParentHierarchyId; v != "" {
 		result.OrganizationalData = expandAwsOrganizationalDataMember(v)
@@ -1994,9 +1997,9 @@ func expandGcpProject(input []GcpProject) *securityconnectors.GcpProjectEnvironm
 		ScanInterval:   pointer.To(int64(gcpProject.ScanInterval)),
 	}
 
-	if v := gcpProject.OrganizationalDataMaster; v != nil {
+	if v := gcpProject.OrganizationalDataMaster; len(v) != 0 {
 		result.OrganizationalData = expandGcpProjectOrganizationalDataMaster(v)
-	} else if v := gcpProject.OrganizationalDataMember; v != nil {
+	} else if v := gcpProject.OrganizationalDataMember; len(v) != 0 {
 		result.OrganizationalData = expandGcpProjectOrganizationalDataMember(v)
 	}
 
