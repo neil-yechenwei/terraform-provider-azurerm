@@ -71,21 +71,17 @@ type GcpProjectDetails struct {
 }
 
 type Offering struct {
-	Type                     string                     `tfschema:"type"`
-	CspmMonitorAws           []CspmMonitorAws           `tfschema:"cspm_monitor_aws"`
-	CspmMonitorGcp           []CspmMonitorGcp           `tfschema:"cspm_monitor_gcp"`
-	DefenderForDatabasesAws  []DefenderForDatabasesAws  `tfschema:"defender_for_databases_aws"`
-	DefenderForDatabasesGcp  []DefenderForDatabasesGcp  `tfschema:"defender_for_databases_gcp"`
-	DefenderForContainersAws []DefenderForContainersAws `tfschema:"defender_for_containers_aws"`
-	DefenderForContainersGcp []DefenderForContainersGcp `tfschema:"defender_for_containers_gcp"`
-	DefenderForServersAws    []DefenderForServersAws    `tfschema:"defender_for_servers_aws"`
-	DefenderForServersGcp    []DefenderForServersGcp    `tfschema:"defender_for_servers_gcp"`
-	DefenderCspmAws          []DefenderCspmAws          `tfschema:"defender_cspm_aws"`
-	DefenderCspmGcp          []DefenderCspmGcp          `tfschema:"defender_cspm_gcp"`
-}
-
-type CspmMonitorAws struct {
-	NativeCloudConnectionCloudRoleArn string `tfschema:"native_cloud_connection_cloud_role_arn"`
+	Type                                            string                     `tfschema:"type"`
+	CspmMonitorAwsNativeCloudConnectionCloudRoleArn string                     `tfschema:"cspm_monitor_aws_native_cloud_connection_cloud_role_arn"`
+	CspmMonitorGcp                                  []CspmMonitorGcp           `tfschema:"cspm_monitor_gcp"`
+	DefenderForDatabasesAws                         []DefenderForDatabasesAws  `tfschema:"defender_for_databases_aws"`
+	DefenderForDatabasesGcp                         []DefenderForDatabasesGcp  `tfschema:"defender_for_databases_gcp"`
+	DefenderForContainersAws                        []DefenderForContainersAws `tfschema:"defender_for_containers_aws"`
+	DefenderForContainersGcp                        []DefenderForContainersGcp `tfschema:"defender_for_containers_gcp"`
+	DefenderForServersAws                           []DefenderForServersAws    `tfschema:"defender_for_servers_aws"`
+	DefenderForServersGcp                           []DefenderForServersGcp    `tfschema:"defender_for_servers_gcp"`
+	DefenderCspmAws                                 []DefenderCspmAws          `tfschema:"defender_cspm_aws"`
+	DefenderCspmGcp                                 []DefenderCspmGcp          `tfschema:"defender_cspm_gcp"`
 }
 
 type CspmMonitorGcp struct {
@@ -630,36 +626,31 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						}, false),
 					},
 
-					"cspm_monitor_aws": {
-						Type:     pluginsdk.TypeList,
-						Optional: true,
-						MaxItems: 1,
-						Elem: &pluginsdk.Resource{
-							Schema: map[string]*pluginsdk.Schema{
-								"native_cloud_connection_cloud_role_arn": {
-									Type:         pluginsdk.TypeString,
-									Optional:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-							},
-						},
+					"cspm_monitor_aws_native_cloud_connection_cloud_role_arn": {
+						Type:         pluginsdk.TypeString,
+						Optional:     true,
+						ForceNew:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
 					"cspm_monitor_gcp": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
+						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
 								"service_account_email_address": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
+									Required:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"workload_identity_provider_id": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
+									Required:     true,
+									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 							},
@@ -2060,11 +2051,9 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorAws) {
 			cspmMonitorAwsOffering := securityconnectors.CspmMonitorAwsOffering{}
 
-			if v := item.CspmMonitorAws; len(v) != 0 {
-				cspmMonitorAws := v[0]
-
+			if v := item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn; v != "" {
 				cspmMonitorAwsOffering.NativeCloudConnection = &securityconnectors.CspmMonitorAwsOfferingNativeCloudConnection{
-					CloudRoleArn: pointer.To(cspmMonitorAws.NativeCloudConnectionCloudRoleArn),
+					CloudRoleArn: pointer.To(v),
 				}
 			}
 
@@ -3004,11 +2993,7 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 			}
 
 			if nativeCloudConnection := v.NativeCloudConnection; nativeCloudConnection != nil {
-				cspmMonitorAwsOffering.CspmMonitorAws = []CspmMonitorAws{
-					{
-						NativeCloudConnectionCloudRoleArn: pointer.From(nativeCloudConnection.CloudRoleArn),
-					},
-				}
+				cspmMonitorAwsOffering.CspmMonitorAwsNativeCloudConnectionCloudRoleArn = pointer.From(nativeCloudConnection.CloudRoleArn)
 			}
 
 			result = append(result, cspmMonitorAwsOffering)
