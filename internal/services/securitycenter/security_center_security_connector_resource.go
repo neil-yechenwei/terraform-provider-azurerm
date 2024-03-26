@@ -90,30 +90,19 @@ type CspmMonitorGcp struct {
 }
 
 type DefenderForDatabasesAws struct {
-	ArcAutoProvisioning []DatabasesAwsArcAutoProvisioning `tfschema:"arc_auto_provisioning"`
-	DatabasesDspm       []DatabasesAwsDspm                `tfschema:"databases_dspm"`
-	Rds                 []DatabasesAwsRds                 `tfschema:"rds"`
+	ArcAutoProvisioning       []DatabasesAwsArcAutoProvisioning `tfschema:"arc_auto_provisioning"`
+	DatabasesDspmCloudRoleArn string                            `tfschema:"databases_dspm_cloud_role_arn"`
+	RdsCloudRoleArn           string                            `tfschema:"rds_cloud_role_arn"`
 }
 
 type DatabasesAwsArcAutoProvisioning struct {
 	CloudRoleArn  string                      `tfschema:"cloud_role_arn"`
 	Configuration []DatabasesAwsConfiguration `tfschema:"configuration"`
-	Enabled       bool                        `tfschema:"enabled"`
 }
 
 type DatabasesAwsConfiguration struct {
 	PrivateLinkScope string `tfschema:"private_link_scope"`
 	Proxy            string `tfschema:"proxy"`
-}
-
-type DatabasesAwsDspm struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
-}
-
-type DatabasesAwsRds struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
 }
 
 type DefenderForDatabasesGcp struct {
@@ -439,24 +428,22 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
+								// no test data
 								"organizational_data_master": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"stackset_name": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"excluded_account_ids": {
 												Type:     pluginsdk.TypeList,
 												Optional: true,
-												ForceNew: true,
 												Elem: &pluginsdk.Schema{
 													Type:         pluginsdk.TypeString,
 													ValidateFunc: validation.StringIsNotEmpty,
@@ -468,10 +455,10 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									AtLeastOneOf:  []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
 								},
 
+								// no test data
 								"organizational_data_member_parent_hierarchy_id": {
 									Type:          pluginsdk.TypeString,
 									Optional:      true,
-									ForceNew:      true,
 									ValidateFunc:  validation.StringIsNotEmpty,
 									ConflictsWith: []string{"environment_data.0.aws_account.0.organizational_data_master"},
 									AtLeastOneOf:  []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
@@ -513,45 +500,40 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"project_id": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"project_number": {
 												Type:         pluginsdk.TypeString,
 												Optional:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
 								},
 
+								// no test data
 								"organizational_data_master": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"excluded_project_numbers": {
 												Type:     pluginsdk.TypeList,
 												Optional: true,
-												ForceNew: true,
 												Elem: &pluginsdk.Schema{
 													Type:         pluginsdk.TypeString,
 													ValidateFunc: validation.StringIsNotEmpty,
@@ -562,24 +544,22 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									ConflictsWith: []string{"environment_data.0.gcp_project.0.organizational_data_member"},
 								},
 
+								// no test data
 								"organizational_data_member": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"parent_hierarchy_id": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"management_project_number": {
 												Type:         pluginsdk.TypeString,
 												Optional:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
@@ -629,28 +609,24 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"cspm_monitor_aws_native_cloud_connection_cloud_role_arn": {
 						Type:         pluginsdk.TypeString,
 						Optional:     true,
-						ForceNew:     true,
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
 					"cspm_monitor_gcp": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
-						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
 								"service_account_email_address": {
 									Type:         pluginsdk.TypeString,
 									Required:     true,
-									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"workload_identity_provider_id": {
 									Type:         pluginsdk.TypeString,
 									Required:     true,
-									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 							},
@@ -666,99 +642,56 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"arc_auto_provisioning": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"cloud_role_arn": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
+											// no test data
 											"configuration": {
 												Type:     pluginsdk.TypeList,
 												Optional: true,
-												ForceNew: true,
 												MaxItems: 1,
 												Elem: &pluginsdk.Resource{
 													Schema: map[string]*pluginsdk.Schema{
 														"private_link_scope": {
 															Type:         pluginsdk.TypeString,
 															Optional:     true,
-															ForceNew:     true,
 															ValidateFunc: validation.StringIsNotEmpty,
 														},
 
 														"proxy": {
 															Type:         pluginsdk.TypeString,
 															Optional:     true,
-															ForceNew:     true,
 															ValidateFunc: validation.StringIsNotEmpty,
 														},
 													},
 												},
 											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
 										},
 									},
 								},
 
-								"databases_dspm": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"databases_dspm_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"rds": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"rds_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 							},
 						},
 					},
 
+					//Continue to test from here
 					"defender_for_databases_gcp": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
@@ -2078,8 +2011,8 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 				defenderForDatabasesAws := v[0]
 
 				defenderFoDatabasesAwsOffering.ArcAutoProvisioning = expandDatabasesAwsArcAutoProvisioning(defenderForDatabasesAws.ArcAutoProvisioning)
-				defenderFoDatabasesAwsOffering.DatabasesDspm = expandDatabasesAwsDspm(defenderForDatabasesAws.DatabasesDspm)
-				defenderFoDatabasesAwsOffering.Rds = expandDatabasesAwsRds(defenderForDatabasesAws.Rds)
+				defenderFoDatabasesAwsOffering.DatabasesDspm = expandDatabasesAwsDspm(defenderForDatabasesAws.DatabasesDspmCloudRoleArn)
+				defenderFoDatabasesAwsOffering.Rds = expandDatabasesAwsRds(defenderForDatabasesAws.RdsCloudRoleArn)
 			}
 
 			result = append(result, defenderFoDatabasesAwsOffering)
@@ -2228,7 +2161,9 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 
 func expandDatabasesAwsArcAutoProvisioning(input []DatabasesAwsArcAutoProvisioning) *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	awsArcAutoProvisioning := input[0]
@@ -2236,7 +2171,7 @@ func expandDatabasesAwsArcAutoProvisioning(input []DatabasesAwsArcAutoProvisioni
 	result := &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning{
 		CloudRoleArn:  pointer.To(awsArcAutoProvisioning.CloudRoleArn),
 		Configuration: expandDatabasesAwsConfiguration(awsArcAutoProvisioning.Configuration),
-		Enabled:       pointer.To(awsArcAutoProvisioning.Enabled),
+		Enabled:       pointer.To(true),
 	}
 
 	return result
@@ -2244,7 +2179,7 @@ func expandDatabasesAwsArcAutoProvisioning(input []DatabasesAwsArcAutoProvisioni
 
 func expandDatabasesAwsConfiguration(input []DatabasesAwsConfiguration) *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration{}
 	}
 
 	awsConfiguration := input[0]
@@ -2257,31 +2192,31 @@ func expandDatabasesAwsConfiguration(input []DatabasesAwsConfiguration) *securit
 	return result
 }
 
-func expandDatabasesAwsDspm(input []DatabasesAwsDspm) *securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm {
-	if len(input) == 0 {
-		return nil
+func expandDatabasesAwsDspm(input string) *securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm {
+	if input == "" {
+		return &securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm{
+			Enabled: pointer.To(false),
+		}
 	}
 
-	databasesDspm := input[0]
-
 	result := &securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm{
-		CloudRoleArn: pointer.To(databasesDspm.CloudRoleArn),
-		Enabled:      pointer.To(databasesDspm.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
 }
 
-func expandDatabasesAwsRds(input []DatabasesAwsRds) *securityconnectors.DefenderFoDatabasesAwsOfferingRds {
-	if len(input) == 0 {
-		return nil
+func expandDatabasesAwsRds(input string) *securityconnectors.DefenderFoDatabasesAwsOfferingRds {
+	if input == "" {
+		return &securityconnectors.DefenderFoDatabasesAwsOfferingRds{
+			Enabled: pointer.To(false),
+		}
 	}
 
-	rds := input[0]
-
 	result := &securityconnectors.DefenderFoDatabasesAwsOfferingRds{
-		CloudRoleArn: pointer.To(rds.CloudRoleArn),
-		Enabled:      pointer.To(rds.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
@@ -3017,9 +2952,9 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderForDatabasesAws),
 				DefenderForDatabasesAws: []DefenderForDatabasesAws{
 					{
-						ArcAutoProvisioning: flattenDatabasesAwsArcAutoProvisioning(v.ArcAutoProvisioning),
-						DatabasesDspm:       flattenDatabasesAwsDspm(v.DatabasesDspm),
-						Rds:                 flattenDatabasesAwsRds(v.Rds),
+						ArcAutoProvisioning:       flattenDatabasesAwsArcAutoProvisioning(v.ArcAutoProvisioning),
+						DatabasesDspmCloudRoleArn: flattenDatabasesDspmCloudRoleArn(v.DatabasesDspm),
+						RdsCloudRoleArn:           flattenRdsCloudRoleArn(v.Rds),
 					},
 				},
 			}
@@ -3174,14 +3109,13 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 
 func flattenDatabasesAwsArcAutoProvisioning(input *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning) []DatabasesAwsArcAutoProvisioning {
 	result := make([]DatabasesAwsArcAutoProvisioning, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
 	awsArcAutoProvisioning := DatabasesAwsArcAutoProvisioning{
 		CloudRoleArn:  pointer.From(input.CloudRoleArn),
 		Configuration: flattenDatabasesAwsConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
 	}
 
 	return append(result, awsArcAutoProvisioning)
@@ -3189,7 +3123,7 @@ func flattenDatabasesAwsArcAutoProvisioning(input *securityconnectors.DefenderFo
 
 func flattenDatabasesAwsConfiguration(input *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration) []DatabasesAwsConfiguration {
 	result := make([]DatabasesAwsConfiguration, 0)
-	if input == nil {
+	if input == nil || (input.PrivateLinkScope == nil && input.Proxy == nil) {
 		return result
 	}
 
@@ -3201,32 +3135,26 @@ func flattenDatabasesAwsConfiguration(input *securityconnectors.DefenderFoDataba
 	return append(result, awsConfiguration)
 }
 
-func flattenDatabasesAwsDspm(input *securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm) []DatabasesAwsDspm {
-	result := make([]DatabasesAwsDspm, 0)
-	if input == nil {
-		return result
+func flattenDatabasesDspmCloudRoleArn(input *securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm) string {
+	var databasesDspmCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return databasesDspmCloudRoleArn
 	}
 
-	databasesDspm := DatabasesAwsDspm{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	databasesDspmCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, databasesDspm)
+	return databasesDspmCloudRoleArn
 }
 
-func flattenDatabasesAwsRds(input *securityconnectors.DefenderFoDatabasesAwsOfferingRds) []DatabasesAwsRds {
-	result := make([]DatabasesAwsRds, 0)
-	if input == nil {
-		return result
+func flattenRdsCloudRoleArn(input *securityconnectors.DefenderFoDatabasesAwsOfferingRds) string {
+	var rdsCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return rdsCloudRoleArn
 	}
 
-	rds := DatabasesAwsRds{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	rdsCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, rds)
+	return rdsCloudRoleArn
 }
 
 func flattenDatabasesGcpGcpArcAutoProvisioning(input *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning) []DatabasesGcpArcAutoProvisioning {
