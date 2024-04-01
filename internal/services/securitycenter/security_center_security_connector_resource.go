@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/security/2023-10-01-preview/securityconnectors"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/securitycenter/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 )
@@ -142,7 +143,6 @@ type DefenderForServersAws struct {
 type ServersAwsVmScanner struct {
 	CloudRoleArn  string            `tfschema:"cloud_role_arn"`
 	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
-	ScanningMode  string            `tfschema:"scanning_mode"`
 }
 
 type DefenderForServersGcp struct {
@@ -151,17 +151,12 @@ type DefenderForServersGcp struct {
 	MdeAutoProvisioningEnabled          bool                           `tfschema:"mde_auto_provisioning_enabled"`
 	SubPlanType                         string                         `tfschema:"sub_plan_type"`
 	VaAutoProvisioningConfigurationType string                         `tfschema:"va_auto_provisioning_configuration_type"`
-	VmScanner                           []ServersGcpVmScanner          `tfschema:"vm_scanner"`
+	VmScannerExclusionTags              map[string]string              `tfschema:"vm_scanner_exclusion_tags"`
 }
 
 type ServersGcpDefenderForServers struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-}
-
-type ServersGcpVmScanner struct {
-	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
-	ScanningMode  string            `tfschema:"scanning_mode"`
 }
 
 type DefenderCspmAws struct {
@@ -186,7 +181,6 @@ type CspmAwsCiemOidc struct {
 type CspmAwsVmScanner struct {
 	CloudRoleArn  string            `tfschema:"cloud_role_arn"`
 	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
-	ScanningMode  string            `tfschema:"scanning_mode"`
 }
 
 type DefenderCspmGcp struct {
@@ -194,7 +188,7 @@ type DefenderCspmGcp struct {
 	DataSensitivityDiscovery           []CspmGcpDataSensitivityDiscovery           `tfschema:"data_sensitivity_discovery"`
 	MdcContainersAgentlessDiscoveryK8s []CspmGcpMdcContainersAgentlessDiscoveryK8s `tfschema:"mdc_containers_agentless_discovery_k8s"`
 	MdcContainersImageAssessment       []CspmGcpMdcContainersImageAssessment       `tfschema:"mdc_containers_image_assessment"`
-	VmScanner                          []CspmGcpVmScanner                          `tfschema:"vm_scanner"`
+	VmScannerExclusionTags             map[string]string                           `tfschema:"vm_scanner_exclusion_tags"`
 }
 
 type CspmGcpCiemDiscovery struct {
@@ -216,11 +210,6 @@ type CspmGcpMdcContainersAgentlessDiscoveryK8s struct {
 type CspmGcpMdcContainersImageAssessment struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-}
-
-type CspmGcpVmScanner struct {
-	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
-	ScanningMode  string            `tfschema:"scanning_mode"`
 }
 
 var _ sdk.Resource = SecurityCenterSecurityConnectorResource{}
@@ -246,7 +235,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 			Type:         pluginsdk.TypeString,
 			Required:     true,
 			ForceNew:     true,
-			ValidateFunc: validation.StringIsNotEmpty,
+			ValidateFunc: validation.StringLenBetween(1, 260),
 		},
 
 		"resource_group_name": commonschema.ResourceGroupName(),
@@ -394,7 +383,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"service_account_email_address": {
 									Type:         pluginsdk.TypeString,
 									Required:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
+									ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 								},
 
 								"workload_identity_provider_id": {
@@ -454,7 +443,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -565,7 +554,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -586,7 +575,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -625,7 +614,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -646,7 +635,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -689,13 +678,13 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
 									Default:      "P2",
-									ValidateFunc: validation.StringIsNotEmpty,
+									ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForSubPlan(), false),
 								},
 
 								"va_auto_provisioning_configuration_type": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
+									ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForType(), false),
 								},
 
 								"vm_scanner": {
@@ -711,13 +700,6 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											},
 
 											"exclusion_tags": commonschema.Tags(),
-
-											"scanning_mode": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												Default:      "Default",
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
 										},
 									},
 								},
@@ -746,7 +728,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -768,32 +750,16 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
 									Default:      "P2",
-									ValidateFunc: validation.StringIsNotEmpty,
+									ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForSubPlan(), false),
 								},
 
 								"va_auto_provisioning_configuration_type": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
+									ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForType(), false),
 								},
 
-								"vm_scanner": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"exclusion_tags": commonschema.Tags(),
-
-											"scanning_mode": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												Default:      "Default",
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-										},
-									},
-								},
+								"vm_scanner_exclusion_tags": commonschema.Tags(),
 							},
 						},
 					},
@@ -877,13 +843,6 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											},
 
 											"exclusion_tags": commonschema.Tags(),
-
-											"scanning_mode": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												Default:      false,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
 										},
 									},
 								},
@@ -906,7 +865,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -933,7 +892,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -954,7 +913,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -975,7 +934,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
+												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 											},
 
 											"workload_identity_provider_id": {
@@ -987,23 +946,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									},
 								},
 
-								"vm_scanner": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"exclusion_tags": commonschema.Tags(),
-
-											"scanning_mode": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												Default:      "Default",
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-										},
-									},
-								},
+								"vm_scanner_exclusion_tags": commonschema.Tags(),
 							},
 						},
 					},
@@ -1380,7 +1323,7 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 				defenderForServersGcpOffering.DefenderForServers = expandServersGcpDefenderForServers(defenderForServersGcp.DefenderForServers)
 				defenderForServersGcpOffering.MdeAutoProvisioning = expandServersGcpMdeAutoProvisioning(defenderForServersGcp.MdeAutoProvisioningEnabled)
 				defenderForServersGcpOffering.VaAutoProvisioning = expandServersGcpVaAutoProvisioning(defenderForServersGcp.VaAutoProvisioningConfigurationType)
-				defenderForServersGcpOffering.VMScanners = expandServersGcpVMScanners(defenderForServersGcp.VmScanner)
+				defenderForServersGcpOffering.VMScanners = expandServersGcpVMScanners(defenderForServersGcp.VmScannerExclusionTags)
 
 				defenderForServersGcpOffering.SubPlan = &securityconnectors.DefenderForServersGcpOfferingSubPlan{
 					Type: pointer.To(securityconnectors.SubPlan(defenderForServersGcp.SubPlanType)),
@@ -1413,7 +1356,7 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 				defenderCspmGcpOffering.DataSensitivityDiscovery = expandCspmGcpDataSensitivityDiscovery(defenderCspmGcp.DataSensitivityDiscovery)
 				defenderCspmGcpOffering.MdcContainersAgentlessDiscoveryK8s = expandCspmGcpMdcContainersAgentlessDiscoveryK8s(defenderCspmGcp.MdcContainersAgentlessDiscoveryK8s)
 				defenderCspmGcpOffering.MdcContainersImageAssessment = expandCspmGcpMdcContainersImageAssessment(defenderCspmGcp.MdcContainersImageAssessment)
-				defenderCspmGcpOffering.VMScanners = expandCspmGcpVMScanners(defenderCspmGcp.VmScanner)
+				defenderCspmGcpOffering.VMScanners = expandCspmGcpVMScanners(defenderCspmGcp.VmScannerExclusionTags)
 			}
 
 			result = append(result, defenderCspmGcpOffering)
@@ -1643,7 +1586,7 @@ func expandServersAwsVMScanners(input []ServersAwsVmScanner) *securityconnectors
 		Configuration: &securityconnectors.DefenderForServersAwsOfferingVMScannersConfiguration{
 			CloudRoleArn:  pointer.To(serversAwsVmScanner.CloudRoleArn),
 			ExclusionTags: pointer.To(serversAwsVmScanner.ExclusionTags),
-			ScanningMode:  pointer.To(securityconnectors.ScanningMode(serversAwsVmScanner.ScanningMode)),
+			ScanningMode:  pointer.To(securityconnectors.ScanningModeDefault),
 		},
 		Enabled: pointer.To(true),
 	}
@@ -1700,19 +1643,17 @@ func expandServersGcpVaAutoProvisioning(input string) *securityconnectors.Defend
 	return result
 }
 
-func expandServersGcpVMScanners(input []ServersGcpVmScanner) *securityconnectors.DefenderForServersGcpOfferingVMScanners {
+func expandServersGcpVMScanners(input map[string]string) *securityconnectors.DefenderForServersGcpOfferingVMScanners {
 	if len(input) == 0 {
 		return &securityconnectors.DefenderForServersGcpOfferingVMScanners{
 			Enabled: pointer.To(false),
 		}
 	}
 
-	serversGcpVmScanner := input[0]
-
 	result := &securityconnectors.DefenderForServersGcpOfferingVMScanners{
 		Configuration: &securityconnectors.DefenderForServersGcpOfferingVMScannersConfiguration{
-			ExclusionTags: pointer.To(serversGcpVmScanner.ExclusionTags),
-			ScanningMode:  pointer.To(securityconnectors.ScanningMode(serversGcpVmScanner.ScanningMode)),
+			ExclusionTags: pointer.To(input),
+			ScanningMode:  pointer.To(securityconnectors.ScanningModeDefault),
 		},
 		Enabled: pointer.To(true),
 	}
@@ -1825,7 +1766,7 @@ func expandCspmAwsVMScanners(input []CspmAwsVmScanner) *securityconnectors.Defen
 		Configuration: &securityconnectors.DefenderCspmAwsOfferingVMScannersConfiguration{
 			CloudRoleArn:  pointer.To(cspmAwsVmScanner.CloudRoleArn),
 			ExclusionTags: pointer.To(cspmAwsVmScanner.ExclusionTags),
-			ScanningMode:  pointer.To(securityconnectors.ScanningMode(cspmAwsVmScanner.ScanningMode)),
+			ScanningMode:  pointer.To(securityconnectors.ScanningModeDefault),
 		},
 		Enabled: pointer.To(true),
 	}
@@ -1903,19 +1844,17 @@ func expandCspmGcpMdcContainersImageAssessment(input []CspmGcpMdcContainersImage
 	return result
 }
 
-func expandCspmGcpVMScanners(input []CspmGcpVmScanner) *securityconnectors.DefenderCspmGcpOfferingVMScanners {
+func expandCspmGcpVMScanners(input map[string]string) *securityconnectors.DefenderCspmGcpOfferingVMScanners {
 	if len(input) == 0 {
 		return &securityconnectors.DefenderCspmGcpOfferingVMScanners{
 			Enabled: pointer.To(false),
 		}
 	}
 
-	cspmGcpVmScanner := input[0]
-
 	result := &securityconnectors.DefenderCspmGcpOfferingVMScanners{
 		Configuration: &securityconnectors.DefenderCspmGcpOfferingVMScannersConfiguration{
-			ExclusionTags: pointer.To(cspmGcpVmScanner.ExclusionTags),
-			ScanningMode:  pointer.To(securityconnectors.ScanningMode(cspmGcpVmScanner.ScanningMode)),
+			ExclusionTags: pointer.To(input),
+			ScanningMode:  pointer.To(securityconnectors.ScanningModeDefault),
 		},
 		Enabled: pointer.To(true),
 	}
@@ -2150,7 +2089,7 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 						DefenderForServers:                  flattenServersGcpDefenderForServers(v.DefenderForServers),
 						MdeAutoProvisioningEnabled:          flattenServersGcpMdeAutoProvisioning(v.MdeAutoProvisioning),
 						VaAutoProvisioningConfigurationType: flattenServersGcpVaAutoProvisioning(v.VaAutoProvisioning),
-						VmScanner:                           flattenServersGcpVmScanner(v.VMScanners),
+						VmScannerExclusionTags:              flattenServersGcpVmScanner(v.VMScanners),
 					},
 				},
 			}
@@ -2185,7 +2124,7 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 						DataSensitivityDiscovery:           flattenDefenderCspmGcpDataSensitivityDiscovery(v.DataSensitivityDiscovery),
 						MdcContainersAgentlessDiscoveryK8s: flattenDefenderCspmGcpMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
 						MdcContainersImageAssessment:       flattenDefenderCspmGcpMdcContainersImageAssessment(v.MdcContainersImageAssessment),
-						VmScanner:                          flattenDefenderCspmGcpVmScanner(v.VMScanners),
+						VmScannerExclusionTags:             flattenDefenderCspmGcpVmScanner(v.VMScanners),
 					},
 				},
 			}
@@ -2372,7 +2311,6 @@ func flattenServersAwsVmScanner(input *securityconnectors.DefenderForServersAwsO
 		serversAwsVmScanner := ServersAwsVmScanner{
 			CloudRoleArn:  pointer.From(v.CloudRoleArn),
 			ExclusionTags: pointer.From(v.ExclusionTags),
-			ScanningMode:  string(pointer.From(v.ScanningMode)),
 		}
 		return append(result, serversAwsVmScanner)
 	}
@@ -2423,18 +2361,14 @@ func flattenServersGcpVaAutoProvisioning(input *securityconnectors.DefenderForSe
 	return vaAutoProvisioningConfigurationType
 }
 
-func flattenServersGcpVmScanner(input *securityconnectors.DefenderForServersGcpOfferingVMScanners) []ServersGcpVmScanner {
-	result := make([]ServersGcpVmScanner, 0)
+func flattenServersGcpVmScanner(input *securityconnectors.DefenderForServersGcpOfferingVMScanners) map[string]string {
+	var result map[string]string
 	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
-	if v := input.Configuration; v != nil {
-		serversGcpVmScanner := ServersGcpVmScanner{
-			ExclusionTags: pointer.From(v.ExclusionTags),
-			ScanningMode:  string(pointer.From(v.ScanningMode)),
-		}
-		return append(result, serversGcpVmScanner)
+	if v := input.Configuration; v != nil && v.ExclusionTags != nil {
+		return pointer.From(v.ExclusionTags)
 	}
 
 	return result
@@ -2525,7 +2459,6 @@ func flattenDefenderCspmAwsVmScanner(input *securityconnectors.DefenderCspmAwsOf
 		cspmAwsVmScanner := CspmAwsVmScanner{
 			CloudRoleArn:  pointer.From(v.CloudRoleArn),
 			ExclusionTags: pointer.From(v.ExclusionTags),
-			ScanningMode:  string(pointer.From(v.ScanningMode)),
 		}
 
 		return append(result, cspmAwsVmScanner)
@@ -2591,18 +2524,14 @@ func flattenDefenderCspmGcpMdcContainersImageAssessment(input *securityconnector
 	return append(result, cspmGcpMdcContainersImageAssessment)
 }
 
-func flattenDefenderCspmGcpVmScanner(input *securityconnectors.DefenderCspmGcpOfferingVMScanners) []CspmGcpVmScanner {
-	result := make([]CspmGcpVmScanner, 0)
+func flattenDefenderCspmGcpVmScanner(input *securityconnectors.DefenderCspmGcpOfferingVMScanners) map[string]string {
+	var result map[string]string
 	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
 	if v := input.Configuration; v != nil {
-		cspmGcpVmScanner := CspmGcpVmScanner{
-			ExclusionTags: pointer.From(v.ExclusionTags),
-			ScanningMode:  string(pointer.From(v.ScanningMode)),
-		}
-		return append(result, cspmGcpVmScanner)
+		return pointer.From(v.ExclusionTags)
 	}
 
 	return result
