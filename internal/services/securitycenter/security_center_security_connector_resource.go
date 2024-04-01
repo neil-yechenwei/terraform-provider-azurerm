@@ -36,33 +36,13 @@ type EnvironmentData struct {
 }
 
 type AwsAccount struct {
-	OrganizationalDataMaster                  []AwsOrganizationalDataMaster `tfschema:"organizational_data_master"`
-	OrganizationalDataMemberParentHierarchyId string                        `tfschema:"organizational_data_member_parent_hierarchy_id"`
-	Regions                                   []string                      `tfschema:"regions"`
-	ScanInterval                              int                           `tfschema:"scan_interval"`
-}
-
-type AwsOrganizationalDataMaster struct {
-	StacksetName       string   `tfschema:"stackset_name"`
-	ExcludedAccountIds []string `tfschema:"excluded_account_ids"`
+	Regions      []string `tfschema:"regions"`
+	ScanInterval int      `tfschema:"scan_interval"`
 }
 
 type GcpProject struct {
-	OrganizationalDataMaster []GcpOrganizationalDataMaster `tfschema:"organizational_data_master"`
-	OrganizationalDataMember []GcpOrganizationalDataMember `tfschema:"organizational_data_member"`
-	ProjectDetails           []GcpProjectDetails           `tfschema:"project_details"`
-	ScanInterval             int                           `tfschema:"scan_interval"`
-}
-
-type GcpOrganizationalDataMaster struct {
-	ExcludedProjectNumbers     []string `tfschema:"excluded_project_numbers"`
-	ServiceAccountEmailAddress string   `tfschema:"service_account_email_address"`
-	WorkloadIdentityProviderId string   `tfschema:"workload_identity_provider_id"`
-}
-
-type GcpOrganizationalDataMember struct {
-	ManagementProjectNumber string `tfschema:"management_project_number"`
-	ParentHierarchyId       string `tfschema:"parent_hierarchy_id"`
+	ProjectDetails []GcpProjectDetails `tfschema:"project_details"`
+	ScanInterval   int                 `tfschema:"scan_interval"`
 }
 
 type GcpProjectDetails struct {
@@ -90,34 +70,14 @@ type CspmMonitorGcp struct {
 }
 
 type DefenderForDatabasesAws struct {
-	ArcAutoProvisioning       []DatabasesAwsArcAutoProvisioning `tfschema:"arc_auto_provisioning"`
-	DatabasesDspmCloudRoleArn string                            `tfschema:"databases_dspm_cloud_role_arn"`
-	RdsCloudRoleArn           string                            `tfschema:"rds_cloud_role_arn"`
-}
-
-type DatabasesAwsArcAutoProvisioning struct {
-	CloudRoleArn  string                      `tfschema:"cloud_role_arn"`
-	Configuration []DatabasesAwsConfiguration `tfschema:"configuration"`
-}
-
-type DatabasesAwsConfiguration struct {
-	PrivateLinkScope string `tfschema:"private_link_scope"`
-	Proxy            string `tfschema:"proxy"`
+	ArcAutoProvisioningCloudRoleArn string `tfschema:"arc_auto_provisioning_cloud_role_arn"`
+	DatabasesDspmCloudRoleArn       string `tfschema:"databases_dspm_cloud_role_arn"`
+	RdsCloudRoleArn                 string `tfschema:"rds_cloud_role_arn"`
 }
 
 type DefenderForDatabasesGcp struct {
-	ArcAutoProvisioning                     []DatabasesGcpArcAutoProvisioning                     `tfschema:"arc_auto_provisioning"`
+	ArcAutoProvisioningEnabled              bool                                                  `tfschema:"arc_auto_provisioning_enabled"`
 	DefenderForDatabasesArcAutoProvisioning []DatabasesGcpDefenderForDatabasesArcAutoProvisioning `tfschema:"defender_for_databases_arc_auto_provisioning"`
-}
-
-type DatabasesGcpArcAutoProvisioning struct {
-	Configuration []DatabasesGcpConfiguration `tfschema:"configuration"`
-	Enabled       bool                        `tfschema:"enabled"`
-}
-
-type DatabasesGcpConfiguration struct {
-	PrivateLinkScope string `tfschema:"private_link_scope"`
-	Proxy            string `tfschema:"proxy"`
 }
 
 type DatabasesGcpDefenderForDatabasesArcAutoProvisioning struct {
@@ -126,28 +86,18 @@ type DatabasesGcpDefenderForDatabasesArcAutoProvisioning struct {
 }
 
 type DefenderForContainersAws struct {
-	AutoProvisioningEnabled                          bool                                              `tfschema:"auto_provisioning_enabled"`
-	CloudWatchToKinesisCloudRoleArn                  string                                            `tfschema:"cloud_watch_to_kinesis_cloud_role_arn"`
-	ContainerVulnerabilityAssessmentCloudRoleArn     string                                            `tfschema:"container_vulnerability_assessment_cloud_role_arn"`
-	ContainerVulnerabilityAssessmentTaskCloudRoleArn string                                            `tfschema:"container_vulnerability_assessment_task_cloud_role_arn"`
-	ContainerVulnerabilityAssessmentEnabled          bool                                              `tfschema:"container_vulnerability_assessment_enabled"`
-	KinesisToS3CloudRoleArn                          string                                            `tfschema:"kinesis_to_s3_cloud_role_arn"`
-	KubeAuditRetentionTime                           int                                               `tfschema:"kube_audit_retention_time"`
-	KubernetesScubaReaderCloudRoleArn                string                                            `tfschema:"kubernetes_scuba_reader_cloud_role_arn"`
-	KubernetesServiceCloudRoleArn                    string                                            `tfschema:"kubernetes_service_cloud_role_arn"`
-	MdcContainersAgentlessDiscoveryK8s               []ContainersAwsMdcContainersAgentlessDiscoveryK8s `tfschema:"mdc_containers_agentless_discovery_k8s"`
-	MdcContainersImageAssessment                     []ContainersAwsMdcContainersImageAssessment       `tfschema:"mdc_containers_image_assessment"`
-	ScubaExternalId                                  string                                            `tfschema:"scuba_external_id"`
-}
-
-type ContainersAwsMdcContainersAgentlessDiscoveryK8s struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
-}
-
-type ContainersAwsMdcContainersImageAssessment struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
+	AutoProvisioningEnabled                          bool   `tfschema:"auto_provisioning_enabled"`
+	CloudWatchToKinesisCloudRoleArn                  string `tfschema:"cloud_watch_to_kinesis_cloud_role_arn"`
+	ContainerVulnerabilityAssessmentCloudRoleArn     string `tfschema:"container_vulnerability_assessment_cloud_role_arn"`
+	ContainerVulnerabilityAssessmentTaskCloudRoleArn string `tfschema:"container_vulnerability_assessment_task_cloud_role_arn"`
+	ContainerVulnerabilityAssessmentEnabled          bool   `tfschema:"container_vulnerability_assessment_enabled"`
+	KinesisToS3CloudRoleArn                          string `tfschema:"kinesis_to_s3_cloud_role_arn"`
+	KubeAuditRetentionTime                           int    `tfschema:"kube_audit_retention_time"`
+	KubernetesScubaReaderCloudRoleArn                string `tfschema:"kubernetes_scuba_reader_cloud_role_arn"`
+	KubernetesServiceCloudRoleArn                    string `tfschema:"kubernetes_service_cloud_role_arn"`
+	MdcContainersAgentlessDiscoveryK8sCloudRoleArn   string `tfschema:"mdc_containers_agentless_discovery_k8s_cloud_role_arn"`
+	MdcContainersImageAssessmentCloudRoleArn         string `tfschema:"mdc_containers_image_assessment_cloud_role_arn"`
+	ScubaExternalId                                  string `tfschema:"scuba_external_id"`
 }
 
 type DefenderForContainersGcp struct {
@@ -168,13 +118,11 @@ type ContainersGcpDataPipelineNativeCloudConnection struct {
 type ContainersGcpMdcContainersAgentlessDiscoveryK8s struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-	Enabled                    bool   `tfschema:"enabled"`
 }
 
 type ContainersGcpMdcContainersImageAssessment struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-	Enabled                    bool   `tfschema:"enabled"`
 }
 
 type ContainersGcpNativeCloudConnection struct {
@@ -183,63 +131,27 @@ type ContainersGcpNativeCloudConnection struct {
 }
 
 type DefenderForServersAws struct {
-	ArcAutoProvisioning            []ServersAwsArcAutoProvisioning `tfschema:"arc_auto_provisioning"`
-	DefenderForServersCloudRoleArn string                          `tfschema:"defender_for_servers_cloud_role_arn"`
-	MdeAutoProvisioning            []ServersAwsMdeAutoProvisioning `tfschema:"mde_auto_provisioning"`
-	SubPlanType                    string                          `tfschema:"sub_plan_type"`
-	VaAutoProvisioning             []ServersAwsVaAutoProvisioning  `tfschema:"va_auto_provisioning"`
-	VmScanner                      []ServersAwsVmScanner           `tfschema:"vm_scanner"`
-}
-
-type ServersAwsArcAutoProvisioning struct {
-	CloudRoleArn  string                    `tfschema:"cloud_role_arn"`
-	Configuration []ServersAwsConfiguration `tfschema:"configuration"`
-	Enabled       bool                      `tfschema:"enabled"`
-}
-
-type ServersAwsConfiguration struct {
-	PrivateLinkScope string `tfschema:"private_link_scope"`
-	Proxy            string `tfschema:"proxy"`
-}
-
-type ServersAwsMdeAutoProvisioning struct {
-	Configuration string `tfschema:"configuration"`
-	Enabled       bool   `tfschema:"enabled"`
-}
-
-type ServersAwsVaAutoProvisioning struct {
-	ConfigurationType string `tfschema:"configuration_type"`
-	Enabled           bool   `tfschema:"enabled"`
+	ArcAutoProvisioningCloudRoleArn     string                `tfschema:"arc_auto_provisioning_cloud_role_arn"`
+	DefenderForServersCloudRoleArn      string                `tfschema:"defender_for_servers_cloud_role_arn"`
+	MdeAutoProvisioningEnabled          bool                  `tfschema:"mde_auto_provisioning_enabled"`
+	SubPlanType                         string                `tfschema:"sub_plan_type"`
+	VaAutoProvisioningConfigurationType string                `tfschema:"va_auto_provisioning_configuration_type"`
+	VmScanner                           []ServersAwsVmScanner `tfschema:"vm_scanner"`
 }
 
 type ServersAwsVmScanner struct {
-	Configuration []ServersAwsVmScannerConfiguration `tfschema:"configuration"`
-	Enabled       bool                               `tfschema:"enabled"`
-}
-
-type ServersAwsVmScannerConfiguration struct {
 	CloudRoleArn  string            `tfschema:"cloud_role_arn"`
 	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
 	ScanningMode  string            `tfschema:"scanning_mode"`
 }
 
 type DefenderForServersGcp struct {
-	ArcAutoProvisioning []ServersGcpArcAutoProvisioning `tfschema:"arc_auto_provisioning"`
-	DefenderForServers  []ServersGcpDefenderForServers  `tfschema:"defender_for_servers"`
-	MdeAutoProvisioning []ServersGcpMdeAutoProvisioning `tfschema:"mde_auto_provisioning"`
-	SubPlanType         string                          `tfschema:"sub_plan_type"`
-	VaAutoProvisioning  []ServersGcpVaAutoProvisioning  `tfschema:"va_auto_provisioning"`
-	VmScanner           []ServersGcpVmScanner           `tfschema:"vm_scanner"`
-}
-
-type ServersGcpArcAutoProvisioning struct {
-	Configuration []ServersGcpConfiguration `tfschema:"configuration"`
-	Enabled       bool                      `tfschema:"enabled"`
-}
-
-type ServersGcpConfiguration struct {
-	PrivateLinkScope string `tfschema:"private_link_scope"`
-	Proxy            string `tfschema:"proxy"`
+	ArcAutoProvisioningEnabled          bool                           `tfschema:"arc_auto_provisioning_enabled"`
+	DefenderForServers                  []ServersGcpDefenderForServers `tfschema:"defender_for_servers"`
+	MdeAutoProvisioningEnabled          bool                           `tfschema:"mde_auto_provisioning_enabled"`
+	SubPlanType                         string                         `tfschema:"sub_plan_type"`
+	VaAutoProvisioningConfigurationType string                         `tfschema:"va_auto_provisioning_configuration_type"`
+	VmScanner                           []ServersGcpVmScanner          `tfschema:"vm_scanner"`
 }
 
 type ServersGcpDefenderForServers struct {
@@ -247,33 +159,18 @@ type ServersGcpDefenderForServers struct {
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
 }
 
-type ServersGcpMdeAutoProvisioning struct {
-	Configuration string `tfschema:"configuration"`
-	Enabled       bool   `tfschema:"enabled"`
-}
-
-type ServersGcpVaAutoProvisioning struct {
-	ConfigurationType string `tfschema:"configuration_type"`
-	Enabled           bool   `tfschema:"enabled"`
-}
-
 type ServersGcpVmScanner struct {
-	Configuration []ServersGcpVmScannerConfiguration `tfschema:"configuration"`
-	Enabled       bool                               `tfschema:"enabled"`
-}
-
-type ServersGcpVmScannerConfiguration struct {
 	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
 	ScanningMode  string            `tfschema:"scanning_mode"`
 }
 
 type DefenderCspmAws struct {
-	Ciem                               []CspmAwsCiem                               `tfschema:"ciem"`
-	DataSensitivityDiscovery           []CspmAwsDataSensitivityDiscovery           `tfschema:"data_sensitivity_discovery"`
-	DatabasesDspm                      []CspmAwsDatabasesDspm                      `tfschema:"databases_dspm"`
-	MdcContainersAgentlessDiscoveryK8s []CspmAwsMdcContainersAgentlessDiscoveryK8s `tfschema:"mdc_containers_agentless_discovery_k8s"`
-	MdcContainersImageAssessment       []CspmAwsMdcContainersImageAssessment       `tfschema:"mdc_containers_image_assessment"`
-	VmScanner                          []CspmAwsVmScanner                          `tfschema:"vm_scanner"`
+	Ciem                                           []CspmAwsCiem      `tfschema:"ciem"`
+	DataSensitivityDiscoveryCloudRoleArn           string             `tfschema:"data_sensitivity_discovery_cloud_role_arn"`
+	DatabasesDspmCloudRoleArn                      string             `tfschema:"databases_dspm_cloud_role_arn"`
+	MdcContainersAgentlessDiscoveryK8sCloudRoleArn string             `tfschema:"mdc_containers_agentless_discovery_k8s_cloud_role_arn"`
+	MdcContainersImageAssessmentCloudRoleArn       string             `tfschema:"mdc_containers_image_assessment_cloud_role_arn"`
+	VmScanner                                      []CspmAwsVmScanner `tfschema:"vm_scanner"`
 }
 
 type CspmAwsCiem struct {
@@ -286,32 +183,7 @@ type CspmAwsCiemOidc struct {
 	CloudRoleArn                string `tfschema:"cloud_role_arn"`
 }
 
-type CspmAwsDataSensitivityDiscovery struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
-}
-
-type CspmAwsDatabasesDspm struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
-}
-
-type CspmAwsMdcContainersAgentlessDiscoveryK8s struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
-}
-
-type CspmAwsMdcContainersImageAssessment struct {
-	CloudRoleArn string `tfschema:"cloud_role_arn"`
-	Enabled      bool   `tfschema:"enabled"`
-}
-
 type CspmAwsVmScanner struct {
-	Configuration []CspmAwsVmScannerConfiguration `tfschema:"configuration"`
-	Enabled       bool                            `tfschema:"enabled"`
-}
-
-type CspmAwsVmScannerConfiguration struct {
 	CloudRoleArn  string            `tfschema:"cloud_role_arn"`
 	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
 	ScanningMode  string            `tfschema:"scanning_mode"`
@@ -334,27 +206,19 @@ type CspmGcpCiemDiscovery struct {
 type CspmGcpDataSensitivityDiscovery struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-	Enabled                    bool   `tfschema:"enabled"`
 }
 
 type CspmGcpMdcContainersAgentlessDiscoveryK8s struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-	Enabled                    bool   `tfschema:"enabled"`
 }
 
 type CspmGcpMdcContainersImageAssessment struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-	Enabled                    bool   `tfschema:"enabled"`
 }
 
 type CspmGcpVmScanner struct {
-	Configuration []CspmGcpVmScannerConfiguration `tfschema:"configuration"`
-	Enabled       bool                            `tfschema:"enabled"`
-}
-
-type CspmGcpVmScannerConfiguration struct {
 	ExclusionTags map[string]string `tfschema:"exclusion_tags"`
 	ScanningMode  string            `tfschema:"scanning_mode"`
 }
@@ -428,49 +292,13 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								// no test data
-								"organizational_data_master": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"stackset_name": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"excluded_account_ids": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												Elem: &pluginsdk.Schema{
-													Type:         pluginsdk.TypeString,
-													ValidateFunc: validation.StringIsNotEmpty,
-												},
-											},
-										},
-									},
-									ConflictsWith: []string{"environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id"},
-									AtLeastOneOf:  []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
-								},
-
-								// no test data
-								"organizational_data_member_parent_hierarchy_id": {
-									Type:          pluginsdk.TypeString,
-									Optional:      true,
-									ValidateFunc:  validation.StringIsNotEmpty,
-									ConflictsWith: []string{"environment_data.0.aws_account.0.organizational_data_master"},
-									AtLeastOneOf:  []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
-								},
-
 								"regions": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
 									Elem: &pluginsdk.Schema{
 										Type:         pluginsdk.TypeString,
 										ValidateFunc: validation.StringIsNotEmpty,
-										AtLeastOneOf: []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
+										AtLeastOneOf: []string{"environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
 									},
 								},
 
@@ -479,7 +307,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									Optional:     true,
 									Default:      4,
 									ValidateFunc: validation.IntBetween(1, 24),
-									AtLeastOneOf: []string{"environment_data.0.aws_account.0.organizational_data_master", "environment_data.0.aws_account.0.organizational_data_member_parent_hierarchy_id", "environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
+									AtLeastOneOf: []string{"environment_data.0.aws_account.0.regions", "environment_data.0.aws_account.0.scan_interval"},
 								},
 							},
 						},
@@ -510,61 +338,6 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											},
 										},
 									},
-								},
-
-								// no test data
-								"organizational_data_master": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"service_account_email_address": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"workload_identity_provider_id": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"excluded_project_numbers": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												Elem: &pluginsdk.Schema{
-													Type:         pluginsdk.TypeString,
-													ValidateFunc: validation.StringIsNotEmpty,
-												},
-											},
-										},
-									},
-									ConflictsWith: []string{"environment_data.0.gcp_project.0.organizational_data_member"},
-								},
-
-								// no test data
-								"organizational_data_member": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"parent_hierarchy_id": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"management_project_number": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-										},
-									},
-									ConflictsWith: []string{"environment_data.0.gcp_project.0.organizational_data_master"},
 								},
 
 								"scan_interval": {
@@ -639,41 +412,10 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"arc_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											// no test data
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"private_link_scope": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-
-														"proxy": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
-											},
-										},
-									},
+								"arc_auto_provisioning_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"databases_dspm_cloud_role_arn": {
@@ -691,71 +433,33 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						},
 					},
 
-					//Continue to test from here
 					"defender_for_databases_gcp": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"arc_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
+								"arc_auto_provisioning_enabled": {
+									Type:     pluginsdk.TypeBool,
 									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"private_link_scope": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-
-														"proxy": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+									Default:  false,
 								},
 
 								"defender_for_databases_arc_auto_provisioning": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
@@ -774,113 +478,72 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"auto_provisioning_enabled": {
 									Type:     pluginsdk.TypeBool,
 									Optional: true,
-									ForceNew: true,
+									Default:  true,
 								},
 
 								"cloud_watch_to_kinesis_cloud_role_arn": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
-									ForceNew:     true,
+									Required:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"kinesis_to_s3_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"kubernetes_scuba_reader_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"kubernetes_service_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Required:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"container_vulnerability_assessment_cloud_role_arn": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"container_vulnerability_assessment_task_cloud_role_arn": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"container_vulnerability_assessment_enabled": {
 									Type:     pluginsdk.TypeBool,
 									Optional: true,
-									ForceNew: true,
-								},
-
-								"kinesis_to_s3_cloud_role_arn": {
-									Type:         pluginsdk.TypeString,
-									Optional:     true,
-									ForceNew:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
+									Default:  false,
 								},
 
 								"kube_audit_retention_time": {
 									Type:     pluginsdk.TypeInt,
 									Optional: true,
-									ForceNew: true,
+									Default:  30,
 								},
 
-								"kubernetes_scuba_reader_cloud_role_arn": {
+								"mdc_containers_agentless_discovery_k8s_cloud_role_arn": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"kubernetes_service_cloud_role_arn": {
+								"mdc_containers_image_assessment_cloud_role_arn": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"mdc_containers_agentless_discovery_k8s": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
-								},
-
-								"mdc_containers_image_assessment": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
 								},
 
 								"scuba_external_id": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ForceNew:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 							},
@@ -893,67 +556,82 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"audit_logs_auto_provisioning_flag_enabled": {
-									Type:     pluginsdk.TypeBool,
-									Optional: true,
-									ForceNew: true,
-								},
-
-								"data_pipeline_native_cloud_connection": {
+								"native_cloud_connection": {
 									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
+									Required: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
 								},
 
-								"defender_agent_auto_provisioning_flag_enabled": {
-									Type:     pluginsdk.TypeBool,
-									Optional: true,
-									ForceNew: true,
-								},
-
-								"mdc_containers_agentless_discovery_k8s": {
+								"data_pipeline_native_cloud_connection": {
 									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
+									Required: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+										},
+									},
+								},
+
+								"audit_logs_auto_provisioning_flag_enabled": {
+									Type:     pluginsdk.TypeBool,
+									Optional: true,
+									Default:  false,
+								},
+
+								"defender_agent_auto_provisioning_flag_enabled": {
+									Type:     pluginsdk.TypeBool,
+									Optional: true,
+									Default:  false,
+								},
+
+								"policy_agent_auto_provisioning_flag_enabled": {
+									Type:     pluginsdk.TypeBool,
+									Optional: true,
+									Default:  false,
+								},
+
+								"mdc_containers_agentless_discovery_k8s": {
+									Type:     pluginsdk.TypeList,
+									Optional: true,
+									MaxItems: 1,
+									Elem: &pluginsdk.Resource{
+										Schema: map[string]*pluginsdk.Schema{
+											"service_account_email_address": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Optional: true,
-												ForceNew: true,
+											"workload_identity_provider_id": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
@@ -962,61 +640,22 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"mdc_containers_image_assessment": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
 												Required:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Optional: true,
-												ForceNew: true,
-											},
-										},
-									},
-								},
-
-								"native_cloud_connection": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"service_account_email_address": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"workload_identity_provider_id": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
-								},
-
-								"policy_agent_auto_provisioning_flag_enabled": {
-									Type:     pluginsdk.TypeBool,
-									Optional: true,
-									ForceNew: true,
 								},
 							},
 						},
@@ -1028,150 +667,56 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"arc_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"private_link_scope": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-
-														"proxy": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
-								},
-
 								"defender_for_servers_cloud_role_arn": {
 									Type:         pluginsdk.TypeString,
-									Optional:     true,
-									ForceNew:     true,
+									Required:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"mde_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
+								"arc_auto_provisioning_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
 
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"mde_auto_provisioning_enabled": {
+									Type:     pluginsdk.TypeBool,
+									Optional: true,
+									Default:  false,
 								},
 
 								"sub_plan_type": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ForceNew:     true,
+									Default:      "P2",
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"va_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"configuration_type": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"va_auto_provisioning_configuration_type": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"vm_scanner": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"cloud_role_arn": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-
-														"exclusion_tags": commonschema.Tags(),
-
-														"scanning_mode": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
+											"cloud_role_arn": {
+												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
+											"exclusion_tags": commonschema.Tags(),
+
+											"scanning_mode": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												Default:      "Default",
+												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
@@ -1186,153 +731,65 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"arc_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
+								"arc_auto_provisioning_enabled": {
+									Type:     pluginsdk.TypeBool,
 									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"private_link_scope": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-
-														"proxy": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+									Default:  false,
 								},
 
 								"defender_for_servers": {
 									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
+									Required: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
 								},
 
-								"mde_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
+								"mde_auto_provisioning_enabled": {
+									Type:     pluginsdk.TypeBool,
 									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+									Default:  false,
 								},
 
 								"sub_plan_type": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
-									ForceNew:     true,
+									Default:      "P2",
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"va_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"configuration_type": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"va_auto_provisioning_configuration_type": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"vm_scanner": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"exclusion_tags": commonschema.Tags(),
+											"exclusion_tags": commonschema.Tags(),
 
-														"scanning_mode": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
+											"scanning_mode": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												Default:      "Default",
+												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
@@ -1350,35 +807,30 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"ciem": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"ciem_discovery_cloud_role_arn": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"ciem_oidc": {
 												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
+												Required: true,
 												MaxItems: 1,
 												Elem: &pluginsdk.Resource{
 													Schema: map[string]*pluginsdk.Schema{
-														"azure_active_directory_app_name": {
+														"cloud_role_arn": {
 															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
+															Required:     true,
 															ValidateFunc: validation.StringIsNotEmpty,
 														},
 
-														"cloud_role_arn": {
+														"azure_active_directory_app_name": {
 															Type:         pluginsdk.TypeString,
 															Optional:     true,
-															ForceNew:     true,
 															ValidateFunc: validation.StringIsNotEmpty,
 														},
 													},
@@ -1388,135 +840,49 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									},
 								},
 
-								"data_sensitivity_discovery": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"data_sensitivity_discovery_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"databases_dspm": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"databases_dspm_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"mdc_containers_agentless_discovery_k8s": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"mdc_containers_agentless_discovery_k8s_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
-								"mdc_containers_image_assessment": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									ForceNew: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"cloud_role_arn": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
-											},
-										},
-									},
+								"mdc_containers_image_assessment_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"vm_scanner": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"cloud_role_arn": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-
-														"exclusion_tags": commonschema.Tags(),
-
-														"scanning_mode": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
+											"cloud_role_arn": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
+											"exclusion_tags": commonschema.Tags(),
+
+											"scanning_mode": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												Default:      false,
+												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
@@ -1534,28 +900,24 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"ciem_discovery": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
-											"azure_active_directory_app_name": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
+												Required:     true,
+												ValidateFunc: validation.StringIsNotEmpty,
+											},
+
+											"azure_active_directory_app_name": {
+												Type:         pluginsdk.TypeString,
 												Optional:     true,
-												ForceNew:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
@@ -1565,28 +927,19 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"data_sensitivity_discovery": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
 											},
 										},
 									},
@@ -1595,28 +948,19 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"mdc_containers_agentless_discovery_k8s": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
 											},
 										},
 									},
@@ -1625,28 +969,19 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"mdc_containers_image_assessment": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
 											"service_account_email_address": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
 											},
 
 											"workload_identity_provider_id": {
 												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ForceNew:     true,
+												Required:     true,
 												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
 											},
 										},
 									},
@@ -1655,33 +990,16 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 								"vm_scanner": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
-									ForceNew: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
-											"configuration": {
-												Type:     pluginsdk.TypeList,
-												Optional: true,
-												ForceNew: true,
-												MaxItems: 1,
-												Elem: &pluginsdk.Resource{
-													Schema: map[string]*pluginsdk.Schema{
-														"exclusion_tags": commonschema.Tags(),
+											"exclusion_tags": commonschema.Tags(),
 
-														"scanning_mode": {
-															Type:         pluginsdk.TypeString,
-															Optional:     true,
-															ForceNew:     true,
-															ValidateFunc: validation.StringIsNotEmpty,
-														},
-													},
-												},
-											},
-
-											"enabled": {
-												Type:     pluginsdk.TypeBool,
-												Required: true,
-												ForceNew: true,
+											"scanning_mode": {
+												Type:         pluginsdk.TypeString,
+												Optional:     true,
+												Default:      "Default",
+												ValidateFunc: validation.StringIsNotEmpty,
 											},
 										},
 									},
@@ -1881,31 +1199,6 @@ func expandAwsAccount(input []AwsAccount) *securityconnectors.AwsEnvironmentData
 		Regions:      pointer.To(awsAccount.Regions),
 	}
 
-	if v := awsAccount.OrganizationalDataMaster; len(v) != 0 {
-		result.OrganizationalData = expandAwsOrganizationalDataMaster(v)
-	} else if v := awsAccount.OrganizationalDataMemberParentHierarchyId; v != "" {
-		result.OrganizationalData = expandAwsOrganizationalDataMember(v)
-	}
-
-	return result
-}
-
-func expandAwsOrganizationalDataMaster(input []AwsOrganizationalDataMaster) *securityconnectors.AwsOrganizationalDataMaster {
-	awsOrganizationalDataMaster := input[0]
-
-	result := &securityconnectors.AwsOrganizationalDataMaster{
-		ExcludedAccountIds: pointer.To(awsOrganizationalDataMaster.ExcludedAccountIds),
-		StacksetName:       pointer.To(awsOrganizationalDataMaster.StacksetName),
-	}
-
-	return result
-}
-
-func expandAwsOrganizationalDataMember(input string) *securityconnectors.AwsOrganizationalDataMember {
-	result := &securityconnectors.AwsOrganizationalDataMember{
-		ParentHierarchyId: pointer.To(input),
-	}
-
 	return result
 }
 
@@ -1919,35 +1212,6 @@ func expandGcpProject(input []GcpProject) *securityconnectors.GcpProjectEnvironm
 	result := &securityconnectors.GcpProjectEnvironmentData{
 		ProjectDetails: expandGcpProjectDetails(gcpProject.ProjectDetails),
 		ScanInterval:   pointer.To(int64(gcpProject.ScanInterval)),
-	}
-
-	if v := gcpProject.OrganizationalDataMaster; len(v) != 0 {
-		result.OrganizationalData = expandGcpProjectOrganizationalDataMaster(v)
-	} else if v := gcpProject.OrganizationalDataMember; len(v) != 0 {
-		result.OrganizationalData = expandGcpProjectOrganizationalDataMember(v)
-	}
-
-	return result
-}
-
-func expandGcpProjectOrganizationalDataMaster(input []GcpOrganizationalDataMaster) *securityconnectors.GcpOrganizationalDataOrganization {
-	gcpProjectOrganizationalDataMaster := input[0]
-
-	result := &securityconnectors.GcpOrganizationalDataOrganization{
-		ExcludedProjectNumbers:     pointer.To(gcpProjectOrganizationalDataMaster.ExcludedProjectNumbers),
-		ServiceAccountEmailAddress: pointer.To(gcpProjectOrganizationalDataMaster.ServiceAccountEmailAddress),
-		WorkloadIdentityProviderId: pointer.To(gcpProjectOrganizationalDataMaster.WorkloadIdentityProviderId),
-	}
-
-	return result
-}
-
-func expandGcpProjectOrganizationalDataMember(input []GcpOrganizationalDataMember) *securityconnectors.GcpOrganizationalDataMember {
-	gcpProjectOrganizationalDataMember := input[0]
-
-	result := &securityconnectors.GcpOrganizationalDataMember{
-		ManagementProjectNumber: pointer.To(gcpProjectOrganizationalDataMember.ManagementProjectNumber),
-		ParentHierarchyId:       pointer.To(gcpProjectOrganizationalDataMember.ParentHierarchyId),
 	}
 
 	return result
@@ -2010,7 +1274,7 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 			if v := item.DefenderForDatabasesAws; len(v) != 0 {
 				defenderForDatabasesAws := v[0]
 
-				defenderFoDatabasesAwsOffering.ArcAutoProvisioning = expandDatabasesAwsArcAutoProvisioning(defenderForDatabasesAws.ArcAutoProvisioning)
+				defenderFoDatabasesAwsOffering.ArcAutoProvisioning = expandDatabasesAwsArcAutoProvisioning(defenderForDatabasesAws.ArcAutoProvisioningCloudRoleArn)
 				defenderFoDatabasesAwsOffering.DatabasesDspm = expandDatabasesAwsDspm(defenderForDatabasesAws.DatabasesDspmCloudRoleArn)
 				defenderFoDatabasesAwsOffering.Rds = expandDatabasesAwsRds(defenderForDatabasesAws.RdsCloudRoleArn)
 			}
@@ -2022,7 +1286,7 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 			if v := item.DefenderForDatabasesGcp; len(v) != 0 {
 				defenderForDatabasesGcp := v[0]
 
-				defenderForDatabasesGcpOffering.ArcAutoProvisioning = expandDatabasesGcpArcAutoProvisioning(defenderForDatabasesGcp.ArcAutoProvisioning)
+				defenderForDatabasesGcpOffering.ArcAutoProvisioning = expandDatabasesGcpArcAutoProvisioning(defenderForDatabasesGcp.ArcAutoProvisioningEnabled)
 				defenderForDatabasesGcpOffering.DefenderForDatabasesArcAutoProvisioning = expandDatabasesGcpDefenderForDatabasesArcAutoProvisioning(defenderForDatabasesGcp.DefenderForDatabasesArcAutoProvisioning)
 			}
 
@@ -2035,8 +1299,8 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 
 				defenderForContainersAwsOffering.AutoProvisioning = pointer.To(defenderForContainersAws.AutoProvisioningEnabled)
 				defenderForContainersAwsOffering.EnableContainerVulnerabilityAssessment = pointer.To(defenderForContainersAws.ContainerVulnerabilityAssessmentEnabled)
-				defenderForContainersAwsOffering.MdcContainersAgentlessDiscoveryK8s = expandContainersAwsMdcContainersAgentlessDiscoveryK8s(defenderForContainersAws.MdcContainersAgentlessDiscoveryK8s)
-				defenderForContainersAwsOffering.MdcContainersImageAssessment = expandContainersAwsMdcContainersImageAssessment(defenderForContainersAws.MdcContainersImageAssessment)
+				defenderForContainersAwsOffering.MdcContainersAgentlessDiscoveryK8s = expandContainersAwsMdcContainersAgentlessDiscoveryK8s(defenderForContainersAws.MdcContainersAgentlessDiscoveryK8sCloudRoleArn)
+				defenderForContainersAwsOffering.MdcContainersImageAssessment = expandContainersAwsMdcContainersImageAssessment(defenderForContainersAws.MdcContainersImageAssessmentCloudRoleArn)
 				defenderForContainersAwsOffering.ScubaExternalId = pointer.To(defenderForContainersAws.ScubaExternalId)
 
 				defenderForContainersAwsOffering.CloudWatchToKinesis = &securityconnectors.DefenderForContainersAwsOfferingCloudWatchToKinesis{
@@ -2091,9 +1355,9 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 			if v := item.DefenderForServersAws; len(v) != 0 {
 				defenderForServersAws := v[0]
 
-				defenderForServersAwsOffering.ArcAutoProvisioning = expandServersAwsArcAutoProvisioning(defenderForServersAws.ArcAutoProvisioning)
-				defenderForServersAwsOffering.MdeAutoProvisioning = expandServersAwsMdeAutoProvisioning(defenderForServersAws.MdeAutoProvisioning)
-				defenderForServersAwsOffering.VaAutoProvisioning = expandServersAwsVaAutoProvisioning(defenderForServersAws.VaAutoProvisioning)
+				defenderForServersAwsOffering.ArcAutoProvisioning = expandServersAwsArcAutoProvisioning(defenderForServersAws.ArcAutoProvisioningCloudRoleArn)
+				defenderForServersAwsOffering.MdeAutoProvisioning = expandServersAwsMdeAutoProvisioning(defenderForServersAws.MdeAutoProvisioningEnabled)
+				defenderForServersAwsOffering.VaAutoProvisioning = expandServersAwsVaAutoProvisioning(defenderForServersAws.VaAutoProvisioningConfigurationType)
 				defenderForServersAwsOffering.VMScanners = expandServersAwsVMScanners(defenderForServersAws.VmScanner)
 
 				defenderForServersAwsOffering.DefenderForServers = &securityconnectors.DefenderForServersAwsOfferingDefenderForServers{
@@ -2112,10 +1376,10 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 			if v := item.DefenderForServersGcp; len(v) != 0 {
 				defenderForServersGcp := v[0]
 
-				defenderForServersGcpOffering.ArcAutoProvisioning = expandServersGcpArcAutoProvisioning(defenderForServersGcp.ArcAutoProvisioning)
+				defenderForServersGcpOffering.ArcAutoProvisioning = expandServersGcpArcAutoProvisioning(defenderForServersGcp.ArcAutoProvisioningEnabled)
 				defenderForServersGcpOffering.DefenderForServers = expandServersGcpDefenderForServers(defenderForServersGcp.DefenderForServers)
-				defenderForServersGcpOffering.MdeAutoProvisioning = expandServersGcpMdeAutoProvisioning(defenderForServersGcp.MdeAutoProvisioning)
-				defenderForServersGcpOffering.VaAutoProvisioning = expandServersGcpVaAutoProvisioning(defenderForServersGcp.VaAutoProvisioning)
+				defenderForServersGcpOffering.MdeAutoProvisioning = expandServersGcpMdeAutoProvisioning(defenderForServersGcp.MdeAutoProvisioningEnabled)
+				defenderForServersGcpOffering.VaAutoProvisioning = expandServersGcpVaAutoProvisioning(defenderForServersGcp.VaAutoProvisioningConfigurationType)
 				defenderForServersGcpOffering.VMScanners = expandServersGcpVMScanners(defenderForServersGcp.VmScanner)
 
 				defenderForServersGcpOffering.SubPlan = &securityconnectors.DefenderForServersGcpOfferingSubPlan{
@@ -2131,10 +1395,10 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 				defenderCspmAws := v[0]
 
 				defenderCspmAwsOffering.Ciem = expandCspmAwsCiem(defenderCspmAws.Ciem)
-				defenderCspmAwsOffering.DataSensitivityDiscovery = expandCspmAwsDataSensitivityDiscovery(defenderCspmAws.DataSensitivityDiscovery)
-				defenderCspmAwsOffering.DatabasesDspm = expandCspmAwsDatabasesDspm(defenderCspmAws.DatabasesDspm)
-				defenderCspmAwsOffering.MdcContainersAgentlessDiscoveryK8s = expandCspmAwsMdcContainersAgentlessDiscoveryK8s(defenderCspmAws.MdcContainersAgentlessDiscoveryK8s)
-				defenderCspmAwsOffering.MdcContainersImageAssessment = expandCspmAwsMdcContainersImageAssessment(defenderCspmAws.MdcContainersImageAssessment)
+				defenderCspmAwsOffering.DataSensitivityDiscovery = expandCspmAwsDataSensitivityDiscovery(defenderCspmAws.DataSensitivityDiscoveryCloudRoleArn)
+				defenderCspmAwsOffering.DatabasesDspm = expandCspmAwsDatabasesDspm(defenderCspmAws.DatabasesDspmCloudRoleArn)
+				defenderCspmAwsOffering.MdcContainersAgentlessDiscoveryK8s = expandCspmAwsMdcContainersAgentlessDiscoveryK8s(defenderCspmAws.MdcContainersAgentlessDiscoveryK8sCloudRoleArn)
+				defenderCspmAwsOffering.MdcContainersImageAssessment = expandCspmAwsMdcContainersImageAssessment(defenderCspmAws.MdcContainersImageAssessmentCloudRoleArn)
 				defenderCspmAwsOffering.VMScanners = expandCspmAwsVMScanners(defenderCspmAws.VmScanner)
 			}
 
@@ -2159,34 +1423,17 @@ func expandOfferings(input []Offering) *[]securityconnectors.CloudOffering {
 	return &result
 }
 
-func expandDatabasesAwsArcAutoProvisioning(input []DatabasesAwsArcAutoProvisioning) *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning {
-	if len(input) == 0 {
+func expandDatabasesAwsArcAutoProvisioning(input string) *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning {
+	if input == "" {
 		return &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning{
 			Enabled: pointer.To(false),
 		}
 	}
 
-	awsArcAutoProvisioning := input[0]
-
 	result := &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning{
-		CloudRoleArn:  pointer.To(awsArcAutoProvisioning.CloudRoleArn),
-		Configuration: expandDatabasesAwsConfiguration(awsArcAutoProvisioning.Configuration),
+		CloudRoleArn:  pointer.To(input),
+		Configuration: &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration{},
 		Enabled:       pointer.To(true),
-	}
-
-	return result
-}
-
-func expandDatabasesAwsConfiguration(input []DatabasesAwsConfiguration) *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration {
-	if len(input) == 0 {
-		return &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration{}
-	}
-
-	awsConfiguration := input[0]
-
-	result := &securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration{
-		PrivateLinkScope: pointer.To(awsConfiguration.PrivateLinkScope),
-		Proxy:            pointer.To(awsConfiguration.Proxy),
 	}
 
 	return result
@@ -2222,31 +1469,10 @@ func expandDatabasesAwsRds(input string) *securityconnectors.DefenderFoDatabases
 	return result
 }
 
-func expandDatabasesGcpArcAutoProvisioning(input []DatabasesGcpArcAutoProvisioning) *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning {
-	if len(input) == 0 {
-		return nil
-	}
-
-	gcpArcAutoProvisioning := input[0]
-
+func expandDatabasesGcpArcAutoProvisioning(input bool) *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning {
 	result := &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning{
-		Configuration: expandDatabasesGcpConfiguration(gcpArcAutoProvisioning.Configuration),
-		Enabled:       pointer.To(gcpArcAutoProvisioning.Enabled),
-	}
-
-	return result
-}
-
-func expandDatabasesGcpConfiguration(input []DatabasesGcpConfiguration) *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration {
-	if len(input) == 0 {
-		return nil
-	}
-
-	gcpConfiguration := input[0]
-
-	result := &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration{
-		PrivateLinkScope: pointer.To(gcpConfiguration.PrivateLinkScope),
-		Proxy:            pointer.To(gcpConfiguration.Proxy),
+		Configuration: &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration{},
+		Enabled:       pointer.To(input),
 	}
 
 	return result
@@ -2267,31 +1493,31 @@ func expandDatabasesGcpDefenderForDatabasesArcAutoProvisioning(input []Databases
 	return result
 }
 
-func expandContainersAwsMdcContainersAgentlessDiscoveryK8s(input []ContainersAwsMdcContainersAgentlessDiscoveryK8s) *securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s {
-	if len(input) == 0 {
-		return nil
+func expandContainersAwsMdcContainersAgentlessDiscoveryK8s(input string) *securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s {
+	if input == "" {
+		return &securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s{
+			Enabled: pointer.To(false),
+		}
 	}
 
-	awsMdcContainersAgentlessDiscoveryK8s := input[0]
-
 	result := &securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s{
-		CloudRoleArn: pointer.To(awsMdcContainersAgentlessDiscoveryK8s.CloudRoleArn),
-		Enabled:      pointer.To(awsMdcContainersAgentlessDiscoveryK8s.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
 }
 
-func expandContainersAwsMdcContainersImageAssessment(input []ContainersAwsMdcContainersImageAssessment) *securityconnectors.DefenderForContainersAwsOfferingMdcContainersImageAssessment {
-	if len(input) == 0 {
-		return nil
+func expandContainersAwsMdcContainersImageAssessment(input string) *securityconnectors.DefenderForContainersAwsOfferingMdcContainersImageAssessment {
+	if input == "" {
+		return &securityconnectors.DefenderForContainersAwsOfferingMdcContainersImageAssessment{
+			Enabled: pointer.To(false),
+		}
 	}
 
-	awsMdcContainersImageAssessment := input[0]
-
 	result := &securityconnectors.DefenderForContainersAwsOfferingMdcContainersImageAssessment{
-		CloudRoleArn: pointer.To(awsMdcContainersImageAssessment.CloudRoleArn),
-		Enabled:      pointer.To(awsMdcContainersImageAssessment.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
@@ -2314,7 +1540,9 @@ func expandContainersGcpDataPipelineNativeCloudConnection(input []ContainersGcpD
 
 func expandContainersGcpMdcContainersAgentlessDiscoveryK8s(input []ContainersGcpMdcContainersAgentlessDiscoveryK8s) *securityconnectors.DefenderForContainersGcpOfferingMdcContainersAgentlessDiscoveryK8s {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderForContainersGcpOfferingMdcContainersAgentlessDiscoveryK8s{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	gcpMdcContainersAgentlessDiscoveryK8s := input[0]
@@ -2322,7 +1550,7 @@ func expandContainersGcpMdcContainersAgentlessDiscoveryK8s(input []ContainersGcp
 	result := &securityconnectors.DefenderForContainersGcpOfferingMdcContainersAgentlessDiscoveryK8s{
 		ServiceAccountEmailAddress: pointer.To(gcpMdcContainersAgentlessDiscoveryK8s.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.To(gcpMdcContainersAgentlessDiscoveryK8s.WorkloadIdentityProviderId),
-		Enabled:                    pointer.To(gcpMdcContainersAgentlessDiscoveryK8s.Enabled),
+		Enabled:                    pointer.To(true),
 	}
 
 	return result
@@ -2330,7 +1558,9 @@ func expandContainersGcpMdcContainersAgentlessDiscoveryK8s(input []ContainersGcp
 
 func expandContainersGcpMdcContainersImageAssessment(input []ContainersGcpMdcContainersImageAssessment) *securityconnectors.DefenderForContainersGcpOfferingMdcContainersImageAssessment {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderForContainersGcpOfferingMdcContainersImageAssessment{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	gcpMdcContainersImageAssessment := input[0]
@@ -2338,7 +1568,7 @@ func expandContainersGcpMdcContainersImageAssessment(input []ContainersGcpMdcCon
 	result := &securityconnectors.DefenderForContainersGcpOfferingMdcContainersImageAssessment{
 		ServiceAccountEmailAddress: pointer.To(gcpMdcContainersImageAssessment.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.To(gcpMdcContainersImageAssessment.WorkloadIdentityProviderId),
-		Enabled:                    pointer.To(gcpMdcContainersImageAssessment.Enabled),
+		Enabled:                    pointer.To(true),
 	}
 
 	return result
@@ -2359,66 +1589,42 @@ func expandContainersGcpNativeCloudConnection(input []ContainersGcpNativeCloudCo
 	return result
 }
 
-func expandServersAwsArcAutoProvisioning(input []ServersAwsArcAutoProvisioning) *securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioning {
-	if len(input) == 0 {
-		return nil
+func expandServersAwsArcAutoProvisioning(input string) *securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioning {
+	if input == "" {
+		return &securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioning{
+			Enabled: pointer.To(false),
+		}
 	}
-
-	serversAwsArcAutoProvisioning := input[0]
 
 	result := &securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioning{
-		CloudRoleArn:  pointer.To(serversAwsArcAutoProvisioning.CloudRoleArn),
-		Configuration: expandServersAwsConfiguration(serversAwsArcAutoProvisioning.Configuration),
-		Enabled:       pointer.To(serversAwsArcAutoProvisioning.Enabled),
+		CloudRoleArn:  pointer.To(input),
+		Configuration: &securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioningConfiguration{},
+		Enabled:       pointer.To(true),
 	}
 
 	return result
 }
 
-func expandServersAwsConfiguration(input []ServersAwsConfiguration) *securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioningConfiguration {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversAwsConfiguration := input[0]
-
-	result := &securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioningConfiguration{
-		PrivateLinkScope: pointer.To(serversAwsConfiguration.PrivateLinkScope),
-		Proxy:            pointer.To(serversAwsConfiguration.Proxy),
-	}
-
-	return result
-}
-
-func expandServersAwsMdeAutoProvisioning(input []ServersAwsMdeAutoProvisioning) *securityconnectors.DefenderForServersAwsOfferingMdeAutoProvisioning {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversAwsArcAutoProvisioning := input[0]
-	var configuration interface{}
-	configuration = serversAwsArcAutoProvisioning.Configuration
-
+func expandServersAwsMdeAutoProvisioning(input bool) *securityconnectors.DefenderForServersAwsOfferingMdeAutoProvisioning {
 	result := &securityconnectors.DefenderForServersAwsOfferingMdeAutoProvisioning{
-		Configuration: pointer.To(configuration),
-		Enabled:       pointer.To(serversAwsArcAutoProvisioning.Enabled),
+		Enabled: pointer.To(input),
 	}
 
 	return result
 }
 
-func expandServersAwsVaAutoProvisioning(input []ServersAwsVaAutoProvisioning) *securityconnectors.DefenderForServersAwsOfferingVaAutoProvisioning {
-	if len(input) == 0 {
-		return nil
+func expandServersAwsVaAutoProvisioning(input string) *securityconnectors.DefenderForServersAwsOfferingVaAutoProvisioning {
+	if input == "" {
+		return &securityconnectors.DefenderForServersAwsOfferingVaAutoProvisioning{
+			Enabled: pointer.To(false),
+		}
 	}
-
-	serversAwsVaAutoProvisioning := input[0]
 
 	result := &securityconnectors.DefenderForServersAwsOfferingVaAutoProvisioning{
 		Configuration: &securityconnectors.DefenderForServersAwsOfferingVaAutoProvisioningConfiguration{
-			Type: pointer.To(securityconnectors.Type(serversAwsVaAutoProvisioning.ConfigurationType)),
+			Type: pointer.To(securityconnectors.Type(input)),
 		},
-		Enabled: pointer.To(serversAwsVaAutoProvisioning.Enabled),
+		Enabled: pointer.To(true),
 	}
 
 	return result
@@ -2426,60 +1632,29 @@ func expandServersAwsVaAutoProvisioning(input []ServersAwsVaAutoProvisioning) *s
 
 func expandServersAwsVMScanners(input []ServersAwsVmScanner) *securityconnectors.DefenderForServersAwsOfferingVMScanners {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderForServersAwsOfferingVMScanners{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	serversAwsVmScanner := input[0]
 
 	result := &securityconnectors.DefenderForServersAwsOfferingVMScanners{
-		Configuration: expandServersAwsVmScannerConfiguration(serversAwsVmScanner.Configuration),
-		Enabled:       pointer.To(serversAwsVmScanner.Enabled),
+		Configuration: &securityconnectors.DefenderForServersAwsOfferingVMScannersConfiguration{
+			CloudRoleArn:  pointer.To(serversAwsVmScanner.CloudRoleArn),
+			ExclusionTags: pointer.To(serversAwsVmScanner.ExclusionTags),
+			ScanningMode:  pointer.To(securityconnectors.ScanningMode(serversAwsVmScanner.ScanningMode)),
+		},
+		Enabled: pointer.To(true),
 	}
 
 	return result
 }
 
-func expandServersAwsVmScannerConfiguration(input []ServersAwsVmScannerConfiguration) *securityconnectors.DefenderForServersAwsOfferingVMScannersConfiguration {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversAwsVmScannerConfiguration := input[0]
-
-	result := &securityconnectors.DefenderForServersAwsOfferingVMScannersConfiguration{
-		CloudRoleArn:  pointer.To(serversAwsVmScannerConfiguration.CloudRoleArn),
-		ExclusionTags: pointer.To(serversAwsVmScannerConfiguration.ExclusionTags),
-		ScanningMode:  pointer.To(securityconnectors.ScanningMode(serversAwsVmScannerConfiguration.ScanningMode)),
-	}
-
-	return result
-}
-
-func expandServersGcpArcAutoProvisioning(input []ServersGcpArcAutoProvisioning) *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversGcpArcAutoProvisioning := input[0]
-
+func expandServersGcpArcAutoProvisioning(input bool) *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning {
 	result := &securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning{
-		Configuration: expandServersGcpConfiguration(serversGcpArcAutoProvisioning.Configuration),
-		Enabled:       pointer.To(serversGcpArcAutoProvisioning.Enabled),
-	}
-
-	return result
-}
-
-func expandServersGcpConfiguration(input []ServersGcpConfiguration) *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioningConfiguration {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversGcpConfiguration := input[0]
-
-	result := &securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioningConfiguration{
-		PrivateLinkScope: pointer.To(serversGcpConfiguration.PrivateLinkScope),
-		Proxy:            pointer.To(serversGcpConfiguration.Proxy),
+		Configuration: &securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioningConfiguration{},
+		Enabled:       pointer.To(input),
 	}
 
 	return result
@@ -2500,35 +1675,26 @@ func expandServersGcpDefenderForServers(input []ServersGcpDefenderForServers) *s
 	return result
 }
 
-func expandServersGcpMdeAutoProvisioning(input []ServersGcpMdeAutoProvisioning) *securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversGcpMdeAutoProvisioning := input[0]
-	var configuration interface{}
-	configuration = serversGcpMdeAutoProvisioning.Configuration
-
+func expandServersGcpMdeAutoProvisioning(input bool) *securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning {
 	result := &securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning{
-		Configuration: pointer.To(configuration),
-		Enabled:       pointer.To(serversGcpMdeAutoProvisioning.Enabled),
+		Enabled: pointer.To(input),
 	}
 
 	return result
 }
 
-func expandServersGcpVaAutoProvisioning(input []ServersGcpVaAutoProvisioning) *securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning {
-	if len(input) == 0 {
-		return nil
+func expandServersGcpVaAutoProvisioning(input string) *securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning {
+	if input == "" {
+		return &securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning{
+			Enabled: pointer.To(false),
+		}
 	}
-
-	serversGcpVaAutoProvisioning := input[0]
 
 	result := &securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning{
 		Configuration: &securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioningConfiguration{
-			Type: pointer.To(securityconnectors.Type(serversGcpVaAutoProvisioning.ConfigurationType)),
+			Type: pointer.To(securityconnectors.Type(input)),
 		},
-		Enabled: pointer.To(serversGcpVaAutoProvisioning.Enabled),
+		Enabled: pointer.To(true),
 	}
 
 	return result
@@ -2536,29 +1702,19 @@ func expandServersGcpVaAutoProvisioning(input []ServersGcpVaAutoProvisioning) *s
 
 func expandServersGcpVMScanners(input []ServersGcpVmScanner) *securityconnectors.DefenderForServersGcpOfferingVMScanners {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderForServersGcpOfferingVMScanners{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	serversGcpVmScanner := input[0]
 
 	result := &securityconnectors.DefenderForServersGcpOfferingVMScanners{
-		Configuration: expandServersGcpVmScannerConfiguration(serversGcpVmScanner.Configuration),
-		Enabled:       pointer.To(serversGcpVmScanner.Enabled),
-	}
-
-	return result
-}
-
-func expandServersGcpVmScannerConfiguration(input []ServersGcpVmScannerConfiguration) *securityconnectors.DefenderForServersGcpOfferingVMScannersConfiguration {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversGcpVmScannerConfiguration := input[0]
-
-	result := &securityconnectors.DefenderForServersGcpOfferingVMScannersConfiguration{
-		ExclusionTags: pointer.To(serversGcpVmScannerConfiguration.ExclusionTags),
-		ScanningMode:  pointer.To(securityconnectors.ScanningMode(serversGcpVmScannerConfiguration.ScanningMode)),
+		Configuration: &securityconnectors.DefenderForServersGcpOfferingVMScannersConfiguration{
+			ExclusionTags: pointer.To(serversGcpVmScanner.ExclusionTags),
+			ScanningMode:  pointer.To(securityconnectors.ScanningMode(serversGcpVmScanner.ScanningMode)),
+		},
+		Enabled: pointer.To(true),
 	}
 
 	return result
@@ -2596,61 +1752,61 @@ func expandCspmAwsCiemOidc(input []CspmAwsCiemOidc) *securityconnectors.Defender
 	return result
 }
 
-func expandCspmAwsDataSensitivityDiscovery(input []CspmAwsDataSensitivityDiscovery) *securityconnectors.DefenderCspmAwsOfferingDataSensitivityDiscovery {
-	if len(input) == 0 {
-		return nil
+func expandCspmAwsDataSensitivityDiscovery(input string) *securityconnectors.DefenderCspmAwsOfferingDataSensitivityDiscovery {
+	if input == "" {
+		return &securityconnectors.DefenderCspmAwsOfferingDataSensitivityDiscovery{
+			Enabled: pointer.To(false),
+		}
 	}
-
-	cspmAwsDataSensitivityDiscovery := input[0]
 
 	result := &securityconnectors.DefenderCspmAwsOfferingDataSensitivityDiscovery{
-		CloudRoleArn: pointer.To(cspmAwsDataSensitivityDiscovery.CloudRoleArn),
-		Enabled:      pointer.To(cspmAwsDataSensitivityDiscovery.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
 }
 
-func expandCspmAwsDatabasesDspm(input []CspmAwsDatabasesDspm) *securityconnectors.DefenderCspmAwsOfferingDatabasesDspm {
-	if len(input) == 0 {
-		return nil
+func expandCspmAwsDatabasesDspm(input string) *securityconnectors.DefenderCspmAwsOfferingDatabasesDspm {
+	if input == "" {
+		return &securityconnectors.DefenderCspmAwsOfferingDatabasesDspm{
+			Enabled: pointer.To(false),
+		}
 	}
-
-	cspmAwsDatabasesDspm := input[0]
 
 	result := &securityconnectors.DefenderCspmAwsOfferingDatabasesDspm{
-		CloudRoleArn: pointer.To(cspmAwsDatabasesDspm.CloudRoleArn),
-		Enabled:      pointer.To(cspmAwsDatabasesDspm.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
 }
 
-func expandCspmAwsMdcContainersAgentlessDiscoveryK8s(input []CspmAwsMdcContainersAgentlessDiscoveryK8s) *securityconnectors.DefenderCspmAwsOfferingMdcContainersAgentlessDiscoveryK8s {
-	if len(input) == 0 {
-		return nil
+func expandCspmAwsMdcContainersAgentlessDiscoveryK8s(input string) *securityconnectors.DefenderCspmAwsOfferingMdcContainersAgentlessDiscoveryK8s {
+	if input == "" {
+		return &securityconnectors.DefenderCspmAwsOfferingMdcContainersAgentlessDiscoveryK8s{
+			Enabled: pointer.To(false),
+		}
 	}
-
-	cspmAwsMdcContainersAgentlessDiscoveryK8s := input[0]
 
 	result := &securityconnectors.DefenderCspmAwsOfferingMdcContainersAgentlessDiscoveryK8s{
-		CloudRoleArn: pointer.To(cspmAwsMdcContainersAgentlessDiscoveryK8s.CloudRoleArn),
-		Enabled:      pointer.To(cspmAwsMdcContainersAgentlessDiscoveryK8s.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
 }
 
-func expandCspmAwsMdcContainersImageAssessment(input []CspmAwsMdcContainersImageAssessment) *securityconnectors.DefenderCspmAwsOfferingMdcContainersImageAssessment {
-	if len(input) == 0 {
-		return nil
+func expandCspmAwsMdcContainersImageAssessment(input string) *securityconnectors.DefenderCspmAwsOfferingMdcContainersImageAssessment {
+	if input == "" {
+		return &securityconnectors.DefenderCspmAwsOfferingMdcContainersImageAssessment{
+			Enabled: pointer.To(false),
+		}
 	}
 
-	cspmAwsMdcContainersImageAssessment := input[0]
-
 	result := &securityconnectors.DefenderCspmAwsOfferingMdcContainersImageAssessment{
-		CloudRoleArn: pointer.To(cspmAwsMdcContainersImageAssessment.CloudRoleArn),
-		Enabled:      pointer.To(cspmAwsMdcContainersImageAssessment.Enabled),
+		CloudRoleArn: pointer.To(input),
+		Enabled:      pointer.To(true),
 	}
 
 	return result
@@ -2658,30 +1814,20 @@ func expandCspmAwsMdcContainersImageAssessment(input []CspmAwsMdcContainersImage
 
 func expandCspmAwsVMScanners(input []CspmAwsVmScanner) *securityconnectors.DefenderCspmAwsOfferingVMScanners {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderCspmAwsOfferingVMScanners{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	cspmAwsVmScanner := input[0]
 
 	result := &securityconnectors.DefenderCspmAwsOfferingVMScanners{
-		Configuration: expandCspmAwsVmScannerConfiguration(cspmAwsVmScanner.Configuration),
-		Enabled:       pointer.To(cspmAwsVmScanner.Enabled),
-	}
-
-	return result
-}
-
-func expandCspmAwsVmScannerConfiguration(input []CspmAwsVmScannerConfiguration) *securityconnectors.DefenderCspmAwsOfferingVMScannersConfiguration {
-	if len(input) == 0 {
-		return nil
-	}
-
-	cspmAwsVmScannerConfiguration := input[0]
-
-	result := &securityconnectors.DefenderCspmAwsOfferingVMScannersConfiguration{
-		CloudRoleArn:  pointer.To(cspmAwsVmScannerConfiguration.CloudRoleArn),
-		ExclusionTags: pointer.To(cspmAwsVmScannerConfiguration.ExclusionTags),
-		ScanningMode:  pointer.To(securityconnectors.ScanningMode(cspmAwsVmScannerConfiguration.ScanningMode)),
+		Configuration: &securityconnectors.DefenderCspmAwsOfferingVMScannersConfiguration{
+			CloudRoleArn:  pointer.To(cspmAwsVmScanner.CloudRoleArn),
+			ExclusionTags: pointer.To(cspmAwsVmScanner.ExclusionTags),
+			ScanningMode:  pointer.To(securityconnectors.ScanningMode(cspmAwsVmScanner.ScanningMode)),
+		},
+		Enabled: pointer.To(true),
 	}
 
 	return result
@@ -2705,7 +1851,9 @@ func expandCspmGcpCiemDiscovery(input []CspmGcpCiemDiscovery) *securityconnector
 
 func expandCspmGcpDataSensitivityDiscovery(input []CspmGcpDataSensitivityDiscovery) *securityconnectors.DefenderCspmGcpOfferingDataSensitivityDiscovery {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderCspmGcpOfferingDataSensitivityDiscovery{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	cspmGcpDataSensitivityDiscovery := input[0]
@@ -2713,7 +1861,7 @@ func expandCspmGcpDataSensitivityDiscovery(input []CspmGcpDataSensitivityDiscove
 	result := &securityconnectors.DefenderCspmGcpOfferingDataSensitivityDiscovery{
 		ServiceAccountEmailAddress: pointer.To(cspmGcpDataSensitivityDiscovery.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.To(cspmGcpDataSensitivityDiscovery.WorkloadIdentityProviderId),
-		Enabled:                    pointer.To(cspmGcpDataSensitivityDiscovery.Enabled),
+		Enabled:                    pointer.To(true),
 	}
 
 	return result
@@ -2721,7 +1869,9 @@ func expandCspmGcpDataSensitivityDiscovery(input []CspmGcpDataSensitivityDiscove
 
 func expandCspmGcpMdcContainersAgentlessDiscoveryK8s(input []CspmGcpMdcContainersAgentlessDiscoveryK8s) *securityconnectors.DefenderCspmGcpOfferingMdcContainersAgentlessDiscoveryK8s {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderCspmGcpOfferingMdcContainersAgentlessDiscoveryK8s{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	cspmGcpMdcContainersAgentlessDiscoveryK8s := input[0]
@@ -2729,7 +1879,7 @@ func expandCspmGcpMdcContainersAgentlessDiscoveryK8s(input []CspmGcpMdcContainer
 	result := &securityconnectors.DefenderCspmGcpOfferingMdcContainersAgentlessDiscoveryK8s{
 		ServiceAccountEmailAddress: pointer.To(cspmGcpMdcContainersAgentlessDiscoveryK8s.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.To(cspmGcpMdcContainersAgentlessDiscoveryK8s.WorkloadIdentityProviderId),
-		Enabled:                    pointer.To(cspmGcpMdcContainersAgentlessDiscoveryK8s.Enabled),
+		Enabled:                    pointer.To(true),
 	}
 
 	return result
@@ -2737,7 +1887,9 @@ func expandCspmGcpMdcContainersAgentlessDiscoveryK8s(input []CspmGcpMdcContainer
 
 func expandCspmGcpMdcContainersImageAssessment(input []CspmGcpMdcContainersImageAssessment) *securityconnectors.DefenderCspmGcpOfferingMdcContainersImageAssessment {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderCspmGcpOfferingMdcContainersImageAssessment{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	cspmGcpMdcContainersImageAssessment := input[0]
@@ -2745,7 +1897,7 @@ func expandCspmGcpMdcContainersImageAssessment(input []CspmGcpMdcContainersImage
 	result := &securityconnectors.DefenderCspmGcpOfferingMdcContainersImageAssessment{
 		ServiceAccountEmailAddress: pointer.To(cspmGcpMdcContainersImageAssessment.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.To(cspmGcpMdcContainersImageAssessment.WorkloadIdentityProviderId),
-		Enabled:                    pointer.To(cspmGcpMdcContainersImageAssessment.Enabled),
+		Enabled:                    pointer.To(true),
 	}
 
 	return result
@@ -2753,29 +1905,19 @@ func expandCspmGcpMdcContainersImageAssessment(input []CspmGcpMdcContainersImage
 
 func expandCspmGcpVMScanners(input []CspmGcpVmScanner) *securityconnectors.DefenderCspmGcpOfferingVMScanners {
 	if len(input) == 0 {
-		return nil
+		return &securityconnectors.DefenderCspmGcpOfferingVMScanners{
+			Enabled: pointer.To(false),
+		}
 	}
 
 	cspmGcpVmScanner := input[0]
 
 	result := &securityconnectors.DefenderCspmGcpOfferingVMScanners{
-		Configuration: expandCspmGcpVmScannerConfiguration(cspmGcpVmScanner.Configuration),
-		Enabled:       pointer.To(cspmGcpVmScanner.Enabled),
-	}
-
-	return result
-}
-
-func expandCspmGcpVmScannerConfiguration(input []CspmGcpVmScannerConfiguration) *securityconnectors.DefenderCspmGcpOfferingVMScannersConfiguration {
-	if len(input) == 0 {
-		return nil
-	}
-
-	cspmGcpVmScannerConfiguration := input[0]
-
-	result := &securityconnectors.DefenderCspmGcpOfferingVMScannersConfiguration{
-		ExclusionTags: pointer.To(cspmGcpVmScannerConfiguration.ExclusionTags),
-		ScanningMode:  pointer.To(securityconnectors.ScanningMode(cspmGcpVmScannerConfiguration.ScanningMode)),
+		Configuration: &securityconnectors.DefenderCspmGcpOfferingVMScannersConfiguration{
+			ExclusionTags: pointer.To(cspmGcpVmScanner.ExclusionTags),
+			ScanningMode:  pointer.To(securityconnectors.ScanningMode(cspmGcpVmScanner.ScanningMode)),
+		},
+		Enabled: pointer.To(true),
 	}
 
 	return result
@@ -2823,30 +1965,7 @@ func flattenAwsAccount(input securityconnectors.AwsEnvironmentData) []AwsAccount
 		ScanInterval: int(pointer.From(input.ScanInterval)),
 	}
 
-	if v, ok := input.OrganizationalData.(securityconnectors.AwsOrganizationalDataMaster); ok {
-		awsAccount.OrganizationalDataMaster = flattenAwsOrganizationalDataMaster(v)
-	} else if v, ok := input.OrganizationalData.(securityconnectors.AwsOrganizationalDataMember); ok {
-		awsAccount.OrganizationalDataMemberParentHierarchyId = flattenAwsOrganizationalDataMember(v)
-	}
-
 	return append(result, awsAccount)
-}
-
-func flattenAwsOrganizationalDataMaster(input securityconnectors.AwsOrganizationalDataMaster) []AwsOrganizationalDataMaster {
-	result := make([]AwsOrganizationalDataMaster, 0)
-
-	awsOrganizationalDataMaster := AwsOrganizationalDataMaster{
-		ExcludedAccountIds: pointer.From(input.ExcludedAccountIds),
-		StacksetName:       pointer.From(input.StacksetName),
-	}
-
-	return append(result, awsOrganizationalDataMaster)
-}
-
-func flattenAwsOrganizationalDataMember(input securityconnectors.AwsOrganizationalDataMember) string {
-	organizationalDataMemberParentHierarchyId := pointer.From(input.ParentHierarchyId)
-
-	return organizationalDataMemberParentHierarchyId
 }
 
 func flattenGcpProject(input securityconnectors.GcpProjectEnvironmentData) []GcpProject {
@@ -2857,36 +1976,7 @@ func flattenGcpProject(input securityconnectors.GcpProjectEnvironmentData) []Gcp
 		ProjectDetails: flattenGcpProjectDetails(input.ProjectDetails),
 	}
 
-	if v, ok := input.OrganizationalData.(securityconnectors.GcpOrganizationalDataOrganization); ok {
-		gcpProject.OrganizationalDataMaster = flattenGcpProjectOrganizationalDataMaster(v)
-	} else if v, ok := input.OrganizationalData.(securityconnectors.GcpOrganizationalDataMember); ok {
-		gcpProject.OrganizationalDataMember = flattenGcpProjectOrganizationalDataMember(v)
-	}
-
 	return append(result, gcpProject)
-}
-
-func flattenGcpProjectOrganizationalDataMaster(input securityconnectors.GcpOrganizationalDataOrganization) []GcpOrganizationalDataMaster {
-	result := make([]GcpOrganizationalDataMaster, 0)
-
-	gcpOrganizationalDataMaster := GcpOrganizationalDataMaster{
-		ExcludedProjectNumbers:     pointer.From(input.ExcludedProjectNumbers),
-		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
-		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-	}
-
-	return append(result, gcpOrganizationalDataMaster)
-}
-
-func flattenGcpProjectOrganizationalDataMember(input securityconnectors.GcpOrganizationalDataMember) []GcpOrganizationalDataMember {
-	result := make([]GcpOrganizationalDataMember, 0)
-
-	gcpOrganizationalDataMember := GcpOrganizationalDataMember{
-		ManagementProjectNumber: pointer.From(input.ManagementProjectNumber),
-		ParentHierarchyId:       pointer.From(input.ParentHierarchyId),
-	}
-
-	return append(result, gcpOrganizationalDataMember)
 }
 
 func flattenGcpProjectDetails(input *securityconnectors.GcpProjectDetails) []GcpProjectDetails {
@@ -2952,9 +2042,9 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderForDatabasesAws),
 				DefenderForDatabasesAws: []DefenderForDatabasesAws{
 					{
-						ArcAutoProvisioning:       flattenDatabasesAwsArcAutoProvisioning(v.ArcAutoProvisioning),
-						DatabasesDspmCloudRoleArn: flattenDatabasesDspmCloudRoleArn(v.DatabasesDspm),
-						RdsCloudRoleArn:           flattenRdsCloudRoleArn(v.Rds),
+						ArcAutoProvisioningCloudRoleArn: flattenDatabasesAwsArcAutoProvisioning(v.ArcAutoProvisioning),
+						DatabasesDspmCloudRoleArn:       flattenDatabasesDspmCloudRoleArn(v.DatabasesDspm),
+						RdsCloudRoleArn:                 flattenRdsCloudRoleArn(v.Rds),
 					},
 				},
 			}
@@ -2965,7 +2055,7 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderForDatabasesGcp),
 				DefenderForDatabasesGcp: []DefenderForDatabasesGcp{
 					{
-						ArcAutoProvisioning:                     flattenDatabasesGcpGcpArcAutoProvisioning(v.ArcAutoProvisioning),
+						ArcAutoProvisioningEnabled:              flattenDatabasesGcpGcpArcAutoProvisioning(v.ArcAutoProvisioning),
 						DefenderForDatabasesArcAutoProvisioning: flattenDatabasesGcpDefenderForDatabasesArcAutoProvisioning(v.DefenderForDatabasesArcAutoProvisioning),
 					},
 				},
@@ -2977,12 +2067,12 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderForContainersAws),
 				DefenderForContainersAws: []DefenderForContainersAws{
 					{
-						AutoProvisioningEnabled:                 pointer.From(v.AutoProvisioning),
-						ContainerVulnerabilityAssessmentEnabled: pointer.From(v.EnableContainerVulnerabilityAssessment),
-						KubeAuditRetentionTime:                  int(pointer.From(v.KubeAuditRetentionTime)),
-						MdcContainersAgentlessDiscoveryK8s:      flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
-						MdcContainersImageAssessment:            flattenContainersAwsMdcContainersImageAssessment(v.MdcContainersImageAssessment),
-						ScubaExternalId:                         pointer.From(v.ScubaExternalId),
+						AutoProvisioningEnabled:                        pointer.From(v.AutoProvisioning),
+						ContainerVulnerabilityAssessmentEnabled:        pointer.From(v.EnableContainerVulnerabilityAssessment),
+						KubeAuditRetentionTime:                         int(pointer.From(v.KubeAuditRetentionTime)),
+						MdcContainersAgentlessDiscoveryK8sCloudRoleArn: flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
+						MdcContainersImageAssessmentCloudRoleArn:       flattenContainersAwsMdcContainersImageAssessment(v.MdcContainersImageAssessment),
+						ScubaExternalId:                                pointer.From(v.ScubaExternalId),
 					},
 				},
 			}
@@ -3034,10 +2124,10 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderForServersAws),
 				DefenderForServersAws: []DefenderForServersAws{
 					{
-						ArcAutoProvisioning: flattenServersAwsArcAutoProvisioning(v.ArcAutoProvisioning),
-						MdeAutoProvisioning: flattenServersAwsMdeAutoProvisioning(v.MdeAutoProvisioning),
-						VaAutoProvisioning:  flattenServersAwsVaAutoProvisioning(v.VaAutoProvisioning),
-						VmScanner:           flattenServersAwsVmScanner(v.VMScanners),
+						ArcAutoProvisioningCloudRoleArn:     flattenServersAwsArcAutoProvisioning(v.ArcAutoProvisioning),
+						MdeAutoProvisioningEnabled:          flattenServersAwsMdeAutoProvisioning(v.MdeAutoProvisioning),
+						VaAutoProvisioningConfigurationType: flattenServersAwsVaAutoProvisioning(v.VaAutoProvisioning),
+						VmScanner:                           flattenServersAwsVmScanner(v.VMScanners),
 					},
 				},
 			}
@@ -3056,11 +2146,11 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderForServersGcp),
 				DefenderForServersGcp: []DefenderForServersGcp{
 					{
-						ArcAutoProvisioning: flattenServersGcpArcAutoProvisioning(v.ArcAutoProvisioning),
-						DefenderForServers:  flattenServersGcpDefenderForServers(v.DefenderForServers),
-						MdeAutoProvisioning: flattenServersGcpMdeAutoProvisioning(v.MdeAutoProvisioning),
-						VaAutoProvisioning:  flattenServersGcpVaAutoProvisioning(v.VaAutoProvisioning),
-						VmScanner:           flattenServersGcpVmScanner(v.VMScanners),
+						ArcAutoProvisioningEnabled:          flattenServersGcpArcAutoProvisioning(v.ArcAutoProvisioning),
+						DefenderForServers:                  flattenServersGcpDefenderForServers(v.DefenderForServers),
+						MdeAutoProvisioningEnabled:          flattenServersGcpMdeAutoProvisioning(v.MdeAutoProvisioning),
+						VaAutoProvisioningConfigurationType: flattenServersGcpVaAutoProvisioning(v.VaAutoProvisioning),
+						VmScanner:                           flattenServersGcpVmScanner(v.VMScanners),
 					},
 				},
 			}
@@ -3075,12 +2165,12 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderCspmAws),
 				DefenderCspmAws: []DefenderCspmAws{
 					{
-						Ciem:                               flattenDefenderCspmAwsCiem(v.Ciem),
-						DataSensitivityDiscovery:           flattenDefenderCspmAwsDataSensitivityDiscovery(v.DataSensitivityDiscovery),
-						DatabasesDspm:                      flattenDefenderCspmAwsDatabasesDspm(v.DatabasesDspm),
-						MdcContainersAgentlessDiscoveryK8s: flattenDefenderCspmAwsMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
-						MdcContainersImageAssessment:       flattenDefenderCspmAwsMdcContainersImageAssessment(v.MdcContainersImageAssessment),
-						VmScanner:                          flattenDefenderCspmAwsVmScanner(v.VMScanners),
+						Ciem:                                 flattenDefenderCspmAwsCiem(v.Ciem),
+						DataSensitivityDiscoveryCloudRoleArn: flattenDefenderCspmAwsDataSensitivityDiscovery(v.DataSensitivityDiscovery),
+						DatabasesDspmCloudRoleArn:            flattenDefenderCspmAwsDatabasesDspm(v.DatabasesDspm),
+						MdcContainersAgentlessDiscoveryK8sCloudRoleArn: flattenDefenderCspmAwsMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
+						MdcContainersImageAssessmentCloudRoleArn:       flattenDefenderCspmAwsMdcContainersImageAssessment(v.MdcContainersImageAssessment),
+						VmScanner:                                      flattenDefenderCspmAwsVmScanner(v.VMScanners),
 					},
 				},
 			}
@@ -3107,32 +2197,15 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 	return result
 }
 
-func flattenDatabasesAwsArcAutoProvisioning(input *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning) []DatabasesAwsArcAutoProvisioning {
-	result := make([]DatabasesAwsArcAutoProvisioning, 0)
+func flattenDatabasesAwsArcAutoProvisioning(input *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning) string {
+	var arcAutoProvisioningCloudRoleArn string
 	if input == nil || pointer.From(input.Enabled) == false {
-		return result
+		return arcAutoProvisioningCloudRoleArn
 	}
 
-	awsArcAutoProvisioning := DatabasesAwsArcAutoProvisioning{
-		CloudRoleArn:  pointer.From(input.CloudRoleArn),
-		Configuration: flattenDatabasesAwsConfiguration(input.Configuration),
-	}
+	arcAutoProvisioningCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, awsArcAutoProvisioning)
-}
-
-func flattenDatabasesAwsConfiguration(input *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioningConfiguration) []DatabasesAwsConfiguration {
-	result := make([]DatabasesAwsConfiguration, 0)
-	if input == nil || (input.PrivateLinkScope == nil && input.Proxy == nil) {
-		return result
-	}
-
-	awsConfiguration := DatabasesAwsConfiguration{
-		PrivateLinkScope: pointer.From(input.PrivateLinkScope),
-		Proxy:            pointer.From(input.Proxy),
-	}
-
-	return append(result, awsConfiguration)
+	return arcAutoProvisioningCloudRoleArn
 }
 
 func flattenDatabasesDspmCloudRoleArn(input *securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm) string {
@@ -3157,32 +2230,12 @@ func flattenRdsCloudRoleArn(input *securityconnectors.DefenderFoDatabasesAwsOffe
 	return rdsCloudRoleArn
 }
 
-func flattenDatabasesGcpGcpArcAutoProvisioning(input *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning) []DatabasesGcpArcAutoProvisioning {
-	result := make([]DatabasesGcpArcAutoProvisioning, 0)
+func flattenDatabasesGcpGcpArcAutoProvisioning(input *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning) bool {
 	if input == nil {
-		return result
+		return false
 	}
 
-	gcpArcAutoProvisioning := DatabasesGcpArcAutoProvisioning{
-		Configuration: flattenDatabasesGcpConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
-	}
-
-	return append(result, gcpArcAutoProvisioning)
-}
-
-func flattenDatabasesGcpConfiguration(input *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration) []DatabasesGcpConfiguration {
-	result := make([]DatabasesGcpConfiguration, 0)
-	if input == nil {
-		return result
-	}
-
-	gcpConfiguration := DatabasesGcpConfiguration{
-		PrivateLinkScope: pointer.From(input.PrivateLinkScope),
-		Proxy:            pointer.From(input.Proxy),
-	}
-
-	return append(result, gcpConfiguration)
+	return pointer.From(input.Enabled)
 }
 
 func flattenDatabasesGcpDefenderForDatabasesArcAutoProvisioning(input *securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning) []DatabasesGcpDefenderForDatabasesArcAutoProvisioning {
@@ -3199,32 +2252,26 @@ func flattenDatabasesGcpDefenderForDatabasesArcAutoProvisioning(input *securityc
 	return append(result, defenderForDatabasesArcAutoProvisioning)
 }
 
-func flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s) []ContainersAwsMdcContainersAgentlessDiscoveryK8s {
-	result := make([]ContainersAwsMdcContainersAgentlessDiscoveryK8s, 0)
-	if input == nil {
-		return result
+func flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s) string {
+	var mdcContainersAgentlessDiscoveryK8sCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return mdcContainersAgentlessDiscoveryK8sCloudRoleArn
 	}
 
-	awsMdcContainersAgentlessDiscoveryK8s := ContainersAwsMdcContainersAgentlessDiscoveryK8s{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	mdcContainersAgentlessDiscoveryK8sCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, awsMdcContainersAgentlessDiscoveryK8s)
+	return mdcContainersAgentlessDiscoveryK8sCloudRoleArn
 }
 
-func flattenContainersAwsMdcContainersImageAssessment(input *securityconnectors.DefenderForContainersAwsOfferingMdcContainersImageAssessment) []ContainersAwsMdcContainersImageAssessment {
-	result := make([]ContainersAwsMdcContainersImageAssessment, 0)
-	if input == nil {
-		return result
+func flattenContainersAwsMdcContainersImageAssessment(input *securityconnectors.DefenderForContainersAwsOfferingMdcContainersImageAssessment) string {
+	var mdcContainersImageAssessmentCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return mdcContainersImageAssessmentCloudRoleArn
 	}
 
-	awsMdcContainersImageAssessment := ContainersAwsMdcContainersImageAssessment{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	mdcContainersImageAssessmentCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, awsMdcContainersImageAssessment)
+	return mdcContainersImageAssessmentCloudRoleArn
 }
 
 func flattenContainersGcpDataPipelineNativeCloudConnection(input *securityconnectors.DefenderForContainersGcpOfferingDataPipelineNativeCloudConnection) []ContainersGcpDataPipelineNativeCloudConnection {
@@ -3250,7 +2297,6 @@ func flattenContainersGcpMdcContainersAgentlessDiscoveryK8s(input *securityconne
 	gcpMdcContainersAgentlessDiscoveryK8s := ContainersGcpMdcContainersAgentlessDiscoveryK8s{
 		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-		Enabled:                    pointer.From(input.Enabled),
 	}
 
 	return append(result, gcpMdcContainersAgentlessDiscoveryK8s)
@@ -3265,7 +2311,6 @@ func flattenContainersGcpMdcContainersImageAssessment(input *securityconnectors.
 	gcpMdcContainersImageAssessment := ContainersGcpMdcContainersImageAssessment{
 		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-		Enabled:                    pointer.From(input.Enabled),
 	}
 
 	return append(result, gcpMdcContainersImageAssessment)
@@ -3285,121 +2330,62 @@ func flattenContainersGcpNativeCloudConnection(input *securityconnectors.Defende
 	return append(result, containersGcpNativeCloudConnection)
 }
 
-func flattenServersAwsArcAutoProvisioning(input *securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioning) []ServersAwsArcAutoProvisioning {
-	result := make([]ServersAwsArcAutoProvisioning, 0)
-	if input == nil {
-		return result
+func flattenServersAwsArcAutoProvisioning(input *securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioning) string {
+	var arcAutoProvisioningCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return arcAutoProvisioningCloudRoleArn
 	}
 
-	serversAwsArcAutoProvisioning := ServersAwsArcAutoProvisioning{
-		CloudRoleArn:  pointer.From(input.CloudRoleArn),
-		Configuration: flattenServersAwsConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
-	}
+	arcAutoProvisioningCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, serversAwsArcAutoProvisioning)
+	return arcAutoProvisioningCloudRoleArn
 }
 
-func flattenServersAwsConfiguration(input *securityconnectors.DefenderForServersAwsOfferingArcAutoProvisioningConfiguration) []ServersAwsConfiguration {
-	result := make([]ServersAwsConfiguration, 0)
+func flattenServersAwsMdeAutoProvisioning(input *securityconnectors.DefenderForServersAwsOfferingMdeAutoProvisioning) bool {
 	if input == nil {
-		return result
+		return false
 	}
 
-	serversAwsConfiguration := ServersAwsConfiguration{
-		PrivateLinkScope: pointer.From(input.PrivateLinkScope),
-		Proxy:            pointer.From(input.Proxy),
-	}
-
-	return append(result, serversAwsConfiguration)
+	return pointer.From(input.Enabled)
 }
 
-func flattenServersAwsMdeAutoProvisioning(input *securityconnectors.DefenderForServersAwsOfferingMdeAutoProvisioning) []ServersAwsMdeAutoProvisioning {
-	result := make([]ServersAwsMdeAutoProvisioning, 0)
-	if input == nil {
-		return result
-	}
-
-	serversAwsMdeAutoProvisioning := ServersAwsMdeAutoProvisioning{
-		Configuration: pointer.From(input.Configuration).(string),
-		Enabled:       pointer.From(input.Enabled),
-	}
-
-	return append(result, serversAwsMdeAutoProvisioning)
-}
-
-func flattenServersAwsVaAutoProvisioning(input *securityconnectors.DefenderForServersAwsOfferingVaAutoProvisioning) []ServersAwsVaAutoProvisioning {
-	result := make([]ServersAwsVaAutoProvisioning, 0)
-	if input == nil {
-		return result
-	}
-
-	serversAwsMdeAutoProvisioning := ServersAwsVaAutoProvisioning{
-		Enabled: pointer.From(input.Enabled),
+func flattenServersAwsVaAutoProvisioning(input *securityconnectors.DefenderForServersAwsOfferingVaAutoProvisioning) string {
+	var vaAutoProvisioningConfigurationType string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return vaAutoProvisioningConfigurationType
 	}
 
 	if configuration := input.Configuration; configuration != nil {
-		serversAwsMdeAutoProvisioning.ConfigurationType = string(pointer.From(configuration.Type))
+		vaAutoProvisioningConfigurationType = string(pointer.From(configuration.Type))
 	}
 
-	return append(result, serversAwsMdeAutoProvisioning)
+	return vaAutoProvisioningConfigurationType
 }
 
 func flattenServersAwsVmScanner(input *securityconnectors.DefenderForServersAwsOfferingVMScanners) []ServersAwsVmScanner {
 	result := make([]ServersAwsVmScanner, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
-	serversAwsVmScanner := ServersAwsVmScanner{
-		Configuration: flattenServersAwsVmScannerConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
+	if v := input.Configuration; v != nil {
+		serversAwsVmScanner := ServersAwsVmScanner{
+			CloudRoleArn:  pointer.From(v.CloudRoleArn),
+			ExclusionTags: pointer.From(v.ExclusionTags),
+			ScanningMode:  string(pointer.From(v.ScanningMode)),
+		}
+		return append(result, serversAwsVmScanner)
 	}
 
-	return append(result, serversAwsVmScanner)
+	return result
 }
 
-func flattenServersAwsVmScannerConfiguration(input *securityconnectors.DefenderForServersAwsOfferingVMScannersConfiguration) []ServersAwsVmScannerConfiguration {
-	result := make([]ServersAwsVmScannerConfiguration, 0)
+func flattenServersGcpArcAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning) bool {
 	if input == nil {
-		return result
+		return false
 	}
 
-	serversAwsVmScannerConfiguration := ServersAwsVmScannerConfiguration{
-		CloudRoleArn:  pointer.From(input.CloudRoleArn),
-		ExclusionTags: pointer.From(input.ExclusionTags),
-		ScanningMode:  string(pointer.From(input.ScanningMode)),
-	}
-
-	return append(result, serversAwsVmScannerConfiguration)
-}
-
-func flattenServersGcpArcAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning) []ServersGcpArcAutoProvisioning {
-	result := make([]ServersGcpArcAutoProvisioning, 0)
-	if input == nil {
-		return result
-	}
-
-	serversGcpArcAutoProvisioning := ServersGcpArcAutoProvisioning{
-		Configuration: flattenServersGcpConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
-	}
-
-	return append(result, serversGcpArcAutoProvisioning)
-}
-
-func flattenServersGcpConfiguration(input *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioningConfiguration) []ServersGcpConfiguration {
-	result := make([]ServersGcpConfiguration, 0)
-	if input == nil {
-		return result
-	}
-
-	serversGcpConfiguration := ServersGcpConfiguration{
-		PrivateLinkScope: pointer.From(input.PrivateLinkScope),
-		Proxy:            pointer.From(input.Proxy),
-	}
-
-	return append(result, serversGcpConfiguration)
+	return pointer.From(input.Enabled)
 }
 
 func flattenServersGcpDefenderForServers(input *securityconnectors.DefenderForServersGcpOfferingDefenderForServers) []ServersGcpDefenderForServers {
@@ -3416,63 +2402,42 @@ func flattenServersGcpDefenderForServers(input *securityconnectors.DefenderForSe
 	return append(result, serversGcpDefenderForServers)
 }
 
-func flattenServersGcpMdeAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning) []ServersGcpMdeAutoProvisioning {
-	result := make([]ServersGcpMdeAutoProvisioning, 0)
+func flattenServersGcpMdeAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning) bool {
 	if input == nil {
-		return result
+		return false
 	}
 
-	serversGcpMdeAutoProvisioning := ServersGcpMdeAutoProvisioning{
-		Configuration: pointer.From(input.Configuration).(string),
-		Enabled:       pointer.From(input.Enabled),
-	}
-
-	return append(result, serversGcpMdeAutoProvisioning)
+	return pointer.From(input.Enabled)
 }
 
-func flattenServersGcpVaAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning) []ServersGcpVaAutoProvisioning {
-	result := make([]ServersGcpVaAutoProvisioning, 0)
-	if input == nil {
-		return result
-	}
-
-	serversGcpVaAutoProvisioning := ServersGcpVaAutoProvisioning{
-		Enabled: pointer.From(input.Enabled),
+func flattenServersGcpVaAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning) string {
+	var vaAutoProvisioningConfigurationType string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return vaAutoProvisioningConfigurationType
 	}
 
 	if configuration := input.Configuration; configuration != nil {
-		serversGcpVaAutoProvisioning.ConfigurationType = string(pointer.From(configuration.Type))
+		vaAutoProvisioningConfigurationType = string(pointer.From(configuration.Type))
 	}
 
-	return append(result, serversGcpVaAutoProvisioning)
+	return vaAutoProvisioningConfigurationType
 }
 
 func flattenServersGcpVmScanner(input *securityconnectors.DefenderForServersGcpOfferingVMScanners) []ServersGcpVmScanner {
 	result := make([]ServersGcpVmScanner, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
-	serversGcpVmScanner := ServersGcpVmScanner{
-		Configuration: flattenServersGcpVmScannerConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
+	if v := input.Configuration; v != nil {
+		serversGcpVmScanner := ServersGcpVmScanner{
+			ExclusionTags: pointer.From(v.ExclusionTags),
+			ScanningMode:  string(pointer.From(v.ScanningMode)),
+		}
+		return append(result, serversGcpVmScanner)
 	}
 
-	return append(result, serversGcpVmScanner)
-}
-
-func flattenServersGcpVmScannerConfiguration(input *securityconnectors.DefenderForServersGcpOfferingVMScannersConfiguration) []ServersGcpVmScannerConfiguration {
-	result := make([]ServersGcpVmScannerConfiguration, 0)
-	if input == nil {
-		return result
-	}
-
-	serversGcpVmScannerConfiguration := ServersGcpVmScannerConfiguration{
-		ExclusionTags: pointer.From(input.ExclusionTags),
-		ScanningMode:  string(pointer.From(input.ScanningMode)),
-	}
-
-	return append(result, serversGcpVmScannerConfiguration)
+	return result
 }
 
 func flattenDefenderCspmAwsCiem(input *securityconnectors.DefenderCspmAwsOfferingCiem) []CspmAwsCiem {
@@ -3506,89 +2471,67 @@ func flattenDefenderCspmAwsCiemOidc(input *securityconnectors.DefenderCspmAwsOff
 	return append(result, cspmAwsCiemOidc)
 }
 
-func flattenDefenderCspmAwsDataSensitivityDiscovery(input *securityconnectors.DefenderCspmAwsOfferingDataSensitivityDiscovery) []CspmAwsDataSensitivityDiscovery {
-	result := make([]CspmAwsDataSensitivityDiscovery, 0)
-	if input == nil {
-		return result
+func flattenDefenderCspmAwsDataSensitivityDiscovery(input *securityconnectors.DefenderCspmAwsOfferingDataSensitivityDiscovery) string {
+	var dataSensitivityDiscoveryCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return dataSensitivityDiscoveryCloudRoleArn
 	}
 
-	cspmAwsDataSensitivityDiscovery := CspmAwsDataSensitivityDiscovery{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	dataSensitivityDiscoveryCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, cspmAwsDataSensitivityDiscovery)
+	return dataSensitivityDiscoveryCloudRoleArn
 }
 
-func flattenDefenderCspmAwsDatabasesDspm(input *securityconnectors.DefenderCspmAwsOfferingDatabasesDspm) []CspmAwsDatabasesDspm {
-	result := make([]CspmAwsDatabasesDspm, 0)
-	if input == nil {
-		return result
+func flattenDefenderCspmAwsDatabasesDspm(input *securityconnectors.DefenderCspmAwsOfferingDatabasesDspm) string {
+	var databasesDspmCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return databasesDspmCloudRoleArn
 	}
 
-	cspmAwsDatabasesDspm := CspmAwsDatabasesDspm{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	databasesDspmCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, cspmAwsDatabasesDspm)
+	return databasesDspmCloudRoleArn
 }
 
-func flattenDefenderCspmAwsMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderCspmAwsOfferingMdcContainersAgentlessDiscoveryK8s) []CspmAwsMdcContainersAgentlessDiscoveryK8s {
-	result := make([]CspmAwsMdcContainersAgentlessDiscoveryK8s, 0)
-	if input == nil {
-		return result
+func flattenDefenderCspmAwsMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderCspmAwsOfferingMdcContainersAgentlessDiscoveryK8s) string {
+	var mdcContainersAgentlessDiscoveryK8s string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return mdcContainersAgentlessDiscoveryK8s
 	}
 
-	cspmAwsMdcContainersAgentlessDiscoveryK8s := CspmAwsMdcContainersAgentlessDiscoveryK8s{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	mdcContainersAgentlessDiscoveryK8s = pointer.From(input.CloudRoleArn)
 
-	return append(result, cspmAwsMdcContainersAgentlessDiscoveryK8s)
+	return mdcContainersAgentlessDiscoveryK8s
 }
 
-func flattenDefenderCspmAwsMdcContainersImageAssessment(input *securityconnectors.DefenderCspmAwsOfferingMdcContainersImageAssessment) []CspmAwsMdcContainersImageAssessment {
-	result := make([]CspmAwsMdcContainersImageAssessment, 0)
-	if input == nil {
-		return result
+func flattenDefenderCspmAwsMdcContainersImageAssessment(input *securityconnectors.DefenderCspmAwsOfferingMdcContainersImageAssessment) string {
+	var mdcContainersImageAssessmentCloudRoleArn string
+	if input == nil || pointer.From(input.Enabled) == false {
+		return mdcContainersImageAssessmentCloudRoleArn
 	}
 
-	cspmAwsMdcContainersImageAssessment := CspmAwsMdcContainersImageAssessment{
-		CloudRoleArn: pointer.From(input.CloudRoleArn),
-		Enabled:      pointer.From(input.Enabled),
-	}
+	mdcContainersImageAssessmentCloudRoleArn = pointer.From(input.CloudRoleArn)
 
-	return append(result, cspmAwsMdcContainersImageAssessment)
+	return mdcContainersImageAssessmentCloudRoleArn
 }
 
 func flattenDefenderCspmAwsVmScanner(input *securityconnectors.DefenderCspmAwsOfferingVMScanners) []CspmAwsVmScanner {
 	result := make([]CspmAwsVmScanner, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
-	cspmAwsVmScanner := CspmAwsVmScanner{
-		Configuration: flattenDefenderCspmAwsVmScannerConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
+	if v := input.Configuration; v != nil {
+		cspmAwsVmScanner := CspmAwsVmScanner{
+			CloudRoleArn:  pointer.From(v.CloudRoleArn),
+			ExclusionTags: pointer.From(v.ExclusionTags),
+			ScanningMode:  string(pointer.From(v.ScanningMode)),
+		}
+
+		return append(result, cspmAwsVmScanner)
 	}
 
-	return append(result, cspmAwsVmScanner)
-}
-
-func flattenDefenderCspmAwsVmScannerConfiguration(input *securityconnectors.DefenderCspmAwsOfferingVMScannersConfiguration) []CspmAwsVmScannerConfiguration {
-	result := make([]CspmAwsVmScannerConfiguration, 0)
-	if input == nil {
-		return result
-	}
-
-	serversGcpVmScannerConfiguration := CspmAwsVmScannerConfiguration{
-		CloudRoleArn:  pointer.From(input.CloudRoleArn),
-		ExclusionTags: pointer.From(input.ExclusionTags),
-		ScanningMode:  string(pointer.From(input.ScanningMode)),
-	}
-
-	return append(result, serversGcpVmScannerConfiguration)
+	return result
 }
 
 func flattenDefenderCspmGcpCiemDiscovery(input *securityconnectors.DefenderCspmGcpOfferingCiemDiscovery) []CspmGcpCiemDiscovery {
@@ -3608,14 +2551,13 @@ func flattenDefenderCspmGcpCiemDiscovery(input *securityconnectors.DefenderCspmG
 
 func flattenDefenderCspmGcpDataSensitivityDiscovery(input *securityconnectors.DefenderCspmGcpOfferingDataSensitivityDiscovery) []CspmGcpDataSensitivityDiscovery {
 	result := make([]CspmGcpDataSensitivityDiscovery, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
 	cspmGcpDataSensitivityDiscovery := CspmGcpDataSensitivityDiscovery{
 		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-		Enabled:                    pointer.From(input.Enabled),
 	}
 
 	return append(result, cspmGcpDataSensitivityDiscovery)
@@ -3623,14 +2565,13 @@ func flattenDefenderCspmGcpDataSensitivityDiscovery(input *securityconnectors.De
 
 func flattenDefenderCspmGcpMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderCspmGcpOfferingMdcContainersAgentlessDiscoveryK8s) []CspmGcpMdcContainersAgentlessDiscoveryK8s {
 	result := make([]CspmGcpMdcContainersAgentlessDiscoveryK8s, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
 	cspmGcpMdcContainersAgentlessDiscoveryK8s := CspmGcpMdcContainersAgentlessDiscoveryK8s{
 		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-		Enabled:                    pointer.From(input.Enabled),
 	}
 
 	return append(result, cspmGcpMdcContainersAgentlessDiscoveryK8s)
@@ -3638,14 +2579,13 @@ func flattenDefenderCspmGcpMdcContainersAgentlessDiscoveryK8s(input *securitycon
 
 func flattenDefenderCspmGcpMdcContainersImageAssessment(input *securityconnectors.DefenderCspmGcpOfferingMdcContainersImageAssessment) []CspmGcpMdcContainersImageAssessment {
 	result := make([]CspmGcpMdcContainersImageAssessment, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
 	cspmGcpMdcContainersImageAssessment := CspmGcpMdcContainersImageAssessment{
 		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-		Enabled:                    pointer.From(input.Enabled),
 	}
 
 	return append(result, cspmGcpMdcContainersImageAssessment)
@@ -3653,28 +2593,17 @@ func flattenDefenderCspmGcpMdcContainersImageAssessment(input *securityconnector
 
 func flattenDefenderCspmGcpVmScanner(input *securityconnectors.DefenderCspmGcpOfferingVMScanners) []CspmGcpVmScanner {
 	result := make([]CspmGcpVmScanner, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
-	cspmGcpVmScanner := CspmGcpVmScanner{
-		Configuration: flattenDefenderCspmGcpVmScannerConfiguration(input.Configuration),
-		Enabled:       pointer.From(input.Enabled),
+	if v := input.Configuration; v != nil {
+		cspmGcpVmScanner := CspmGcpVmScanner{
+			ExclusionTags: pointer.From(v.ExclusionTags),
+			ScanningMode:  string(pointer.From(v.ScanningMode)),
+		}
+		return append(result, cspmGcpVmScanner)
 	}
 
-	return append(result, cspmGcpVmScanner)
-}
-
-func flattenDefenderCspmGcpVmScannerConfiguration(input *securityconnectors.DefenderCspmGcpOfferingVMScannersConfiguration) []CspmGcpVmScannerConfiguration {
-	result := make([]CspmGcpVmScannerConfiguration, 0)
-	if input == nil {
-		return result
-	}
-
-	serversGcpVmScannerConfiguration := CspmGcpVmScannerConfiguration{
-		ExclusionTags: pointer.From(input.ExclusionTags),
-		ScanningMode:  string(pointer.From(input.ScanningMode)),
-	}
-
-	return append(result, serversGcpVmScannerConfiguration)
+	return result
 }
