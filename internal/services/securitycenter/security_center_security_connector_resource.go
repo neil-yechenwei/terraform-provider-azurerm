@@ -42,26 +42,20 @@ type AwsAccount struct {
 }
 
 type GcpProject struct {
-	ProjectDetails []GcpProjectDetails `tfschema:"project_details"`
-	ScanInterval   int                 `tfschema:"scan_interval"`
-}
-
-type GcpProjectDetails struct {
-	ProjectId     string `tfschema:"project_id"`
-	ProjectNumber string `tfschema:"project_number"`
+	ProjectId    string `tfschema:"project_id"`
+	ScanInterval int    `tfschema:"scan_interval"`
 }
 
 type Offering struct {
-	Type                                            string                     `tfschema:"type"`
-	CspmMonitorAwsNativeCloudConnectionCloudRoleArn string                     `tfschema:"cspm_monitor_aws_native_cloud_connection_cloud_role_arn"`
-	CspmMonitorGcp                                  []CspmMonitorGcp           `tfschema:"cspm_monitor_gcp"`
-	DefenderForDatabasesAws                         []DefenderForDatabasesAws  `tfschema:"defender_for_databases_aws"`
-	DefenderForDatabasesGcp                         []DefenderForDatabasesGcp  `tfschema:"defender_for_databases_gcp"`
-	DefenderForContainersAws                        []DefenderForContainersAws `tfschema:"defender_for_containers_aws"`
-	DefenderForContainersGcp                        []DefenderForContainersGcp `tfschema:"defender_for_containers_gcp"`
-	DefenderForServersGcp                           []DefenderForServersGcp    `tfschema:"defender_for_servers_gcp"`
-	DefenderCspmAws                                 []DefenderCspmAws          `tfschema:"defender_cspm_aws"`
-	DefenderCspmGcp                                 []DefenderCspmGcp          `tfschema:"defender_cspm_gcp"`
+	Type                                            string                                       `tfschema:"type"`
+	CspmMonitorAwsNativeCloudConnectionCloudRoleArn string                                       `tfschema:"cspm_monitor_aws_native_cloud_connection_cloud_role_arn"`
+	CspmMonitorGcp                                  []CspmMonitorGcp                             `tfschema:"cspm_monitor_gcp"`
+	DefenderForDatabasesAws                         []DefenderForDatabasesAws                    `tfschema:"defender_for_databases_aws"`
+	DefenderForDatabasesGcpArcAutoProvisioning      []DefenderForDatabasesGcpArcAutoProvisioning `tfschema:"defender_for_databases_gcp_arc_auto_provisioning"`
+	DefenderForContainersAws                        []DefenderForContainersAws                   `tfschema:"defender_for_containers_aws"`
+	DefenderForContainersGcp                        []DefenderForContainersGcp                   `tfschema:"defender_for_containers_gcp"`
+	DefenderCspmAws                                 []DefenderCspmAws                            `tfschema:"defender_cspm_aws"`
+	DefenderCspmGcp                                 []DefenderCspmGcp                            `tfschema:"defender_cspm_gcp"`
 }
 
 type CspmMonitorGcp struct {
@@ -75,12 +69,7 @@ type DefenderForDatabasesAws struct {
 	RdsCloudRoleArn                 string `tfschema:"rds_cloud_role_arn"`
 }
 
-type DefenderForDatabasesGcp struct {
-	ArcAutoProvisioningEnabled              bool                                                  `tfschema:"arc_auto_provisioning_enabled"`
-	DefenderForDatabasesArcAutoProvisioning []DatabasesGcpDefenderForDatabasesArcAutoProvisioning `tfschema:"defender_for_databases_arc_auto_provisioning"`
-}
-
-type DatabasesGcpDefenderForDatabasesArcAutoProvisioning struct {
+type DefenderForDatabasesGcpArcAutoProvisioning struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
 }
@@ -100,7 +89,6 @@ type DefenderForContainersAws struct {
 }
 
 type DefenderForContainersGcp struct {
-	AuditLogsAutoProvisioningFlagEnabled     bool                                              `tfschema:"audit_logs_auto_provisioning_flag_enabled"`
 	DataPipelineNativeCloudConnection        []ContainersGcpDataPipelineNativeCloudConnection  `tfschema:"data_pipeline_native_cloud_connection"`
 	DefenderAgentAutoProvisioningFlagEnabled bool                                              `tfschema:"defender_agent_auto_provisioning_flag_enabled"`
 	MdcContainersAgentlessDiscoveryK8s       []ContainersGcpMdcContainersAgentlessDiscoveryK8s `tfschema:"mdc_containers_agentless_discovery_k8s"`
@@ -125,20 +113,6 @@ type ContainersGcpMdcContainersImageAssessment struct {
 }
 
 type ContainersGcpNativeCloudConnection struct {
-	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
-	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
-}
-
-type DefenderForServersGcp struct {
-	ArcAutoProvisioningEnabled          bool                           `tfschema:"arc_auto_provisioning_enabled"`
-	DefenderForServers                  []ServersGcpDefenderForServers `tfschema:"defender_for_servers"`
-	MdeAutoProvisioningEnabled          bool                           `tfschema:"mde_auto_provisioning_enabled"`
-	SubPlanType                         string                         `tfschema:"sub_plan_type"`
-	VaAutoProvisioningConfigurationType string                         `tfschema:"va_auto_provisioning_configuration_type"`
-	VmScannerExclusionTags              map[string]string              `tfschema:"vm_scanner_exclusion_tags"`
-}
-
-type ServersGcpDefenderForServers struct {
 	ServiceAccountEmailAddress string `tfschema:"service_account_email_address"`
 	WorkloadIdentityProviderId string `tfschema:"workload_identity_provider_id"`
 }
@@ -290,28 +264,14 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 					"gcp_project": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
+						ForceNew: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"project_details": {
-									Type:     pluginsdk.TypeList,
-									Required: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"project_id": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-
-											"project_number": {
-												Type:         pluginsdk.TypeString,
-												Optional:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-										},
-									},
+								"project_id": {
+									Type:         pluginsdk.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"scan_interval": {
@@ -406,37 +366,22 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						},
 					},
 
-					"defender_for_databases_gcp": {
+					"defender_for_databases_gcp_arc_auto_provisioning": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"arc_auto_provisioning_enabled": {
-									Type:     pluginsdk.TypeBool,
-									Optional: true,
-									Default:  false,
+								"service_account_email_address": {
+									Type:         pluginsdk.TypeString,
+									Required:     true,
+									ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
 								},
 
-								"defender_for_databases_arc_auto_provisioning": {
-									Type:     pluginsdk.TypeList,
-									Optional: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"service_account_email_address": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
-											},
-
-											"workload_identity_provider_id": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-										},
-									},
+								"workload_identity_provider_id": {
+									Type:         pluginsdk.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
 								},
 							},
 						},
@@ -546,7 +491,7 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 
 								"data_pipeline_native_cloud_connection": {
 									Type:     pluginsdk.TypeList,
-									Required: true,
+									Optional: true,
 									MaxItems: 1,
 									Elem: &pluginsdk.Resource{
 										Schema: map[string]*pluginsdk.Schema{
@@ -563,12 +508,6 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 											},
 										},
 									},
-								},
-
-								"audit_logs_auto_provisioning_flag_enabled": {
-									Type:     pluginsdk.TypeBool,
-									Optional: true,
-									Default:  false,
 								},
 
 								"defender_agent_auto_provisioning_flag_enabled": {
@@ -628,87 +567,12 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 						},
 					},
 
-					"defender_for_servers_gcp": {
-						Type:     pluginsdk.TypeList,
-						Optional: true,
-						MaxItems: 1,
-						Elem: &pluginsdk.Resource{
-							Schema: map[string]*pluginsdk.Schema{
-								"defender_for_servers": {
-									Type:     pluginsdk.TypeList,
-									Required: true,
-									MaxItems: 1,
-									Elem: &pluginsdk.Resource{
-										Schema: map[string]*pluginsdk.Schema{
-											"service_account_email_address": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validate.SecurityConnectorServiceAccountEmailAddress,
-											},
-
-											"workload_identity_provider_id": {
-												Type:         pluginsdk.TypeString,
-												Required:     true,
-												ValidateFunc: validation.StringIsNotEmpty,
-											},
-										},
-									},
-								},
-
-								"arc_auto_provisioning_enabled": {
-									Type:     pluginsdk.TypeBool,
-									Optional: true,
-									Default:  false,
-								},
-
-								"mde_auto_provisioning_enabled": {
-									Type:     pluginsdk.TypeBool,
-									Optional: true,
-									Default:  false,
-								},
-
-								"sub_plan_type": {
-									Type:         pluginsdk.TypeString,
-									Optional:     true,
-									Default:      "P2",
-									ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForSubPlan(), false),
-								},
-
-								"va_auto_provisioning_configuration_type": {
-									Type:         pluginsdk.TypeString,
-									Optional:     true,
-									ValidateFunc: validation.StringInSlice(securityconnectors.PossibleValuesForType(), false),
-								},
-
-								"vm_scanner_exclusion_tags": commonschema.Tags(),
-							},
-						},
-					},
-
 					"defender_cspm_aws": {
 						Type:     pluginsdk.TypeList,
 						Optional: true,
 						MaxItems: 1,
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
-								"databases_dspm_cloud_role_arn": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"mdc_containers_agentless_discovery_k8s_cloud_role_arn": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
-								"mdc_containers_image_assessment_cloud_role_arn": {
-									Type:         pluginsdk.TypeString,
-									Required:     true,
-									ValidateFunc: validation.StringIsNotEmpty,
-								},
-
 								"ciem": {
 									Type:     pluginsdk.TypeList,
 									Optional: true,
@@ -745,7 +609,25 @@ func (r SecurityCenterSecurityConnectorResource) Arguments() map[string]*plugins
 									},
 								},
 
+								"databases_dspm_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
 								"data_sensitivity_discovery_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"mdc_containers_agentless_discovery_k8s_cloud_role_arn": {
+									Type:         pluginsdk.TypeString,
+									Optional:     true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"mdc_containers_image_assessment_cloud_role_arn": {
 									Type:         pluginsdk.TypeString,
 									Optional:     true,
 									ValidateFunc: validation.StringIsNotEmpty,
@@ -1083,23 +965,10 @@ func expandGcpProject(input []GcpProject) *securityconnectors.GcpProjectEnvironm
 	gcpProject := input[0]
 
 	result := &securityconnectors.GcpProjectEnvironmentData{
-		ProjectDetails: expandGcpProjectDetails(gcpProject.ProjectDetails),
-		ScanInterval:   pointer.To(int64(gcpProject.ScanInterval)),
-	}
-
-	return result
-}
-
-func expandGcpProjectDetails(input []GcpProjectDetails) *securityconnectors.GcpProjectDetails {
-	if len(input) == 0 {
-		return nil
-	}
-
-	projectDetails := input[0]
-
-	result := &securityconnectors.GcpProjectDetails{
-		ProjectId:     pointer.To(projectDetails.ProjectId),
-		ProjectNumber: pointer.To(projectDetails.ProjectNumber),
+		ProjectDetails: &securityconnectors.GcpProjectDetails{
+			ProjectId: pointer.To(gcpProject.ProjectId),
+		},
+		ScanInterval: pointer.To(int64(gcpProject.ScanInterval)),
 	}
 
 	return result
@@ -1113,26 +982,26 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 
 	for _, item := range input {
 		if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorAzureDevOps) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `AzureDevOps`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `AzureDevOps`")
 			}
 
 			result = append(result, securityconnectors.CspmMonitorAzureDevOpsOffering{})
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorGithub) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `Github`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `Github`")
 			}
 
 			result = append(result, securityconnectors.CspmMonitorGithubOffering{})
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorGitLab) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `GitLab`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `GitLab`")
 			}
 
 			result = append(result, securityconnectors.CspmMonitorGitLabOffering{})
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorAws) {
-			if len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `CspmMonitorAws`")
+			if len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `CspmMonitorAws`")
 			}
 
 			cspmMonitorAwsOffering := securityconnectors.CspmMonitorAwsOffering{}
@@ -1145,8 +1014,8 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 
 			result = append(result, cspmMonitorAwsOffering)
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorGcp) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `CspmMonitorGcp`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `CspmMonitorGcp`")
 			}
 
 			cspmMonitorGcpOffering := securityconnectors.CspmMonitorGcpOffering{}
@@ -1162,8 +1031,8 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 
 			result = append(result, cspmMonitorGcpOffering)
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderForDatabasesAws) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForDatabasesAws`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForDatabasesAws`")
 			}
 
 			defenderFoDatabasesAwsOffering := securityconnectors.DefenderFoDatabasesAwsOffering{}
@@ -1178,23 +1047,30 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 
 			result = append(result, defenderFoDatabasesAwsOffering)
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderForDatabasesGcp) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForDatabasesGcp`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForDatabasesGcp`")
 			}
 
 			defenderForDatabasesGcpOffering := securityconnectors.DefenderForDatabasesGcpOffering{}
 
-			if v := item.DefenderForDatabasesGcp; len(v) != 0 {
+			if v := item.DefenderForDatabasesGcpArcAutoProvisioning; len(v) != 0 {
 				defenderForDatabasesGcp := v[0]
 
-				defenderForDatabasesGcpOffering.ArcAutoProvisioning = expandDatabasesGcpArcAutoProvisioning(defenderForDatabasesGcp.ArcAutoProvisioningEnabled)
-				defenderForDatabasesGcpOffering.DefenderForDatabasesArcAutoProvisioning = expandDatabasesGcpDefenderForDatabasesArcAutoProvisioning(defenderForDatabasesGcp.DefenderForDatabasesArcAutoProvisioning)
+				defenderForDatabasesGcpOffering.ArcAutoProvisioning = &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning{
+					Configuration: &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration{},
+					Enabled:       pointer.To(true),
+				}
+
+				defenderForDatabasesGcpOffering.DefenderForDatabasesArcAutoProvisioning = &securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning{
+					ServiceAccountEmailAddress: pointer.To(defenderForDatabasesGcp.ServiceAccountEmailAddress),
+					WorkloadIdentityProviderId: pointer.To(defenderForDatabasesGcp.WorkloadIdentityProviderId),
+				}
 			}
 
 			result = append(result, defenderForDatabasesGcpOffering)
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderForContainersAws) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_gcp`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForContainersAws`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForContainersAws`")
 			}
 
 			defenderForContainersAwsOffering := securityconnectors.DefenderForContainersAwsOffering{}
@@ -1242,8 +1118,8 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 
 			result = append(result, defenderForContainersAwsOffering)
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderForContainersGcp) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_servers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForContainersGcp`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForContainersGcp`")
 			}
 
 			defenderForContainersGcpOffering := securityconnectors.DefenderForContainersGcpOffering{}
@@ -1251,7 +1127,9 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 			if v := item.DefenderForContainersGcp; len(v) != 0 {
 				defenderForContainersGcp := v[0]
 
-				defenderForContainersGcpOffering.AuditLogsAutoProvisioningFlag = pointer.To(defenderForContainersGcp.AuditLogsAutoProvisioningFlagEnabled)
+				if len(defenderForContainersGcp.DataPipelineNativeCloudConnection) != 0 {
+					defenderForContainersGcpOffering.AuditLogsAutoProvisioningFlag = pointer.To(true)
+				}
 				defenderForContainersGcpOffering.DataPipelineNativeCloudConnection = expandContainersGcpDataPipelineNativeCloudConnection(defenderForContainersGcp.DataPipelineNativeCloudConnection)
 				defenderForContainersGcpOffering.DefenderAgentAutoProvisioningFlag = pointer.To(defenderForContainersGcp.DefenderAgentAutoProvisioningFlagEnabled)
 				defenderForContainersGcpOffering.MdcContainersAgentlessDiscoveryK8s = expandContainersGcpMdcContainersAgentlessDiscoveryK8s(defenderForContainersGcp.MdcContainersAgentlessDiscoveryK8s)
@@ -1261,31 +1139,9 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 			}
 
 			result = append(result, defenderForContainersGcpOffering)
-		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderForServersGcp) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForServersGcp`")
-			}
-
-			defenderForServersGcpOffering := securityconnectors.DefenderForServersGcpOffering{}
-
-			if v := item.DefenderForServersGcp; len(v) != 0 {
-				defenderForServersGcp := v[0]
-
-				defenderForServersGcpOffering.ArcAutoProvisioning = expandServersGcpArcAutoProvisioning(defenderForServersGcp.ArcAutoProvisioningEnabled)
-				defenderForServersGcpOffering.DefenderForServers = expandServersGcpDefenderForServers(defenderForServersGcp.DefenderForServers)
-				defenderForServersGcpOffering.MdeAutoProvisioning = expandServersGcpMdeAutoProvisioning(defenderForServersGcp.MdeAutoProvisioningEnabled)
-				defenderForServersGcpOffering.VaAutoProvisioning = expandServersGcpVaAutoProvisioning(defenderForServersGcp.VaAutoProvisioningConfigurationType)
-				defenderForServersGcpOffering.VMScanners = expandServersGcpVMScanners(defenderForServersGcp.VmScannerExclusionTags)
-
-				defenderForServersGcpOffering.SubPlan = &securityconnectors.DefenderForServersGcpOfferingSubPlan{
-					Type: pointer.To(securityconnectors.SubPlan(defenderForServersGcp.SubPlanType)),
-				}
-			}
-
-			result = append(result, defenderForServersGcpOffering)
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderCspmAws) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmGcp) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp` and `defender_cspm_gcp` cannot be set for the offering type `DefenderCspmAws`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmGcp) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp` and `defender_cspm_gcp` cannot be set for the offering type `DefenderCspmAws`")
 			}
 
 			defenderCspmAwsOffering := securityconnectors.DefenderCspmAwsOffering{}
@@ -1303,8 +1159,8 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 
 			result = append(result, defenderCspmAwsOffering)
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderCspmGcp) {
-			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcp) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderForServersGcp) != 0 || len(item.DefenderCspmAws) != 0 {
-				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_for_servers_gcp` and `defender_cspm_aws` cannot be set for the offering type `DefenderCspmGcp`")
+			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 {
+				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp` and `defender_cspm_aws` cannot be set for the offering type `DefenderCspmGcp`")
 			}
 
 			defenderCspmGcpOffering := securityconnectors.DefenderCspmGcpOffering{}
@@ -1367,30 +1223,6 @@ func expandDatabasesAwsRds(input string) *securityconnectors.DefenderFoDatabases
 	result := &securityconnectors.DefenderFoDatabasesAwsOfferingRds{
 		CloudRoleArn: pointer.To(input),
 		Enabled:      pointer.To(true),
-	}
-
-	return result
-}
-
-func expandDatabasesGcpArcAutoProvisioning(input bool) *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning {
-	result := &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning{
-		Configuration: &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration{},
-		Enabled:       pointer.To(input),
-	}
-
-	return result
-}
-
-func expandDatabasesGcpDefenderForDatabasesArcAutoProvisioning(input []DatabasesGcpDefenderForDatabasesArcAutoProvisioning) *securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning {
-	if len(input) == 0 {
-		return nil
-	}
-
-	defenderForDatabasesArcAutoProvisioning := input[0]
-
-	result := &securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning{
-		ServiceAccountEmailAddress: pointer.To(defenderForDatabasesArcAutoProvisioning.ServiceAccountEmailAddress),
-		WorkloadIdentityProviderId: pointer.To(defenderForDatabasesArcAutoProvisioning.WorkloadIdentityProviderId),
 	}
 
 	return result
@@ -1487,73 +1319,6 @@ func expandContainersGcpNativeCloudConnection(input []ContainersGcpNativeCloudCo
 	result := &securityconnectors.DefenderForContainersGcpOfferingNativeCloudConnection{
 		ServiceAccountEmailAddress: pointer.To(containersGcpNativeCloudConnection.ServiceAccountEmailAddress),
 		WorkloadIdentityProviderId: pointer.To(containersGcpNativeCloudConnection.WorkloadIdentityProviderId),
-	}
-
-	return result
-}
-
-func expandServersGcpArcAutoProvisioning(input bool) *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning {
-	result := &securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning{
-		Configuration: &securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioningConfiguration{},
-		Enabled:       pointer.To(input),
-	}
-
-	return result
-}
-
-func expandServersGcpDefenderForServers(input []ServersGcpDefenderForServers) *securityconnectors.DefenderForServersGcpOfferingDefenderForServers {
-	if len(input) == 0 {
-		return nil
-	}
-
-	serversGcpDefenderForServers := input[0]
-
-	result := &securityconnectors.DefenderForServersGcpOfferingDefenderForServers{
-		ServiceAccountEmailAddress: pointer.To(serversGcpDefenderForServers.ServiceAccountEmailAddress),
-		WorkloadIdentityProviderId: pointer.To(serversGcpDefenderForServers.WorkloadIdentityProviderId),
-	}
-
-	return result
-}
-
-func expandServersGcpMdeAutoProvisioning(input bool) *securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning {
-	result := &securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning{
-		Enabled: pointer.To(input),
-	}
-
-	return result
-}
-
-func expandServersGcpVaAutoProvisioning(input string) *securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning {
-	if input == "" {
-		return &securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning{
-			Enabled: pointer.To(false),
-		}
-	}
-
-	result := &securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning{
-		Configuration: &securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioningConfiguration{
-			Type: pointer.To(securityconnectors.Type(input)),
-		},
-		Enabled: pointer.To(true),
-	}
-
-	return result
-}
-
-func expandServersGcpVMScanners(input map[string]string) *securityconnectors.DefenderForServersGcpOfferingVMScanners {
-	if len(input) == 0 {
-		return &securityconnectors.DefenderForServersGcpOfferingVMScanners{
-			Enabled: pointer.To(false),
-		}
-	}
-
-	result := &securityconnectors.DefenderForServersGcpOfferingVMScanners{
-		Configuration: &securityconnectors.DefenderForServersGcpOfferingVMScannersConfiguration{
-			ExclusionTags: pointer.To(input),
-			ScanningMode:  pointer.To(securityconnectors.ScanningModeDefault),
-		},
-		Enabled: pointer.To(true),
 	}
 
 	return result
@@ -1809,25 +1574,22 @@ func flattenGcpProject(input securityconnectors.GcpProjectEnvironmentData) []Gcp
 	result := make([]GcpProject, 0)
 
 	gcpProject := GcpProject{
-		ScanInterval:   int(pointer.From(input.ScanInterval)),
-		ProjectDetails: flattenGcpProjectDetails(input.ProjectDetails),
+		ScanInterval: int(pointer.From(input.ScanInterval)),
+		ProjectId:    flattenGcpProjectDetails(input.ProjectDetails),
 	}
 
 	return append(result, gcpProject)
 }
 
-func flattenGcpProjectDetails(input *securityconnectors.GcpProjectDetails) []GcpProjectDetails {
-	result := make([]GcpProjectDetails, 0)
+func flattenGcpProjectDetails(input *securityconnectors.GcpProjectDetails) string {
+	var projectId string
 	if input == nil {
-		return result
+		return projectId
 	}
 
-	gcpProjectDetails := GcpProjectDetails{
-		ProjectId:     pointer.From(input.ProjectId),
-		ProjectNumber: pointer.From(input.ProjectNumber),
-	}
+	projectId = pointer.From(input.ProjectId)
 
-	return append(result, gcpProjectDetails)
+	return projectId
 }
 
 func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
@@ -1890,12 +1652,15 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 		} else if v, ok := item.(securityconnectors.DefenderForDatabasesGcpOffering); ok {
 			defenderForDatabasesGcpOffering := Offering{
 				Type: string(securityconnectors.OfferingTypeDefenderForDatabasesGcp),
-				DefenderForDatabasesGcp: []DefenderForDatabasesGcp{
+			}
+
+			if defenderForDatabasesArcAutoProvisioning := v.DefenderForDatabasesArcAutoProvisioning; defenderForDatabasesArcAutoProvisioning != nil {
+				defenderForDatabasesGcpOffering.DefenderForDatabasesGcpArcAutoProvisioning = []DefenderForDatabasesGcpArcAutoProvisioning{
 					{
-						ArcAutoProvisioningEnabled:              flattenDatabasesGcpGcpArcAutoProvisioning(v.ArcAutoProvisioning),
-						DefenderForDatabasesArcAutoProvisioning: flattenDatabasesGcpDefenderForDatabasesArcAutoProvisioning(v.DefenderForDatabasesArcAutoProvisioning),
+						ServiceAccountEmailAddress: pointer.From(defenderForDatabasesArcAutoProvisioning.ServiceAccountEmailAddress),
+						WorkloadIdentityProviderId: pointer.From(defenderForDatabasesArcAutoProvisioning.WorkloadIdentityProviderId),
 					},
-				},
+				}
 			}
 
 			result = append(result, defenderForDatabasesGcpOffering)
@@ -1943,7 +1708,6 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 				Type: string(securityconnectors.OfferingTypeDefenderForContainersGcp),
 				DefenderForContainersGcp: []DefenderForContainersGcp{
 					{
-						AuditLogsAutoProvisioningFlagEnabled:     pointer.From(v.AuditLogsAutoProvisioningFlag),
 						DataPipelineNativeCloudConnection:        flattenContainersGcpDataPipelineNativeCloudConnection(v.DataPipelineNativeCloudConnection),
 						DefenderAgentAutoProvisioningFlagEnabled: pointer.From(v.DefenderAgentAutoProvisioningFlag),
 						MdcContainersAgentlessDiscoveryK8s:       flattenContainersGcpMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
@@ -1955,25 +1719,6 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 			}
 
 			result = append(result, defenderForContainersGcpOffering)
-		} else if v, ok := item.(securityconnectors.DefenderForServersGcpOffering); ok {
-			defenderForServersGcpOffering := Offering{
-				Type: string(securityconnectors.OfferingTypeDefenderForServersGcp),
-				DefenderForServersGcp: []DefenderForServersGcp{
-					{
-						ArcAutoProvisioningEnabled:          flattenServersGcpArcAutoProvisioning(v.ArcAutoProvisioning),
-						DefenderForServers:                  flattenServersGcpDefenderForServers(v.DefenderForServers),
-						MdeAutoProvisioningEnabled:          flattenServersGcpMdeAutoProvisioning(v.MdeAutoProvisioning),
-						VaAutoProvisioningConfigurationType: flattenServersGcpVaAutoProvisioning(v.VaAutoProvisioning),
-						VmScannerExclusionTags:              flattenServersGcpVmScanner(v.VMScanners),
-					},
-				},
-			}
-
-			if subPlan := v.SubPlan; subPlan != nil {
-				defenderForServersGcpOffering.DefenderForServersGcp[0].SubPlanType = string(pointer.From(subPlan.Type))
-			}
-
-			result = append(result, defenderForServersGcpOffering)
 		} else if v, ok := item.(securityconnectors.DefenderCspmAwsOffering); ok {
 			defenderCspmAwsOffering := Offering{
 				Type: string(securityconnectors.OfferingTypeDefenderCspmAws),
@@ -2044,28 +1789,6 @@ func flattenRdsCloudRoleArn(input *securityconnectors.DefenderFoDatabasesAwsOffe
 	return rdsCloudRoleArn
 }
 
-func flattenDatabasesGcpGcpArcAutoProvisioning(input *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning) bool {
-	if input == nil {
-		return false
-	}
-
-	return pointer.From(input.Enabled)
-}
-
-func flattenDatabasesGcpDefenderForDatabasesArcAutoProvisioning(input *securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning) []DatabasesGcpDefenderForDatabasesArcAutoProvisioning {
-	result := make([]DatabasesGcpDefenderForDatabasesArcAutoProvisioning, 0)
-	if input == nil {
-		return result
-	}
-
-	defenderForDatabasesArcAutoProvisioning := DatabasesGcpDefenderForDatabasesArcAutoProvisioning{
-		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
-		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-	}
-
-	return append(result, defenderForDatabasesArcAutoProvisioning)
-}
-
 func flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s) string {
 	var mdcContainersAgentlessDiscoveryK8sCloudRoleArn string
 	if input == nil || pointer.From(input.Enabled) == false {
@@ -2104,7 +1827,7 @@ func flattenContainersGcpDataPipelineNativeCloudConnection(input *securityconnec
 
 func flattenContainersGcpMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderForContainersGcpOfferingMdcContainersAgentlessDiscoveryK8s) []ContainersGcpMdcContainersAgentlessDiscoveryK8s {
 	result := make([]ContainersGcpMdcContainersAgentlessDiscoveryK8s, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
@@ -2118,7 +1841,7 @@ func flattenContainersGcpMdcContainersAgentlessDiscoveryK8s(input *securityconne
 
 func flattenContainersGcpMdcContainersImageAssessment(input *securityconnectors.DefenderForContainersGcpOfferingMdcContainersImageAssessment) []ContainersGcpMdcContainersImageAssessment {
 	result := make([]ContainersGcpMdcContainersImageAssessment, 0)
-	if input == nil {
+	if input == nil || pointer.From(input.Enabled) == false {
 		return result
 	}
 
@@ -2142,62 +1865,6 @@ func flattenContainersGcpNativeCloudConnection(input *securityconnectors.Defende
 	}
 
 	return append(result, containersGcpNativeCloudConnection)
-}
-
-func flattenServersGcpArcAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingArcAutoProvisioning) bool {
-	if input == nil {
-		return false
-	}
-
-	return pointer.From(input.Enabled)
-}
-
-func flattenServersGcpDefenderForServers(input *securityconnectors.DefenderForServersGcpOfferingDefenderForServers) []ServersGcpDefenderForServers {
-	result := make([]ServersGcpDefenderForServers, 0)
-	if input == nil {
-		return result
-	}
-
-	serversGcpDefenderForServers := ServersGcpDefenderForServers{
-		ServiceAccountEmailAddress: pointer.From(input.ServiceAccountEmailAddress),
-		WorkloadIdentityProviderId: pointer.From(input.WorkloadIdentityProviderId),
-	}
-
-	return append(result, serversGcpDefenderForServers)
-}
-
-func flattenServersGcpMdeAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingMdeAutoProvisioning) bool {
-	if input == nil {
-		return false
-	}
-
-	return pointer.From(input.Enabled)
-}
-
-func flattenServersGcpVaAutoProvisioning(input *securityconnectors.DefenderForServersGcpOfferingVaAutoProvisioning) string {
-	var vaAutoProvisioningConfigurationType string
-	if input == nil || pointer.From(input.Enabled) == false {
-		return vaAutoProvisioningConfigurationType
-	}
-
-	if configuration := input.Configuration; configuration != nil {
-		vaAutoProvisioningConfigurationType = string(pointer.From(configuration.Type))
-	}
-
-	return vaAutoProvisioningConfigurationType
-}
-
-func flattenServersGcpVmScanner(input *securityconnectors.DefenderForServersGcpOfferingVMScanners) map[string]string {
-	var result map[string]string
-	if input == nil || pointer.From(input.Enabled) == false {
-		return result
-	}
-
-	if v := input.Configuration; v != nil && v.ExclusionTags != nil {
-		return pointer.From(v.ExclusionTags)
-	}
-
-	return result
 }
 
 func flattenDefenderCspmAwsCiem(input *securityconnectors.DefenderCspmAwsOfferingCiem) []CspmAwsCiem {
