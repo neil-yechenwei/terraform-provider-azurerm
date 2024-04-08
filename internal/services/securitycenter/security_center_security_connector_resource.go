@@ -1638,14 +1638,8 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 			result = append(result, cspmMonitorGcpOffering)
 		} else if v, ok := item.(securityconnectors.DefenderFoDatabasesAwsOffering); ok {
 			defenderFoDatabasesAwsOffering := Offering{
-				Type: string(securityconnectors.OfferingTypeDefenderForDatabasesAws),
-				DefenderForDatabasesAws: []DefenderForDatabasesAws{
-					{
-						ArcAutoProvisioningCloudRoleArn: flattenDatabasesAwsArcAutoProvisioning(v.ArcAutoProvisioning),
-						DatabasesDspmCloudRoleArn:       flattenDatabasesDspmCloudRoleArn(v.DatabasesDspm),
-						RdsCloudRoleArn:                 flattenRdsCloudRoleArn(v.Rds),
-					},
-				},
+				Type:                    string(securityconnectors.OfferingTypeDefenderForDatabasesAws),
+				DefenderForDatabasesAws: flattenDatabasesAwsArcAutoProvisioning(v),
 			}
 
 			result = append(result, defenderFoDatabasesAwsOffering)
@@ -1721,32 +1715,15 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 			result = append(result, defenderForContainersGcpOffering)
 		} else if v, ok := item.(securityconnectors.DefenderCspmAwsOffering); ok {
 			defenderCspmAwsOffering := Offering{
-				Type: string(securityconnectors.OfferingTypeDefenderCspmAws),
-				DefenderCspmAws: []DefenderCspmAws{
-					{
-						Ciem:                                 flattenDefenderCspmAwsCiem(v.Ciem),
-						DataSensitivityDiscoveryCloudRoleArn: flattenDefenderCspmAwsDataSensitivityDiscovery(v.DataSensitivityDiscovery),
-						DatabasesDspmCloudRoleArn:            flattenDefenderCspmAwsDatabasesDspm(v.DatabasesDspm),
-						MdcContainersAgentlessDiscoveryK8sCloudRoleArn: flattenDefenderCspmAwsMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
-						MdcContainersImageAssessmentCloudRoleArn:       flattenDefenderCspmAwsMdcContainersImageAssessment(v.MdcContainersImageAssessment),
-						VmScanner:                                      flattenDefenderCspmAwsVmScanner(v.VMScanners),
-					},
-				},
+				Type:            string(securityconnectors.OfferingTypeDefenderCspmAws),
+				DefenderCspmAws: flattenDefenderCspmAws(v),
 			}
 
 			result = append(result, defenderCspmAwsOffering)
 		} else if v, ok := item.(securityconnectors.DefenderCspmGcpOffering); ok {
 			defenderCspmGcpOffering := Offering{
-				Type: string(securityconnectors.OfferingTypeDefenderCspmGcp),
-				DefenderCspmGcp: []DefenderCspmGcp{
-					{
-						CiemDiscovery:                      flattenDefenderCspmGcpCiemDiscovery(v.CiemDiscovery),
-						DataSensitivityDiscovery:           flattenDefenderCspmGcpDataSensitivityDiscovery(v.DataSensitivityDiscovery),
-						MdcContainersAgentlessDiscoveryK8s: flattenDefenderCspmGcpMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
-						MdcContainersImageAssessment:       flattenDefenderCspmGcpMdcContainersImageAssessment(v.MdcContainersImageAssessment),
-						VmScannerExclusionTags:             flattenDefenderCspmGcpVmScanner(v.VMScanners),
-					},
-				},
+				Type:            string(securityconnectors.OfferingTypeDefenderCspmGcp),
+				DefenderCspmGcp: flattenDefenderCspmGcp(v),
 			}
 
 			result = append(result, defenderCspmGcpOffering)
@@ -1756,37 +1733,27 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 	return result
 }
 
-func flattenDatabasesAwsArcAutoProvisioning(input *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning) string {
-	var arcAutoProvisioningCloudRoleArn string
-	if input == nil || pointer.From(input.Enabled) == false {
-		return arcAutoProvisioningCloudRoleArn
+func flattenDatabasesAwsArcAutoProvisioning(input securityconnectors.DefenderFoDatabasesAwsOffering) []DefenderForDatabasesAws {
+	result := make([]DefenderForDatabasesAws, 0)
+	if (input.ArcAutoProvisioning == nil || pointer.From(input.ArcAutoProvisioning.Enabled) == false) && (input.DatabasesDspm == nil || pointer.From(input.DatabasesDspm.Enabled) == false) && (input.Rds == nil || pointer.From(input.Rds.Enabled) == false) {
+		return result
 	}
 
-	arcAutoProvisioningCloudRoleArn = pointer.From(input.CloudRoleArn)
+	defenderForDatabasesAws := DefenderForDatabasesAws{}
 
-	return arcAutoProvisioningCloudRoleArn
-}
-
-func flattenDatabasesDspmCloudRoleArn(input *securityconnectors.DefenderFoDatabasesAwsOfferingDatabasesDspm) string {
-	var databasesDspmCloudRoleArn string
-	if input == nil || pointer.From(input.Enabled) == false {
-		return databasesDspmCloudRoleArn
+	if v := input.ArcAutoProvisioning; v != nil && pointer.From(v.Enabled) == true {
+		defenderForDatabasesAws.ArcAutoProvisioningCloudRoleArn = pointer.From(v.CloudRoleArn)
 	}
 
-	databasesDspmCloudRoleArn = pointer.From(input.CloudRoleArn)
-
-	return databasesDspmCloudRoleArn
-}
-
-func flattenRdsCloudRoleArn(input *securityconnectors.DefenderFoDatabasesAwsOfferingRds) string {
-	var rdsCloudRoleArn string
-	if input == nil || pointer.From(input.Enabled) == false {
-		return rdsCloudRoleArn
+	if v := input.DatabasesDspm; v != nil && pointer.From(v.Enabled) == true {
+		defenderForDatabasesAws.DatabasesDspmCloudRoleArn = pointer.From(v.CloudRoleArn)
 	}
 
-	rdsCloudRoleArn = pointer.From(input.CloudRoleArn)
+	if v := input.Rds; v != nil && pointer.From(v.Enabled) == true {
+		defenderForDatabasesAws.RdsCloudRoleArn = pointer.From(v.CloudRoleArn)
+	}
 
-	return rdsCloudRoleArn
+	return append(result, defenderForDatabasesAws)
 }
 
 func flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s) string {
@@ -1865,6 +1832,24 @@ func flattenContainersGcpNativeCloudConnection(input *securityconnectors.Defende
 	}
 
 	return append(result, containersGcpNativeCloudConnection)
+}
+
+func flattenDefenderCspmAws(input securityconnectors.DefenderCspmAwsOffering) []DefenderCspmAws {
+	result := make([]DefenderCspmAws, 0)
+	if input.Ciem == nil && (input.DataSensitivityDiscovery == nil || pointer.From(input.DataSensitivityDiscovery.Enabled) == false) && (input.DatabasesDspm == nil || pointer.From(input.DatabasesDspm.Enabled) == false) && (input.MdcContainersAgentlessDiscoveryK8s == nil || pointer.From(input.MdcContainersAgentlessDiscoveryK8s.Enabled) == false) && (input.MdcContainersImageAssessment == nil || pointer.From(input.MdcContainersImageAssessment.Enabled) == false) && (input.VMScanners == nil || pointer.From(input.VMScanners.Enabled) == false) {
+		return result
+	}
+
+	defenderCspmAws := DefenderCspmAws{
+		Ciem:                                 flattenDefenderCspmAwsCiem(input.Ciem),
+		DataSensitivityDiscoveryCloudRoleArn: flattenDefenderCspmAwsDataSensitivityDiscovery(input.DataSensitivityDiscovery),
+		DatabasesDspmCloudRoleArn:            flattenDefenderCspmAwsDatabasesDspm(input.DatabasesDspm),
+		MdcContainersAgentlessDiscoveryK8sCloudRoleArn: flattenDefenderCspmAwsMdcContainersAgentlessDiscoveryK8s(input.MdcContainersAgentlessDiscoveryK8s),
+		MdcContainersImageAssessmentCloudRoleArn:       flattenDefenderCspmAwsMdcContainersImageAssessment(input.MdcContainersImageAssessment),
+		VmScanner:                                      flattenDefenderCspmAwsVmScanner(input.VMScanners),
+	}
+
+	return append(result, defenderCspmAws)
 }
 
 func flattenDefenderCspmAwsCiem(input *securityconnectors.DefenderCspmAwsOfferingCiem) []CspmAwsCiem {
@@ -1958,6 +1943,23 @@ func flattenDefenderCspmAwsVmScanner(input *securityconnectors.DefenderCspmAwsOf
 	}
 
 	return result
+}
+
+func flattenDefenderCspmGcp(input securityconnectors.DefenderCspmGcpOffering) []DefenderCspmGcp {
+	result := make([]DefenderCspmGcp, 0)
+	if input.CiemDiscovery == nil && (input.DataSensitivityDiscovery == nil || pointer.From(input.DataSensitivityDiscovery.Enabled) == false) && (input.MdcContainersAgentlessDiscoveryK8s == nil || pointer.From(input.MdcContainersAgentlessDiscoveryK8s.Enabled) == false) && (input.MdcContainersImageAssessment == nil || pointer.From(input.MdcContainersImageAssessment.Enabled) == false) && (input.VMScanners == nil || pointer.From(input.VMScanners.Enabled) == false) {
+		return result
+	}
+
+	defenderCspmGcp := DefenderCspmGcp{
+		CiemDiscovery:                      flattenDefenderCspmGcpCiemDiscovery(input.CiemDiscovery),
+		DataSensitivityDiscovery:           flattenDefenderCspmGcpDataSensitivityDiscovery(input.DataSensitivityDiscovery),
+		MdcContainersAgentlessDiscoveryK8s: flattenDefenderCspmGcpMdcContainersAgentlessDiscoveryK8s(input.MdcContainersAgentlessDiscoveryK8s),
+		MdcContainersImageAssessment:       flattenDefenderCspmGcpMdcContainersImageAssessment(input.MdcContainersImageAssessment),
+		VmScannerExclusionTags:             flattenDefenderCspmGcpVmScanner(input.VMScanners),
+	}
+
+	return append(result, defenderCspmGcp)
 }
 
 func flattenDefenderCspmGcpCiemDiscovery(input *securityconnectors.DefenderCspmGcpOfferingCiemDiscovery) []CspmGcpCiemDiscovery {
