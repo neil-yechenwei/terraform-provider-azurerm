@@ -1004,32 +1004,17 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 				return nil, fmt.Errorf("`cspm_monitor_gcp`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `CspmMonitorAws`")
 			}
 
-			cspmMonitorAwsOffering := securityconnectors.CspmMonitorAwsOffering{}
-
-			if v := item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn; v != "" {
-				cspmMonitorAwsOffering.NativeCloudConnection = &securityconnectors.CspmMonitorAwsOfferingNativeCloudConnection{
-					CloudRoleArn: pointer.To(v),
-				}
-			}
-
-			result = append(result, cspmMonitorAwsOffering)
+			result = append(result, securityconnectors.CspmMonitorAwsOffering{
+				NativeCloudConnection: expandCspmMonitorAwsNativeCloudConnection(item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn),
+			})
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeCspmMonitorGcp) {
 			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.DefenderForDatabasesAws) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
 				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `defender_for_databases_aws`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `CspmMonitorGcp`")
 			}
 
-			cspmMonitorGcpOffering := securityconnectors.CspmMonitorGcpOffering{}
-
-			if v := item.CspmMonitorGcp; len(v) != 0 {
-				cspmMonitorGcp := v[0]
-
-				cspmMonitorGcpOffering.NativeCloudConnection = &securityconnectors.CspmMonitorGcpOfferingNativeCloudConnection{
-					ServiceAccountEmailAddress: pointer.To(cspmMonitorGcp.ServiceAccountEmailAddress),
-					WorkloadIdentityProviderId: pointer.To(cspmMonitorGcp.WorkloadIdentityProviderId),
-				}
-			}
-
-			result = append(result, cspmMonitorGcpOffering)
+			result = append(result, securityconnectors.CspmMonitorGcpOffering{
+				NativeCloudConnection: expandCspmMonitorGcpNativeCloudConnection(item.CspmMonitorGcp),
+			})
 		} else if offeringType := item.Type; offeringType == string(securityconnectors.OfferingTypeDefenderForDatabasesAws) {
 			if item.CspmMonitorAwsNativeCloudConnectionCloudRoleArn != "" || len(item.CspmMonitorGcp) != 0 || len(item.DefenderForDatabasesGcpArcAutoProvisioning) != 0 || len(item.DefenderForContainersAws) != 0 || len(item.DefenderForContainersGcp) != 0 || len(item.DefenderCspmAws) != 0 || len(item.DefenderCspmGcp) != 0 {
 				return nil, fmt.Errorf("`cspm_monitor_aws_native_cloud_connection_cloud_role_arn`, `cspm_monitor_gcp`, `defender_for_databases_gcp_arc_auto_provisioning`, `defender_for_containers_aws`, `defender_for_containers_gcp`, `defender_cspm_aws` and `defender_cspm_gcp` cannot be set for the offering type `DefenderForDatabasesAws`")
@@ -1056,15 +1041,8 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 			if v := item.DefenderForDatabasesGcpArcAutoProvisioning; len(v) != 0 {
 				defenderForDatabasesGcp := v[0]
 
-				defenderForDatabasesGcpOffering.ArcAutoProvisioning = &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning{
-					Configuration: &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration{},
-					Enabled:       pointer.To(true),
-				}
-
-				defenderForDatabasesGcpOffering.DefenderForDatabasesArcAutoProvisioning = &securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning{
-					ServiceAccountEmailAddress: pointer.To(defenderForDatabasesGcp.ServiceAccountEmailAddress),
-					WorkloadIdentityProviderId: pointer.To(defenderForDatabasesGcp.WorkloadIdentityProviderId),
-				}
+				defenderForDatabasesGcpOffering.ArcAutoProvisioning = expandDefenderForDatabasesGcpArcAutoProvisioning()
+				defenderForDatabasesGcpOffering.DefenderForDatabasesArcAutoProvisioning = expandDefenderForDatabasesGcpDefenderForDatabasesArcAutoProvisioning(defenderForDatabasesGcp)
 			}
 
 			result = append(result, defenderForDatabasesGcpOffering)
@@ -1082,38 +1060,14 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 				defenderForContainersAwsOffering.MdcContainersAgentlessDiscoveryK8s = expandContainersAwsMdcContainersAgentlessDiscoveryK8s(defenderForContainersAws.MdcContainersAgentlessDiscoveryK8sCloudRoleArn)
 				defenderForContainersAwsOffering.MdcContainersImageAssessment = expandContainersAwsMdcContainersImageAssessment(defenderForContainersAws.MdcContainersImageAssessmentCloudRoleArn)
 				defenderForContainersAwsOffering.ScubaExternalId = pointer.To(defenderForContainersAws.ScubaExternalId)
-
-				defenderForContainersAwsOffering.CloudWatchToKinesis = &securityconnectors.DefenderForContainersAwsOfferingCloudWatchToKinesis{
-					CloudRoleArn: pointer.To(defenderForContainersAws.CloudWatchToKinesisCloudRoleArn),
-				}
-
-				if defenderForContainersAws.ContainerVulnerabilityAssessmentCloudRoleArn != "" || defenderForContainersAws.ContainerVulnerabilityAssessmentTaskCloudRoleArn != "" {
-					defenderForContainersAwsOffering.EnableContainerVulnerabilityAssessment = pointer.To(true)
-				}
-
-				defenderForContainersAwsOffering.ContainerVulnerabilityAssessment = &securityconnectors.DefenderForContainersAwsOfferingContainerVulnerabilityAssessment{
-					CloudRoleArn: pointer.To(defenderForContainersAws.ContainerVulnerabilityAssessmentCloudRoleArn),
-				}
-
-				defenderForContainersAwsOffering.ContainerVulnerabilityAssessmentTask = &securityconnectors.DefenderForContainersAwsOfferingContainerVulnerabilityAssessmentTask{
-					CloudRoleArn: pointer.To(defenderForContainersAws.ContainerVulnerabilityAssessmentTaskCloudRoleArn),
-				}
-
-				defenderForContainersAwsOffering.KinesisToS3 = &securityconnectors.DefenderForContainersAwsOfferingKinesisToS3{
-					CloudRoleArn: pointer.To(defenderForContainersAws.KinesisToS3CloudRoleArn),
-				}
-
-				if v := defenderForContainersAws.KubeAuditRetentionTime; v != 0 {
-					defenderForContainersAwsOffering.KubeAuditRetentionTime = pointer.To(int64(v))
-				}
-
-				defenderForContainersAwsOffering.KubernetesScubaReader = &securityconnectors.DefenderForContainersAwsOfferingKubernetesScubaReader{
-					CloudRoleArn: pointer.To(defenderForContainersAws.KubernetesScubaReaderCloudRoleArn),
-				}
-
-				defenderForContainersAwsOffering.KubernetesService = &securityconnectors.DefenderForContainersAwsOfferingKubernetesService{
-					CloudRoleArn: pointer.To(defenderForContainersAws.KubernetesServiceCloudRoleArn),
-				}
+				defenderForContainersAwsOffering.CloudWatchToKinesis = expandDefenderForContainersAwsCloudWatchToKinesis(defenderForContainersAws.CloudWatchToKinesisCloudRoleArn)
+				defenderForContainersAwsOffering.EnableContainerVulnerabilityAssessment = expandDefenderForContainersAwsEnableContainerVulnerabilityAssessment(defenderForContainersAws.ContainerVulnerabilityAssessmentCloudRoleArn, defenderForContainersAws.ContainerVulnerabilityAssessmentTaskCloudRoleArn)
+				defenderForContainersAwsOffering.ContainerVulnerabilityAssessment = expandDefenderForContainersAwsContainerVulnerabilityAssessment(defenderForContainersAws.ContainerVulnerabilityAssessmentCloudRoleArn)
+				defenderForContainersAwsOffering.ContainerVulnerabilityAssessmentTask = expandDefenderForContainersAwsContainerVulnerabilityAssessmentTask(defenderForContainersAws.ContainerVulnerabilityAssessmentTaskCloudRoleArn)
+				defenderForContainersAwsOffering.KinesisToS3 = expandDefenderForContainersAwsKinesisToS3(defenderForContainersAws.KinesisToS3CloudRoleArn)
+				defenderForContainersAwsOffering.KubeAuditRetentionTime = pointer.To(int64(defenderForContainersAws.KubeAuditRetentionTime))
+				defenderForContainersAwsOffering.KubernetesScubaReader = expandDefenderForContainersAwsKubernetesScubaReader(defenderForContainersAws.KubernetesScubaReaderCloudRoleArn)
+				defenderForContainersAwsOffering.KubernetesService = expanddefenderForContainersAwsKubernetesService(defenderForContainersAws.KubernetesServiceCloudRoleArn)
 			}
 
 			result = append(result, defenderForContainersAwsOffering)
@@ -1180,6 +1134,43 @@ func expandOfferings(input []Offering) (*[]securityconnectors.CloudOffering, err
 	}
 
 	return &result, nil
+}
+
+func expandCspmMonitorAwsNativeCloudConnection(input string) *securityconnectors.CspmMonitorAwsOfferingNativeCloudConnection {
+	if input == "" {
+		return nil
+	}
+
+	return &securityconnectors.CspmMonitorAwsOfferingNativeCloudConnection{
+		CloudRoleArn: pointer.To(input),
+	}
+}
+
+func expandCspmMonitorGcpNativeCloudConnection(input []CspmMonitorGcp) *securityconnectors.CspmMonitorGcpOfferingNativeCloudConnection {
+	if len(input) == 0 {
+		return nil
+	}
+
+	cspmMonitorGcp := input[0]
+
+	return &securityconnectors.CspmMonitorGcpOfferingNativeCloudConnection{
+		ServiceAccountEmailAddress: pointer.To(cspmMonitorGcp.ServiceAccountEmailAddress),
+		WorkloadIdentityProviderId: pointer.To(cspmMonitorGcp.WorkloadIdentityProviderId),
+	}
+}
+
+func expandDefenderForDatabasesGcpArcAutoProvisioning() *securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning {
+	return &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioning{
+		Configuration: &securityconnectors.DefenderForDatabasesGcpOfferingArcAutoProvisioningConfiguration{},
+		Enabled:       pointer.To(true),
+	}
+}
+
+func expandDefenderForDatabasesGcpDefenderForDatabasesArcAutoProvisioning(input DefenderForDatabasesGcpArcAutoProvisioning) *securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning {
+	return &securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning{
+		ServiceAccountEmailAddress: pointer.To(input.ServiceAccountEmailAddress),
+		WorkloadIdentityProviderId: pointer.To(input.WorkloadIdentityProviderId),
+	}
 }
 
 func expandDatabasesAwsArcAutoProvisioning(input string) *securityconnectors.DefenderFoDatabasesAwsOfferingArcAutoProvisioning {
@@ -1256,6 +1247,50 @@ func expandContainersAwsMdcContainersImageAssessment(input string) *securityconn
 	}
 
 	return result
+}
+
+func expandDefenderForContainersAwsCloudWatchToKinesis(input string) *securityconnectors.DefenderForContainersAwsOfferingCloudWatchToKinesis {
+	return &securityconnectors.DefenderForContainersAwsOfferingCloudWatchToKinesis{
+		CloudRoleArn: pointer.To(input),
+	}
+}
+
+func expandDefenderForContainersAwsEnableContainerVulnerabilityAssessment(containerVulnerabilityAssessmentCloudRoleArn, containerVulnerabilityAssessmentTaskCloudRoleArn string) *bool {
+	if containerVulnerabilityAssessmentCloudRoleArn != "" || containerVulnerabilityAssessmentTaskCloudRoleArn != "" {
+		return pointer.To(true)
+	}
+
+	return pointer.To(false)
+}
+
+func expandDefenderForContainersAwsContainerVulnerabilityAssessment(input string) *securityconnectors.DefenderForContainersAwsOfferingContainerVulnerabilityAssessment {
+	return &securityconnectors.DefenderForContainersAwsOfferingContainerVulnerabilityAssessment{
+		CloudRoleArn: pointer.To(input),
+	}
+}
+
+func expandDefenderForContainersAwsContainerVulnerabilityAssessmentTask(input string) *securityconnectors.DefenderForContainersAwsOfferingContainerVulnerabilityAssessmentTask {
+	return &securityconnectors.DefenderForContainersAwsOfferingContainerVulnerabilityAssessmentTask{
+		CloudRoleArn: pointer.To(input),
+	}
+}
+
+func expandDefenderForContainersAwsKinesisToS3(input string) *securityconnectors.DefenderForContainersAwsOfferingKinesisToS3 {
+	return &securityconnectors.DefenderForContainersAwsOfferingKinesisToS3{
+		CloudRoleArn: pointer.To(input),
+	}
+}
+
+func expandDefenderForContainersAwsKubernetesScubaReader(input string) *securityconnectors.DefenderForContainersAwsOfferingKubernetesScubaReader {
+	return &securityconnectors.DefenderForContainersAwsOfferingKubernetesScubaReader{
+		CloudRoleArn: pointer.To(input),
+	}
+}
+
+func expanddefenderForContainersAwsKubernetesService(input string) *securityconnectors.DefenderForContainersAwsOfferingKubernetesService {
+	return &securityconnectors.DefenderForContainersAwsOfferingKubernetesService{
+		CloudRoleArn: pointer.To(input),
+	}
 }
 
 func expandContainersGcpDataPipelineNativeCloudConnection(input []ContainersGcpDataPipelineNativeCloudConnection) *securityconnectors.DefenderForContainersGcpOfferingDataPipelineNativeCloudConnection {
