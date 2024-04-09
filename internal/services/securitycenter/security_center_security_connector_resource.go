@@ -1614,102 +1614,42 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 		} else if v, ok := item.(securityconnectors.CspmMonitorAwsOffering); ok {
 			cspmMonitorAwsOffering := Offering{
 				Type: string(securityconnectors.OfferingTypeCspmMonitorAws),
-			}
-
-			if nativeCloudConnection := v.NativeCloudConnection; nativeCloudConnection != nil {
-				cspmMonitorAwsOffering.CspmMonitorAwsNativeCloudConnectionCloudRoleArn = pointer.From(nativeCloudConnection.CloudRoleArn)
+				CspmMonitorAwsNativeCloudConnectionCloudRoleArn: flattenCspmMonitorAwsNativeCloudConnectionCloudRoleArn(v.NativeCloudConnection),
 			}
 
 			result = append(result, cspmMonitorAwsOffering)
 		} else if v, ok := item.(securityconnectors.CspmMonitorGcpOffering); ok {
 			cspmMonitorGcpOffering := Offering{
-				Type: string(securityconnectors.OfferingTypeCspmMonitorGcp),
-			}
-
-			if nativeCloudConnection := v.NativeCloudConnection; nativeCloudConnection != nil {
-				cspmMonitorGcpOffering.CspmMonitorGcp = []CspmMonitorGcp{
-					{
-						ServiceAccountEmailAddress: pointer.From(nativeCloudConnection.ServiceAccountEmailAddress),
-						WorkloadIdentityProviderId: pointer.From(nativeCloudConnection.WorkloadIdentityProviderId),
-					},
-				}
+				Type:           string(securityconnectors.OfferingTypeCspmMonitorGcp),
+				CspmMonitorGcp: flattenCspmMonitorGcp(v),
 			}
 
 			result = append(result, cspmMonitorGcpOffering)
 		} else if v, ok := item.(securityconnectors.DefenderFoDatabasesAwsOffering); ok {
 			defenderFoDatabasesAwsOffering := Offering{
 				Type:                    string(securityconnectors.OfferingTypeDefenderForDatabasesAws),
-				DefenderForDatabasesAws: flattenDatabasesAwsArcAutoProvisioning(v),
+				DefenderForDatabasesAws: flattenDefenerForDatabasesAws(v),
 			}
 
 			result = append(result, defenderFoDatabasesAwsOffering)
 		} else if v, ok := item.(securityconnectors.DefenderForDatabasesGcpOffering); ok {
 			defenderForDatabasesGcpOffering := Offering{
 				Type: string(securityconnectors.OfferingTypeDefenderForDatabasesGcp),
-			}
-
-			if defenderForDatabasesArcAutoProvisioning := v.DefenderForDatabasesArcAutoProvisioning; defenderForDatabasesArcAutoProvisioning != nil {
-				defenderForDatabasesGcpOffering.DefenderForDatabasesGcpArcAutoProvisioning = []DefenderForDatabasesGcpArcAutoProvisioning{
-					{
-						ServiceAccountEmailAddress: pointer.From(defenderForDatabasesArcAutoProvisioning.ServiceAccountEmailAddress),
-						WorkloadIdentityProviderId: pointer.From(defenderForDatabasesArcAutoProvisioning.WorkloadIdentityProviderId),
-					},
-				}
+				DefenderForDatabasesGcpArcAutoProvisioning: flattenDefenderForDatabasesGcpArcAutoProvisioning(v.DefenderForDatabasesArcAutoProvisioning),
 			}
 
 			result = append(result, defenderForDatabasesGcpOffering)
 		} else if v, ok := item.(securityconnectors.DefenderForContainersAwsOffering); ok {
 			defenderForContainersAwsOffering := Offering{
-				Type: string(securityconnectors.OfferingTypeDefenderForContainersAws),
-				DefenderForContainersAws: []DefenderForContainersAws{
-					{
-						AutoProvisioningEnabled:                        pointer.From(v.AutoProvisioning),
-						KubeAuditRetentionTime:                         int(pointer.From(v.KubeAuditRetentionTime)),
-						MdcContainersAgentlessDiscoveryK8sCloudRoleArn: flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
-						MdcContainersImageAssessmentCloudRoleArn:       flattenContainersAwsMdcContainersImageAssessment(v.MdcContainersImageAssessment),
-						ScubaExternalId:                                pointer.From(v.ScubaExternalId),
-					},
-				},
-			}
-
-			if cloudWatchToKinesis := v.CloudWatchToKinesis; cloudWatchToKinesis != nil {
-				defenderForContainersAwsOffering.DefenderForContainersAws[0].CloudWatchToKinesisCloudRoleArn = pointer.From(cloudWatchToKinesis.CloudRoleArn)
-			}
-
-			if containerVulnerabilityAssessment := v.ContainerVulnerabilityAssessment; containerVulnerabilityAssessment != nil {
-				defenderForContainersAwsOffering.DefenderForContainersAws[0].ContainerVulnerabilityAssessmentCloudRoleArn = pointer.From(containerVulnerabilityAssessment.CloudRoleArn)
-			}
-
-			if containerVulnerabilityAssessmentTask := v.ContainerVulnerabilityAssessmentTask; containerVulnerabilityAssessmentTask != nil {
-				defenderForContainersAwsOffering.DefenderForContainersAws[0].ContainerVulnerabilityAssessmentTaskCloudRoleArn = pointer.From(containerVulnerabilityAssessmentTask.CloudRoleArn)
-			}
-
-			if kinesisToS3 := v.KinesisToS3; kinesisToS3 != nil {
-				defenderForContainersAwsOffering.DefenderForContainersAws[0].KinesisToS3CloudRoleArn = pointer.From(kinesisToS3.CloudRoleArn)
-			}
-
-			if kubernetesScubaReader := v.KubernetesScubaReader; kubernetesScubaReader != nil {
-				defenderForContainersAwsOffering.DefenderForContainersAws[0].KubernetesScubaReaderCloudRoleArn = pointer.From(kubernetesScubaReader.CloudRoleArn)
-			}
-
-			if kubernetesService := v.KubernetesService; kubernetesService != nil {
-				defenderForContainersAwsOffering.DefenderForContainersAws[0].KubernetesServiceCloudRoleArn = pointer.From(kubernetesService.CloudRoleArn)
+				Type:                     string(securityconnectors.OfferingTypeDefenderForContainersAws),
+				DefenderForContainersAws: flattenDefenderForContainersAws(v),
 			}
 
 			result = append(result, defenderForContainersAwsOffering)
 		} else if v, ok := item.(securityconnectors.DefenderForContainersGcpOffering); ok {
 			defenderForContainersGcpOffering := Offering{
-				Type: string(securityconnectors.OfferingTypeDefenderForContainersGcp),
-				DefenderForContainersGcp: []DefenderForContainersGcp{
-					{
-						DataPipelineNativeCloudConnection:        flattenContainersGcpDataPipelineNativeCloudConnection(v.DataPipelineNativeCloudConnection),
-						DefenderAgentAutoProvisioningFlagEnabled: pointer.From(v.DefenderAgentAutoProvisioningFlag),
-						MdcContainersAgentlessDiscoveryK8s:       flattenContainersGcpMdcContainersAgentlessDiscoveryK8s(v.MdcContainersAgentlessDiscoveryK8s),
-						MdcContainersImageAssessment:             flattenContainersGcpMdcContainersImageAssessment(v.MdcContainersImageAssessment),
-						NativeCloudConnection:                    flattenContainersGcpNativeCloudConnection(v.NativeCloudConnection),
-						PolicyAgentAutoProvisioningFlagEnabled:   pointer.From(v.PolicyAgentAutoProvisioningFlag),
-					},
-				},
+				Type:                     string(securityconnectors.OfferingTypeDefenderForContainersGcp),
+				DefenderForContainersGcp: flattenDefenderForContainersGcp(v),
 			}
 
 			result = append(result, defenderForContainersGcpOffering)
@@ -1733,7 +1673,37 @@ func flattenOfferings(input *[]securityconnectors.CloudOffering) []Offering {
 	return result
 }
 
-func flattenDatabasesAwsArcAutoProvisioning(input securityconnectors.DefenderFoDatabasesAwsOffering) []DefenderForDatabasesAws {
+func flattenCspmMonitorGcp(input securityconnectors.CspmMonitorGcpOffering) []CspmMonitorGcp {
+	result := make([]CspmMonitorGcp, 0)
+	if input.NativeCloudConnection == nil {
+		return result
+	}
+
+	cspmMonitorGcp := CspmMonitorGcp{}
+
+	if v := input.NativeCloudConnection; v != nil {
+		if serviceAccountEmailAddress := v.ServiceAccountEmailAddress; serviceAccountEmailAddress != nil {
+			cspmMonitorGcp.ServiceAccountEmailAddress = pointer.From(serviceAccountEmailAddress)
+		}
+
+		if workloadIdentityProviderId := v.WorkloadIdentityProviderId; workloadIdentityProviderId != nil {
+			cspmMonitorGcp.WorkloadIdentityProviderId = pointer.From(workloadIdentityProviderId)
+		}
+	}
+
+	return append(result, cspmMonitorGcp)
+}
+
+func flattenCspmMonitorAwsNativeCloudConnectionCloudRoleArn(input *securityconnectors.CspmMonitorAwsOfferingNativeCloudConnection) string {
+	var result string
+	if input == nil {
+		return result
+	}
+
+	return pointer.From(input.CloudRoleArn)
+}
+
+func flattenDefenerForDatabasesAws(input securityconnectors.DefenderFoDatabasesAwsOffering) []DefenderForDatabasesAws {
 	result := make([]DefenderForDatabasesAws, 0)
 	if (input.ArcAutoProvisioning == nil || pointer.From(input.ArcAutoProvisioning.Enabled) == false) && (input.DatabasesDspm == nil || pointer.From(input.DatabasesDspm.Enabled) == false) && (input.Rds == nil || pointer.From(input.Rds.Enabled) == false) {
 		return result
@@ -1754,6 +1724,25 @@ func flattenDatabasesAwsArcAutoProvisioning(input securityconnectors.DefenderFoD
 	}
 
 	return append(result, defenderForDatabasesAws)
+}
+
+func flattenDefenderForDatabasesGcpArcAutoProvisioning(input *securityconnectors.DefenderForDatabasesGcpOfferingDefenderForDatabasesArcAutoProvisioning) []DefenderForDatabasesGcpArcAutoProvisioning {
+	result := make([]DefenderForDatabasesGcpArcAutoProvisioning, 0)
+	if input == nil {
+		return result
+	}
+
+	defenderForDatabasesGcpArcAutoProvisioning := DefenderForDatabasesGcpArcAutoProvisioning{}
+
+	if v := input.ServiceAccountEmailAddress; v != nil {
+		defenderForDatabasesGcpArcAutoProvisioning.ServiceAccountEmailAddress = pointer.From(v)
+	}
+
+	if v := input.WorkloadIdentityProviderId; v != nil {
+		defenderForDatabasesGcpArcAutoProvisioning.WorkloadIdentityProviderId = pointer.From(v)
+	}
+
+	return append(result, defenderForDatabasesGcpArcAutoProvisioning)
 }
 
 func flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(input *securityconnectors.DefenderForContainersAwsOfferingMdcContainersAgentlessDiscoveryK8s) string {
@@ -1834,6 +1823,44 @@ func flattenContainersGcpNativeCloudConnection(input *securityconnectors.Defende
 	return append(result, containersGcpNativeCloudConnection)
 }
 
+func flattenDefenderForContainersAws(input securityconnectors.DefenderForContainersAwsOffering) []DefenderForContainersAws {
+	result := make([]DefenderForContainersAws, 0)
+
+	defenderForContainersAws := DefenderForContainersAws{
+		AutoProvisioningEnabled:                        pointer.From(input.AutoProvisioning),
+		KubeAuditRetentionTime:                         int(pointer.From(input.KubeAuditRetentionTime)),
+		MdcContainersAgentlessDiscoveryK8sCloudRoleArn: flattenContainersAwsMdcContainersAgentlessDiscoveryK8s(input.MdcContainersAgentlessDiscoveryK8s),
+		MdcContainersImageAssessmentCloudRoleArn:       flattenContainersAwsMdcContainersImageAssessment(input.MdcContainersImageAssessment),
+		ScubaExternalId:                                pointer.From(input.ScubaExternalId),
+	}
+
+	if v := input.CloudWatchToKinesis; v != nil {
+		defenderForContainersAws.CloudWatchToKinesisCloudRoleArn = pointer.From(v.CloudRoleArn)
+	}
+
+	if v := input.ContainerVulnerabilityAssessment; v != nil {
+		defenderForContainersAws.ContainerVulnerabilityAssessmentCloudRoleArn = pointer.From(v.CloudRoleArn)
+	}
+
+	if v := input.ContainerVulnerabilityAssessmentTask; v != nil {
+		defenderForContainersAws.ContainerVulnerabilityAssessmentTaskCloudRoleArn = pointer.From(v.CloudRoleArn)
+	}
+
+	if v := input.KinesisToS3; v != nil {
+		defenderForContainersAws.KinesisToS3CloudRoleArn = pointer.From(v.CloudRoleArn)
+	}
+
+	if v := input.KubernetesScubaReader; v != nil {
+		defenderForContainersAws.KubernetesScubaReaderCloudRoleArn = pointer.From(v.CloudRoleArn)
+	}
+
+	if v := input.KubernetesService; v != nil {
+		defenderForContainersAws.KubernetesServiceCloudRoleArn = pointer.From(v.CloudRoleArn)
+	}
+
+	return append(result, defenderForContainersAws)
+}
+
 func flattenDefenderCspmAws(input securityconnectors.DefenderCspmAwsOffering) []DefenderCspmAws {
 	result := make([]DefenderCspmAws, 0)
 	if input.Ciem == nil && (input.DataSensitivityDiscovery == nil || pointer.From(input.DataSensitivityDiscovery.Enabled) == false) && (input.DatabasesDspm == nil || pointer.From(input.DatabasesDspm.Enabled) == false) && (input.MdcContainersAgentlessDiscoveryK8s == nil || pointer.From(input.MdcContainersAgentlessDiscoveryK8s.Enabled) == false) && (input.MdcContainersImageAssessment == nil || pointer.From(input.MdcContainersImageAssessment.Enabled) == false) && (input.VMScanners == nil || pointer.From(input.VMScanners.Enabled) == false) {
@@ -1850,6 +1877,21 @@ func flattenDefenderCspmAws(input securityconnectors.DefenderCspmAwsOffering) []
 	}
 
 	return append(result, defenderCspmAws)
+}
+
+func flattenDefenderForContainersGcp(input securityconnectors.DefenderForContainersGcpOffering) []DefenderForContainersGcp {
+	result := make([]DefenderForContainersGcp, 0)
+
+	defenderForContainersGcp := DefenderForContainersGcp{
+		DataPipelineNativeCloudConnection:        flattenContainersGcpDataPipelineNativeCloudConnection(input.DataPipelineNativeCloudConnection),
+		DefenderAgentAutoProvisioningFlagEnabled: pointer.From(input.DefenderAgentAutoProvisioningFlag),
+		MdcContainersAgentlessDiscoveryK8s:       flattenContainersGcpMdcContainersAgentlessDiscoveryK8s(input.MdcContainersAgentlessDiscoveryK8s),
+		MdcContainersImageAssessment:             flattenContainersGcpMdcContainersImageAssessment(input.MdcContainersImageAssessment),
+		NativeCloudConnection:                    flattenContainersGcpNativeCloudConnection(input.NativeCloudConnection),
+		PolicyAgentAutoProvisioningFlagEnabled:   pointer.From(input.PolicyAgentAutoProvisioningFlag),
+	}
+
+	return append(result, defenderForContainersGcp)
 }
 
 func flattenDefenderCspmAwsCiem(input *securityconnectors.DefenderCspmAwsOfferingCiem) []CspmAwsCiem {
