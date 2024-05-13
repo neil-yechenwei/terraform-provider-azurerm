@@ -375,6 +375,11 @@ func resourcePostgresqlFlexibleServer() *pluginsdk.Resource {
 			oldStorageMbRaw, newStorageMbRaw := diff.GetChange("storage_mb")
 			oldTierRaw, newTierRaw := diff.GetChange("storage_tier")
 
+			// storage_tier is added `Computed: true` so that TF always returns the value in the previous apply when `storage_tier` isn't set in the tf config. So we need to use `IsExplicitlyNullInConfig` to check if it's set in the tf config
+			if v := diff.GetRawConfig().AsValueMap()["storage_tier"]; v.IsNull() {
+				newTierRaw = ""
+			}
+
 			if oldStorageMbRaw.(int) == 0 && oldTierRaw.(string) == "" && newStorageMbRaw.(int) == 0 && newTierRaw.(string) == "" {
 				// This is a new resource without any values in the state
 				// or config, default values will be set in create...
@@ -840,9 +845,30 @@ func resourcePostgresqlFlexibleServerUpdate(d *pluginsdk.ResourceData, meta inte
 
 	if d.HasChange("auto_grow_enabled") || d.HasChange("storage_mb") || d.HasChange("storage_tier") {
 		// TODO remove the additional update after https://github.com/Azure/azure-rest-api-specs/issues/22867 is fixed
+		storage := expandArmServerStorage(d)
+		var storageMb int
+
+		if storage.StorageSizeGB == nil || *storage.StorageSizeGB == 0 {
+			// set the default value for storage_mb...
+			storageMb = 32768
+			storage.StorageSizeGB = pointer.FromInt64(int64(32))
+			log.Printf("[DEBUG]: Default 'storage_mb' Set -> %d\n", storageMb)
+		} else {
+			storageMb = int(*storage.StorageSizeGB) * 1024
+		}
+
+		if storage.Tier == nil || *storage.Tier == "" {
+			// determine the correct default storage_tier based
+			// on the defined storage_mb...
+			storageTierMappings := validate.InitializeFlexibleServerStorageTierDefaults()
+			storageTiers := storageTierMappings[storageMb]
+			storage.Tier = pointer.To(storageTiers.DefaultTier)
+			log.Printf("[DEBUG]: Default 'storage_tier' Set -> %q\n", storageTiers.DefaultTier)
+		}
+
 		storageUpdateParameters := servers.ServerForUpdate{
 			Properties: &servers.ServerPropertiesForUpdate{
-				Storage: expandArmServerStorage(d),
+				Storage: storage,
 			},
 		}
 
@@ -998,8 +1024,11 @@ func expandArmServerStorage(d *pluginsdk.ResourceData) *servers.Storage {
 		storage.StorageSizeGB = pointer.FromInt64(int64(v.(int) / 1024))
 	}
 
-	if v, ok := d.GetOk("storage_tier"); ok {
-		storage.Tier = pointer.To(servers.AzureManagedDiskPerformanceTiers(v.(string)))
+	// storage_tier is added `Computed: true` so that TF always returns the value in the previous apply when `storage_tier` isn't set in the tf config. So we need to use `IsExplicitlyNullInConfig` to check if it's set in the tf config
+	if !pluginsdk.IsExplicitlyNullInConfig(d, "storage_tier") {
+		if v, ok := d.GetOk("storage_tier"); ok {
+			storage.Tier = pointer.To(servers.AzureManagedDiskPerformanceTiers(v.(string)))
+		}
 	}
 
 	return &storage
