@@ -375,7 +375,12 @@ func resourcePostgresqlFlexibleServer() *pluginsdk.Resource {
 			oldStorageMbRaw, newStorageMbRaw := diff.GetChange("storage_mb")
 			oldTierRaw, newTierRaw := diff.GetChange("storage_tier")
 
-			// storage_tier is added `Computed: true` so that TF always returns the value in the previous apply when `storage_tier` isn't set in the tf config. So we need to use `IsExplicitlyNullInConfig` to check if it's set in the tf config
+			// storage_mb is added `Computed: true` so that TF always returns the value in the previous apply when `storage_mb` isn't set in the tf config. So we need to use `diff.GetRawConfig().AsValueMap()` to check if it's set in the tf config
+			if v := diff.GetRawConfig().AsValueMap()["storage_mb"]; v.IsNull() {
+				newStorageMbRaw = ""
+			}
+
+			// storage_tier is added `Computed: true` so that TF always returns the value in the previous apply when `storage_tier` isn't set in the tf config. So we need to use `diff.GetRawConfig().AsValueMap()` to check if it's set in the tf config
 			if v := diff.GetRawConfig().AsValueMap()["storage_tier"]; v.IsNull() {
 				newTierRaw = ""
 			}
@@ -1020,8 +1025,11 @@ func expandArmServerStorage(d *pluginsdk.ResourceData) *servers.Storage {
 	}
 	storage.AutoGrow = &autoGrow
 
-	if v, ok := d.GetOk("storage_mb"); ok {
-		storage.StorageSizeGB = pointer.FromInt64(int64(v.(int) / 1024))
+	// storage_mb is added `Computed: true` so that TF always returns the value in the previous apply when `storage_mb` isn't set in the tf config. So we need to use `IsExplicitlyNullInConfig` to check if it's set in the tf config
+	if !pluginsdk.IsExplicitlyNullInConfig(d, "storage_mb") {
+		if v, ok := d.GetOk("storage_mb"); ok {
+			storage.StorageSizeGB = pointer.FromInt64(int64(v.(int) / 1024))
+		}
 	}
 
 	// storage_tier is added `Computed: true` so that TF always returns the value in the previous apply when `storage_tier` isn't set in the tf config. So we need to use `IsExplicitlyNullInConfig` to check if it's set in the tf config
