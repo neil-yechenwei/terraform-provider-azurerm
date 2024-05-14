@@ -377,7 +377,7 @@ func resourcePostgresqlFlexibleServer() *pluginsdk.Resource {
 
 			// storage_mb is added `Computed: true` so that TF always returns the value in the previous apply when `storage_mb` isn't set in the tf config. So we need to use `diff.GetRawConfig().AsValueMap()` to check if it's set in the tf config
 			if v := diff.GetRawConfig().AsValueMap()["storage_mb"]; v.IsNull() {
-				newStorageMbRaw = ""
+				newStorageMbRaw = 0
 			}
 
 			// storage_tier is added `Computed: true` so that TF always returns the value in the previous apply when `storage_tier` isn't set in the tf config. So we need to use `diff.GetRawConfig().AsValueMap()` to check if it's set in the tf config
