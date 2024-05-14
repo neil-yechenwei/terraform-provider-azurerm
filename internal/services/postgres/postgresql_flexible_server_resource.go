@@ -395,7 +395,7 @@ func resourcePostgresqlFlexibleServer() *pluginsdk.Resource {
 			newTier = newTierRaw.(string)
 
 			// storage_mb can only be scaled up...
-			if newMb < oldStorageMbRaw.(int) {
+			if newMb != 0 && newMb < oldStorageMbRaw.(int) {
 				return fmt.Errorf("'storage_mb' can only be scaled up, expected the new 'storage_mb' value (%d) to be larger than the previous 'storage_mb' value (%d)", newMb, oldStorageMbRaw.(int))
 			}
 
