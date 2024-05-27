@@ -25,7 +25,7 @@ import (
 )
 
 func resourceServiceFabricCluster() *pluginsdk.Resource {
-	return &pluginsdk.Resource{
+	resource := &pluginsdk.Resource{
 		Create: resourceServiceFabricClusterCreateUpdate,
 		Read:   resourceServiceFabricClusterRead,
 		Update: resourceServiceFabricClusterCreateUpdate,
@@ -515,17 +515,18 @@ func resourceServiceFabricCluster() *pluginsdk.Resource {
 						"application_ports": {
 							Type:     pluginsdk.TypeList,
 							Optional: true,
-							Computed: true,
 							MaxItems: 1,
 							Elem: &pluginsdk.Resource{
 								Schema: map[string]*pluginsdk.Schema{
 									"start_port": {
 										Type:     pluginsdk.TypeInt,
-										Required: true,
+										Optional: true,
+										Default:  20000,
 									},
 									"end_port": {
 										Type:     pluginsdk.TypeInt,
-										Required: true,
+										Optional: true,
+										Default:  30000,
 									},
 								},
 							},
@@ -534,17 +535,18 @@ func resourceServiceFabricCluster() *pluginsdk.Resource {
 						"ephemeral_ports": {
 							Type:     pluginsdk.TypeList,
 							Optional: true,
-							Computed: true,
 							MaxItems: 1,
 							Elem: &pluginsdk.Resource{
 								Schema: map[string]*pluginsdk.Schema{
 									"start_port": {
 										Type:     pluginsdk.TypeInt,
-										Required: true,
+										Optional: true,
+										Default:  49152,
 									},
 									"end_port": {
 										Type:     pluginsdk.TypeInt,
-										Required: true,
+										Optional: true,
+										Default:  65534,
 									},
 								},
 							},
@@ -561,6 +563,112 @@ func resourceServiceFabricCluster() *pluginsdk.Resource {
 			},
 		},
 	}
+
+	resource.Schema["node_type"] = &pluginsdk.Schema{
+		Type:     pluginsdk.TypeList,
+		Required: true,
+		Elem: &pluginsdk.Resource{
+			Schema: map[string]*pluginsdk.Schema{
+				"name": {
+					Type:     pluginsdk.TypeString,
+					Required: true,
+				},
+				"placement_properties": {
+					Type:     pluginsdk.TypeMap,
+					Optional: true,
+					Elem: &pluginsdk.Schema{
+						Type: pluginsdk.TypeString,
+					},
+				},
+				"capacities": {
+					Type:     pluginsdk.TypeMap,
+					Optional: true,
+					Elem: &pluginsdk.Schema{
+						Type: pluginsdk.TypeString,
+					},
+				},
+				"instance_count": {
+					Type:     pluginsdk.TypeInt,
+					Required: true,
+				},
+				"is_primary": {
+					Type:     pluginsdk.TypeBool,
+					Required: true,
+				},
+				"is_stateless": {
+					Type:     pluginsdk.TypeBool,
+					Optional: true,
+				},
+				"multiple_availability_zones": {
+					Type:     pluginsdk.TypeBool,
+					Optional: true,
+				},
+				"client_endpoint_port": {
+					Type:     pluginsdk.TypeInt,
+					Required: true,
+				},
+				"http_endpoint_port": {
+					Type:     pluginsdk.TypeInt,
+					Required: true,
+				},
+				"reverse_proxy_endpoint_port": {
+					Type:         pluginsdk.TypeInt,
+					Optional:     true,
+					ValidateFunc: validate.PortNumber,
+				},
+				"durability_level": {
+					Type:     pluginsdk.TypeString,
+					Optional: true,
+					Default:  string(cluster.DurabilityLevelBronze),
+					ValidateFunc: validation.StringInSlice([]string{
+						string(cluster.DurabilityLevelBronze),
+						string(cluster.DurabilityLevelSilver),
+						string(cluster.DurabilityLevelGold),
+					}, false),
+				},
+
+				"application_ports": {
+					Type:     pluginsdk.TypeList,
+					Optional: true,
+					Computed: true,
+					MaxItems: 1,
+					Elem: &pluginsdk.Resource{
+						Schema: map[string]*pluginsdk.Schema{
+							"start_port": {
+								Type:     pluginsdk.TypeInt,
+								Required: true,
+							},
+							"end_port": {
+								Type:     pluginsdk.TypeInt,
+								Required: true,
+							},
+						},
+					},
+				},
+
+				"ephemeral_ports": {
+					Type:     pluginsdk.TypeList,
+					Optional: true,
+					Computed: true,
+					MaxItems: 1,
+					Elem: &pluginsdk.Resource{
+						Schema: map[string]*pluginsdk.Schema{
+							"start_port": {
+								Type:     pluginsdk.TypeInt,
+								Required: true,
+							},
+							"end_port": {
+								Type:     pluginsdk.TypeInt,
+								Required: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return resource
 }
 
 func resourceServiceFabricClusterCreateUpdate(d *pluginsdk.ResourceData, meta interface{}) error {
