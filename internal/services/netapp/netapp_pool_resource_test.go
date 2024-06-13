@@ -81,7 +81,7 @@ func TestAccNetAppPool_update(t *testing.T) {
 			Config: r.basic(data),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
-				check.That(data.ResourceName).Key("size_in_tb").HasValue("2"),
+				check.That(data.ResourceName).Key("size_in_tb").HasValue("1"),
 				check.That(data.ResourceName).Key("tags.%").HasValue("1"),
 				check.That(data.ResourceName).Key("qos_type").HasValue("Auto"),
 			),
@@ -168,7 +168,7 @@ resource "azurerm_netapp_pool" "test" {
   location            = azurerm_resource_group.test.location
   resource_group_name = azurerm_resource_group.test.name
   service_level       = "Standard"
-  size_in_tb          = 2
+  size_in_tb          = 1
 
   tags = {
     "CreatedOnDate" = "2022-07-08T23:50:21Z",
