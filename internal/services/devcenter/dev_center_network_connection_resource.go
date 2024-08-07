@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourcegroups"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/devcenter/2023-04-01/networkconnections"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/devcenter/validate"
@@ -30,16 +31,17 @@ func (r DevCenterNetworkConnectionResource) ModelObject() interface{} {
 }
 
 type DevCenterNetworkConnectionResourceModel struct {
-	Name              string            `tfschema:"name"`
-	ResourceGroupName string            `tfschema:"resource_group_name"`
-	Location          string            `tfschema:"location"`
-	DomainJoinType    string            `tfschema:"domain_join_type"`
-	SubnetId          string            `tfschema:"subnet_id"`
-	DomainName        string            `tfschema:"domain_name"`
-	DomainPassword    string            `tfschema:"domain_password"`
-	DomainUsername    string            `tfschema:"domain_username"`
-	OrganizationUnit  string            `tfschema:"organization_unit"`
-	Tags              map[string]string `tfschema:"tags"`
+	Name                        string            `tfschema:"name"`
+	ResourceGroupName           string            `tfschema:"resource_group_name"`
+	Location                    string            `tfschema:"location"`
+	DomainJoinType              string            `tfschema:"domain_join_type"`
+	SubnetId                    string            `tfschema:"subnet_id"`
+	DomainName                  string            `tfschema:"domain_name"`
+	DomainPassword              string            `tfschema:"domain_password"`
+	DomainUsername              string            `tfschema:"domain_username"`
+	NetworkingResourceGroupName string            `tfschema:"networking_resource_group_name"`
+	OrganizationUnit            string            `tfschema:"organization_unit"`
+	Tags                        map[string]string `tfschema:"tags"`
 }
 
 func (r DevCenterNetworkConnectionResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {
@@ -89,6 +91,13 @@ func (r DevCenterNetworkConnectionResource) Arguments() map[string]*pluginsdk.Sc
 			Type:         pluginsdk.TypeString,
 			Optional:     true,
 			ValidateFunc: validate.DevCenterNetworkConnectionDomainUsername,
+		},
+
+		"networking_resource_group_name": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: resourcegroups.ValidateName,
 		},
 
 		"organization_unit": {
@@ -151,6 +160,10 @@ func (r DevCenterNetworkConnectionResource) Create() sdk.ResourceFunc {
 				parameters.Properties.DomainUsername = pointer.To(v)
 			}
 
+			if v := model.NetworkingResourceGroupName; v != "" {
+				parameters.Properties.NetworkingResourceGroupName = pointer.To(v)
+			}
+
 			if v := model.OrganizationUnit; v != "" {
 				parameters.Properties.OrganizationUnit = pointer.To(v)
 			}
@@ -198,6 +211,7 @@ func (r DevCenterNetworkConnectionResource) Read() sdk.ResourceFunc {
 					state.SubnetId = pointer.From(props.SubnetId)
 					state.DomainName = pointer.From(props.DomainName)
 					state.DomainUsername = pointer.From(props.DomainUsername)
+					state.NetworkingResourceGroupName = pointer.From(props.NetworkingResourceGroupName)
 					state.OrganizationUnit = pointer.From(props.OrganizationUnit)
 
 					if v := props.DomainJoinType; v != "" {

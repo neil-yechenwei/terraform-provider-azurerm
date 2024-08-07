@@ -159,15 +159,16 @@ resource "azurerm_resource_group" "network" {
 }
 
 resource "azurerm_dev_center_network_connection" "test" {
-  name                = "acctest-dcnc-%d"
-  resource_group_name = azurerm_resource_group.test.name
-  location            = azurerm_resource_group.test.location
-  domain_join_type    = "HybridAzureADJoin"
-  subnet_id           = azurerm_subnet.test.id
-  domain_name         = "never.gonna.shut.you.down"
-  domain_username     = "tfuser@microsoft.com"
-  domain_password     = "P@ssW0RD7890"
-  organization_unit   = "OU=Sales,DC=Fabrikam,DC=com"
+  name                           = "acctest-dcnc-%d"
+  resource_group_name            = azurerm_resource_group.test.name
+  location                       = azurerm_resource_group.test.location
+  domain_join_type               = "HybridAzureADJoin"
+  subnet_id                      = azurerm_subnet.test.id
+  domain_name                    = "never.gonna.shut.you.down"
+  domain_username                = "tfuser@microsoft.com"
+  domain_password                = "P@ssW0RD7890"
+  organization_unit              = "OU=Sales,DC=Fabrikam,DC=com"
+  networking_resource_group_name = azurerm_resource_group.network.name
 
   tags = {
     ENV = "Test"
@@ -197,15 +198,16 @@ resource "azurerm_subnet" "test2" {
 }
 
 resource "azurerm_dev_center_network_connection" "test" {
-  name                = "acctest-dcnc-%d"
-  resource_group_name = azurerm_resource_group.test.name
-  location            = azurerm_resource_group.test.location
-  domain_join_type    = "HybridAzureADJoin"
-  subnet_id           = azurerm_subnet.test2.id
-  domain_name         = "never2.gonna.shut.you.down"
-  domain_username     = "tfuser2@microsoft.com"
-  domain_password     = "P@ssW0RD7891"
-  organization_unit   = "OU=SaleStores,DC=Fabrikam,DC=com"
+  name                           = "acctest-dcnc-%d"
+  resource_group_name            = azurerm_resource_group.test.name
+  location                       = azurerm_resource_group.test.location
+  domain_join_type               = "HybridAzureADJoin"
+  subnet_id                      = azurerm_subnet.test2.id
+  domain_name                    = "never2.gonna.shut.you.down"
+  domain_username                = "tfuser2@microsoft.com"
+  domain_password                = "P@ssW0RD7891"
+  organization_unit              = "OU=SaleStores,DC=Fabrikam,DC=com"
+  networking_resource_group_name = azurerm_resource_group.network.name
 
   tags = {
     ENV = "Test2"

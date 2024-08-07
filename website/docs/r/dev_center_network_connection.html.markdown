@@ -61,6 +61,8 @@ The following arguments are supported:
 
 * `domain_username` - (Optional) The username of the Azure Active Directory account (user or service account) that has permissions to create computer objects in Active Directory.
 
+* `networking_resource_group_name` - (Optional) Specifies the name of the Resource Group within which the Network Interface should exist. Changing this forces a new resource to be created.
+
 * `organization_unit` - (Optional) The Azure Active Directory domain Organization Unit (OU).
 
 * `tags` - (Optional) A mapping of tags which should be assigned to the Dev Center Network Connection.
