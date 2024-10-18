@@ -478,7 +478,6 @@ resource "azurerm_virtual_network_gateway_connection" "test" {
   type                       = "IPsec"
   virtual_network_gateway_id = azurerm_virtual_network_gateway.test.id
   local_network_gateway_id   = azurerm_local_network_gateway.test.id
-  shared_key                 = "4-v3ry-53cr37-1p53c-5h4r3d-k3y"
 }
 `, data.RandomInteger, data.Locations.Primary)
 }
@@ -586,7 +585,6 @@ resource "azurerm_virtual_network_gateway_connection" "test" {
   express_route_circuit_id   = azurerm_express_route_circuit.test.id
   authorization_key          = azurerm_express_route_circuit_authorization.test.authorization_key
   routing_weight             = "0"
-  shared_key                 = "4-v3ry-53cr37-1p53c-5h4r3d-k3y"
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger)
 }
@@ -923,7 +921,6 @@ resource "azurerm_virtual_network_gateway_connection" "test" {
     ipsec_encryption = "AES256"
     ipsec_integrity  = "SHA256"
     pfs_group        = "PFS14"
-    sa_datasize      = 102400000
     sa_lifetime      = 27000
   }
 
@@ -1009,7 +1006,7 @@ resource "azurerm_virtual_network_gateway_connection" "test" {
     ipsec_encryption = "AES256"
     ipsec_integrity  = "SHA256"
     pfs_group        = "PFS2048"
-    sa_datasize      = 102400000
+    sa_datasize      = 0
     sa_lifetime      = 27000
   }
 
@@ -1182,7 +1179,7 @@ resource "azurerm_virtual_network_gateway_connection" "test" {
     ipsec_encryption = "AES256"
     ipsec_integrity  = "SHA256"
     pfs_group        = "PFS2048"
-    sa_datasize      = 102400000
+    sa_datasize      = 0
     sa_lifetime      = 27000
   }
 
@@ -1275,7 +1272,7 @@ resource "azurerm_virtual_network_gateway_connection" "test" {
     ipsec_encryption = "AES256"
     ipsec_integrity  = "SHA256"
     pfs_group        = "PFS2048"
-    sa_datasize      = 102400000
+    sa_datasize      = 0
     sa_lifetime      = 27000
   }
 
@@ -1667,8 +1664,6 @@ resource "azurerm_virtual_network_gateway_connection" "test" {
 
   egress_nat_rule_ids  = [azurerm_virtual_network_gateway_nat_rule.test.id]
   ingress_nat_rule_ids = [azurerm_virtual_network_gateway_nat_rule.test2.id]
-
-  shared_key = "4-v3ry-53cr37-1p53c-5h4r3d-k3y"
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger, data.RandomInteger)
 }
@@ -1876,7 +1871,7 @@ resource "azurerm_virtual_network_gateway_nat_rule" "test" {
 }
 
 resource "azurerm_virtual_network_gateway_nat_rule" "test4" {
-  name                       = "acctestvnetgwegressnatrule-%d"
+  name                       = "acctestvnetgwegressnatrule4-%d"
   resource_group_name        = azurerm_resource_group.test.name
   virtual_network_gateway_id = data.azurerm_virtual_network_gateway.test.id
   mode                       = "EgressSnat"
@@ -2025,7 +2020,7 @@ resource "azurerm_virtual_network_gateway_nat_rule" "test" {
 }
 
 resource "azurerm_virtual_network_gateway_nat_rule" "test4" {
-  name                       = "acctestvnetgwegressnatrule-%d"
+  name                       = "acctestvnetgwegressnatrule4-%d"
   resource_group_name        = azurerm_resource_group.test.name
   virtual_network_gateway_id = data.azurerm_virtual_network_gateway.test.id
   mode                       = "EgressSnat"
@@ -2042,7 +2037,7 @@ resource "azurerm_virtual_network_gateway_nat_rule" "test4" {
 }
 
 resource "azurerm_virtual_network_gateway_nat_rule" "test2" {
-  name                       = "acctestvnetgwingressnatrule-%d"
+  name                       = "acctestvnetgwingressnatrule2-%d"
   resource_group_name        = azurerm_resource_group.test.name
   virtual_network_gateway_id = data.azurerm_virtual_network_gateway.test.id
   mode                       = "IngressSnat"
@@ -2059,7 +2054,7 @@ resource "azurerm_virtual_network_gateway_nat_rule" "test2" {
 }
 
 resource "azurerm_virtual_network_gateway_nat_rule" "test3" {
-  name                       = "acctestvnetgwingressnatrule-%d"
+  name                       = "acctestvnetgwingressnatrule3-%d"
   resource_group_name        = azurerm_resource_group.test.name
   virtual_network_gateway_id = data.azurerm_virtual_network_gateway.test.id
   mode                       = "IngressSnat"
