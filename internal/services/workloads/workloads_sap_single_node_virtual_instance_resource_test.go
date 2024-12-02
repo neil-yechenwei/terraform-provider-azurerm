@@ -301,14 +301,15 @@ resource "azurerm_storage_account" "test" {
 }
 
 resource "azurerm_workloads_sap_single_node_virtual_instance" "test" {
-  name                        = "X%d"
-  resource_group_name         = azurerm_resource_group.test.name
-  location                    = azurerm_resource_group.test.location
-  environment                 = "NonProd"
-  sap_product                 = "S4HANA"
-  managed_resource_group_name = "acctestManagedRG%d"
-  app_location                = azurerm_resource_group.app.location
-  sap_fqdn                    = "sap.bpaas.com"
+  name                                  = "X%d"
+  resource_group_name                   = azurerm_resource_group.test.name
+  location                              = azurerm_resource_group.test.location
+  environment                           = "NonProd"
+  sap_product                           = "S4HANA"
+  managed_resource_group_name           = "acctestManagedRG%d"
+  app_location                          = azurerm_resource_group.app.location
+  sap_fqdn                              = "sap.bpaas.com"
+  managed_resources_network_access_type = "Private"
 
   single_server_configuration {
     app_resource_group_name = azurerm_resource_group.app.name
@@ -428,14 +429,15 @@ resource "azurerm_storage_account" "test" {
 }
 
 resource "azurerm_workloads_sap_single_node_virtual_instance" "test" {
-  name                        = "X%d"
-  resource_group_name         = azurerm_resource_group.test.name
-  location                    = azurerm_resource_group.test.location
-  environment                 = "NonProd"
-  sap_product                 = "S4HANA"
-  managed_resource_group_name = "acctestManagedRG%d"
-  app_location                = azurerm_resource_group.app.location
-  sap_fqdn                    = "sap.bpaas.com"
+  name                                  = "X%d"
+  resource_group_name                   = azurerm_resource_group.test.name
+  location                              = azurerm_resource_group.test.location
+  environment                           = "NonProd"
+  sap_product                           = "S4HANA"
+  managed_resource_group_name           = "acctestManagedRG%d"
+  app_location                          = azurerm_resource_group.app.location
+  sap_fqdn                              = "sap.bpaas.com"
+  managed_resources_network_access_type = "Public"
 
   single_server_configuration {
     app_resource_group_name = azurerm_resource_group.app.name
