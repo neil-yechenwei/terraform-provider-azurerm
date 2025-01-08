@@ -12,6 +12,7 @@ import (
 	aadb2c_v2021_04_01_preview "github.com/hashicorp/go-azure-sdk/resource-manager/aadb2c/2021-04-01-preview"
 	analysisservices_v2017_08_01 "github.com/hashicorp/go-azure-sdk/resource-manager/analysisservices/2017-08-01"
 	azurestackhci_v2024_01_01 "github.com/hashicorp/go-azure-sdk/resource-manager/azurestackhci/2024-01-01"
+	billing_2024_04_01 "github.com/hashicorp/go-azure-sdk/resource-manager/billing/2024-04-01"
 	datadog_v2021_03_01 "github.com/hashicorp/go-azure-sdk/resource-manager/datadog/2021-03-01"
 	dns_v2018_05_01 "github.com/hashicorp/go-azure-sdk/resource-manager/dns/2018-05-01"
 	fluidrelay_2022_05_26 "github.com/hashicorp/go-azure-sdk/resource-manager/fluidrelay/2022-05-26"
@@ -39,6 +40,7 @@ import (
 	automation "github.com/hashicorp/terraform-provider-azurerm/internal/services/automation/client"
 	azureStackHCI "github.com/hashicorp/terraform-provider-azurerm/internal/services/azurestackhci/client"
 	batch "github.com/hashicorp/terraform-provider-azurerm/internal/services/batch/client"
+	billing "github.com/hashicorp/terraform-provider-azurerm/internal/services/billing/client"
 	blueprints "github.com/hashicorp/terraform-provider-azurerm/internal/services/blueprints/client"
 	bot "github.com/hashicorp/terraform-provider-azurerm/internal/services/bot/client"
 	cdn "github.com/hashicorp/terraform-provider-azurerm/internal/services/cdn/client"
@@ -175,6 +177,7 @@ type Client struct {
 	Automation                        *automation.Client
 	AzureStackHCI                     *azurestackhci_v2024_01_01.Client
 	Batch                             *batch.Client
+	Billing                           *billing_2024_04_01.Client
 	Blueprints                        *blueprints.Client
 	Bot                               *bot.Client
 	Cdn                               *cdn.Client
@@ -649,6 +652,9 @@ func (client *Client) Build(ctx context.Context, o *common.ClientOptions) error 
 	}
 
 	client.Synapse = synapse.NewClient(o)
+	if client.Billing, err = billing.NewClient(o); err != nil {
+		return fmt.Errorf("building clients for Billing: %+v", err)
+	}
 	if client.SystemCenterVirtualMachineManager, err = systemCenterVirtualMachineManager.NewClient(o); err != nil {
 		return fmt.Errorf("building clients for System Center Virtual Machine Manager: %+v", err)
 	}
