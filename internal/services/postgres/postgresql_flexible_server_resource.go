@@ -290,7 +290,37 @@ func resourcePostgresqlFlexibleServer() *pluginsdk.Resource {
 				}, false),
 			},
 
-			"identity": commonschema.UserAssignedIdentityOptional(),
+			"identity": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"type": {
+							Type:     pluginsdk.TypeString,
+							Required: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(identity.TypeUserAssigned),
+								string(identity.TypeSystemAssigned),
+							}, false),
+						},
+
+						"identity_ids": {
+							Type:     pluginsdk.TypeSet,
+							Optional: true,
+							Elem: &pluginsdk.Schema{
+								Type:         pluginsdk.TypeString,
+								ValidateFunc: commonids.ValidateUserAssignedIdentityID,
+							},
+						},
+
+						"tenant_id": {
+							Type:     pluginsdk.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 
 			"customer_managed_key": {
 				Type:     pluginsdk.TypeList,
@@ -590,9 +620,9 @@ func resourcePostgresqlFlexibleServerCreate(d *pluginsdk.ResourceData, meta inte
 		parameters.Properties.AuthConfig = authConfig
 	}
 
-	identity, err := identity.ExpandUserAssignedMap(d.Get("identity").([]interface{}))
+	identity, err := expandSystemOrUserAssigned(d.Get("identity").([]interface{}))
 	if err != nil {
-		return fmt.Errorf("expanding `identity`")
+		return fmt.Errorf("expanding `identity`: %+v", err)
 	}
 	parameters.Identity = identity
 
@@ -711,7 +741,7 @@ func resourcePostgresqlFlexibleServerRead(d *pluginsdk.ResourceData, meta interf
 				return fmt.Errorf("setting `customer_managed_key`: %+v", err)
 			}
 
-			identity, err := identity.FlattenUserAssignedMap(model.Identity)
+			identity, err := flattenSystemOrUserAssigned(model.Identity)
 			if err != nil {
 				return fmt.Errorf("flattening `identity`: %+v", err)
 			}
@@ -897,7 +927,7 @@ func resourcePostgresqlFlexibleServerUpdate(d *pluginsdk.ResourceData, meta inte
 	}
 
 	if d.HasChange("identity") {
-		identity, err := identity.ExpandUserAssignedMap(d.Get("identity").([]interface{}))
+		identity, err := expandSystemOrUserAssigned(d.Get("identity").([]interface{}))
 		if err != nil {
 			return fmt.Errorf("expanding `identity` for %s: %+v", *id, err)
 		}
@@ -1279,4 +1309,65 @@ func flattenFlexibleServerDataEncryption(de *servers.DataEncryption) ([]interfac
 	}
 
 	return []interface{}{item}, nil
+}
+
+func expandSystemOrUserAssigned(input []interface{}) (*servers.UserAssignedIdentity, error) {
+	identityType := servers.IdentityTypeNone
+	identityIds := make(map[string]servers.UserIdentity, 0)
+
+	if len(input) > 0 {
+		raw := input[0].(map[string]interface{})
+		typeRaw := raw["type"].(string)
+		if typeRaw == string(servers.IdentityTypeSystemAssigned) {
+			identityType = servers.IdentityTypeSystemAssigned
+		}
+		if typeRaw == string(servers.IdentityTypeUserAssigned) {
+			identityType = servers.IdentityTypeUserAssigned
+		}
+
+		identityIdsRaw := raw["identity_ids"].(*pluginsdk.Set).List()
+		for _, v := range identityIdsRaw {
+			identityIds[v.(string)] = servers.UserIdentity{
+				// intentionally empty since the expand shouldn't send these values
+			}
+		}
+	}
+
+	if len(identityIds) > 0 && identityType != servers.IdentityTypeUserAssigned {
+		return nil, fmt.Errorf("`identity_ids` can only be specified when `type` is set to %q", string(servers.IdentityTypeUserAssigned))
+	}
+
+	identity := &servers.UserAssignedIdentity{
+		Type:                   identityType,
+		UserAssignedIdentities: &identityIds,
+	}
+
+	return identity, nil
+}
+
+func flattenSystemOrUserAssigned(input *servers.UserAssignedIdentity) (*[]interface{}, error) {
+	if input == nil {
+		return &[]interface{}{}, nil
+	}
+
+	if input.Type != servers.IdentityTypeSystemAssigned && input.Type != servers.IdentityTypeUserAssigned {
+		return &[]interface{}{}, nil
+	}
+
+	identityIds := make([]string, 0)
+	for raw := range *input.UserAssignedIdentities {
+		id, err := commonids.ParseUserAssignedIdentityIDInsensitively(raw)
+		if err != nil {
+			return nil, fmt.Errorf("parsing %q as a User Assigned Identity ID: %+v", raw, err)
+		}
+		identityIds = append(identityIds, id.ID())
+	}
+
+	return &[]interface{}{
+		map[string]interface{}{
+			"type":         string(input.Type),
+			"identity_ids": identityIds,
+			"tenant_id":    input.TenantId,
+		},
+	}, nil
 }
