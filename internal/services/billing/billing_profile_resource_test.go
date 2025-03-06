@@ -9,12 +9,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/billing/2024-04-01/billingprofile"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
-	"github.com/hashicorp/terraform-provider-azurerm/utils"
 )
 
 type BillingProfileResource struct{}
@@ -116,7 +116,7 @@ func (r BillingProfileResource) Exists(ctx context.Context, client *clients.Clie
 		return nil, fmt.Errorf("reading %s: %+v", *id, err)
 	}
 
-	return utils.Bool(resp.Model != nil), nil
+	return pointer.To(resp.Model != nil), nil
 }
 
 func (r BillingProfileResource) basic(data acceptance.TestData) string {
@@ -125,13 +125,11 @@ provider "azurerm" {
   features {}
 }
 
-%s
-
 resource "azurerm_billing_profile" "test" {
   name                 = "acctest-bp-%d"
   billing_account_name = "%s"
 }
-`, r.template(data), data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
+`, data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
 }
 
 func (r BillingProfileResource) requiresImport(data acceptance.TestData) string {
@@ -151,8 +149,6 @@ provider "azurerm" {
   features {}
 }
 
-%[1]s
-
 resource "azurerm_billing_profile" "test" {
   name                 = "acctest-bp-%d"
   billing_account_name = "%s"
@@ -161,7 +157,7 @@ resource "azurerm_billing_profile" "test" {
     Env = "Test"
   }
 }
-`, r.template(data), data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
+`, data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
 }
 
 func (r BillingProfileResource) update(data acceptance.TestData) string {
@@ -169,8 +165,6 @@ func (r BillingProfileResource) update(data acceptance.TestData) string {
 provider "azurerm" {
   features {}
 }
-
-%[1]s
 
 resource "azurerm_billing_profile" "test" {
   name                 = "acctest-bp-%d"
@@ -180,14 +174,5 @@ resource "azurerm_billing_profile" "test" {
     Env = "Test2"
   }
 }
-`, r.template(data), data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
-}
-
-func (r BillingProfileResource) template(data acceptance.TestData) string {
-	return fmt.Sprintf(`
-resource "azurerm_resource_group" "test" {
-  name     = "acctestRG-bp-%d"
-  location = "%s"
-}
-`, data.RandomInteger, data.Locations.Primary)
+`, data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
 }
