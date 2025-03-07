@@ -20,8 +20,8 @@ import (
 type BillingProfileResource struct{}
 
 func TestAccBillingProfile_basic(t *testing.T) {
-	if os.Getenv("ARM_BILLING_ACCOUNT_NAME") == "" {
-		t.Skip("Skipping as `ARM_BILLING_ACCOUNT` is not specified")
+	if os.Getenv("ARM_TEST_BILLING_ACCOUNT_NAME") == "" {
+		t.Skip("Skipping as `ARM_TEST_BILLING_ACCOUNT_NAME` is not specified")
 	}
 	data := acceptance.BuildTestData(t, "azurerm_billing_profile", "test")
 	r := BillingProfileResource{}
@@ -38,8 +38,8 @@ func TestAccBillingProfile_basic(t *testing.T) {
 }
 
 func TestAccBillingProfile_requiresImport(t *testing.T) {
-	if os.Getenv("ARM_BILLING_ACCOUNT_NAME") == "" {
-		t.Skip("Skipping as `ARM_BILLING_ACCOUNT` is not specified")
+	if os.Getenv("ARM_TEST_BILLING_ACCOUNT_NAME") == "" {
+		t.Skip("Skipping as `ARM_TEST_BILLING_ACCOUNT_NAME` is not specified")
 	}
 	data := acceptance.BuildTestData(t, "azurerm_billing_profile", "test")
 	r := BillingProfileResource{}
@@ -56,8 +56,8 @@ func TestAccBillingProfile_requiresImport(t *testing.T) {
 }
 
 func TestAccBillingProfile_complete(t *testing.T) {
-	if os.Getenv("ARM_BILLING_ACCOUNT_NAME") == "" {
-		t.Skip("Skipping as `ARM_BILLING_ACCOUNT` is not specified")
+	if os.Getenv("ARM_TEST_BILLING_ACCOUNT_NAME") == "" {
+		t.Skip("Skipping as `ARM_TEST_BILLING_ACCOUNT_NAME` is not specified")
 	}
 	data := acceptance.BuildTestData(t, "azurerm_billing_profile", "test")
 	r := BillingProfileResource{}
@@ -74,8 +74,8 @@ func TestAccBillingProfile_complete(t *testing.T) {
 }
 
 func TestAccBillingProfile_update(t *testing.T) {
-	if os.Getenv("ARM_BILLING_ACCOUNT_NAME") == "" {
-		t.Skip("Skipping as `ARM_BILLING_ACCOUNT` is not specified")
+	if os.Getenv("ARM_TEST_BILLING_ACCOUNT_NAME") == "" {
+		t.Skip("Skipping as `ARM_TEST_BILLING_ACCOUNT_NAME` is not specified")
 	}
 	data := acceptance.BuildTestData(t, "azurerm_billing_profile", "test2")
 	r := BillingProfileResource{}
@@ -129,7 +129,7 @@ resource "azurerm_billing_profile" "test" {
   name                 = "acctest-bp-%d"
   billing_account_name = "%s"
 }
-`, data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
+`, data.RandomInteger, os.Getenv("ARM_TEST_BILLING_ACCOUNT_NAME"))
 }
 
 func (r BillingProfileResource) requiresImport(data acceptance.TestData) string {
@@ -157,7 +157,7 @@ resource "azurerm_billing_profile" "test" {
     Env = "Test"
   }
 }
-`, data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
+`, data.RandomInteger, os.Getenv("ARM_TEST_BILLING_ACCOUNT_NAME"))
 }
 
 func (r BillingProfileResource) update(data acceptance.TestData) string {
@@ -174,5 +174,5 @@ resource "azurerm_billing_profile" "test" {
     Env = "Test2"
   }
 }
-`, data.RandomInteger, os.Getenv("ARM_BILLING_ACCOUNT_NAME"))
+`, data.RandomInteger, os.Getenv("ARM_TEST_BILLING_ACCOUNT_NAME"))
 }

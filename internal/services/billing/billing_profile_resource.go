@@ -118,6 +118,12 @@ func (r BillingProfileResource) Arguments() map[string]*pluginsdk.Schema {
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
+					"company_name": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+
 					"country": {
 						Type:         pluginsdk.TypeString,
 						Required:     true,
@@ -137,12 +143,6 @@ func (r BillingProfileResource) Arguments() map[string]*pluginsdk.Schema {
 					},
 
 					"city": {
-						Type:         pluginsdk.TypeString,
-						Optional:     true,
-						ValidateFunc: validation.StringIsNotEmpty,
-					},
-
-					"company_name": {
 						Type:         pluginsdk.TypeString,
 						Optional:     true,
 						ValidateFunc: validation.StringIsNotEmpty,
@@ -323,6 +323,18 @@ func (r BillingProfileResource) Arguments() map[string]*pluginsdk.Schema {
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
+					"company_name": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+
+					"country": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+
 					"address_line_2": {
 						Type:         pluginsdk.TypeString,
 						Optional:     true,
@@ -338,18 +350,6 @@ func (r BillingProfileResource) Arguments() map[string]*pluginsdk.Schema {
 					"city": {
 						Type:         pluginsdk.TypeString,
 						Optional:     true,
-						ValidateFunc: validation.StringIsNotEmpty,
-					},
-
-					"company_name": {
-						Type:         pluginsdk.TypeString,
-						Optional:     true,
-						ValidateFunc: validation.StringIsNotEmpty,
-					},
-
-					"country": {
-						Type:         pluginsdk.TypeString,
-						Required:     true,
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
@@ -422,6 +422,18 @@ func (r BillingProfileResource) Arguments() map[string]*pluginsdk.Schema {
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
+					"company_name": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+
+					"country": {
+						Type:         pluginsdk.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+
 					"address_line_2": {
 						Type:         pluginsdk.TypeString,
 						Optional:     true,
@@ -437,18 +449,6 @@ func (r BillingProfileResource) Arguments() map[string]*pluginsdk.Schema {
 					"city": {
 						Type:         pluginsdk.TypeString,
 						Optional:     true,
-						ValidateFunc: validation.StringIsNotEmpty,
-					},
-
-					"company_name": {
-						Type:         pluginsdk.TypeString,
-						Optional:     true,
-						ValidateFunc: validation.StringIsNotEmpty,
-					},
-
-					"country": {
-						Type:         pluginsdk.TypeString,
-						Required:     true,
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
@@ -547,7 +547,6 @@ func (r BillingProfileResource) Create() sdk.ResourceFunc {
 					EnabledAzurePlans:        expandEnabledAzurePlans(model.EnabledAzurePlans),
 					IndirectRelationshipInfo: expandIndirectRelationshipInfo(model.IndirectRelationshipInfo),
 					InvoiceEmailOptIn:        pointer.To(model.InvoiceEmailOptInEnabled),
-					InvoiceRecipients:        pointer.To(model.InvoiceRecipients),
 					ShipTo:                   expandAddressDetails(model.ShipTo),
 					SoldTo:                   expandAddressDetails(model.SoldTo),
 				},
@@ -556,6 +555,10 @@ func (r BillingProfileResource) Create() sdk.ResourceFunc {
 
 			if v := model.DisplayName; v != "" {
 				parameters.Properties.DisplayName = pointer.To(v)
+			}
+
+			if v := model.InvoiceRecipients; v != nil {
+				parameters.Properties.InvoiceRecipients = pointer.To(v)
 			}
 
 			if v := model.PoNumber; v != "" {
@@ -724,6 +727,7 @@ func expandAddressDetails(input []AddressDetails) *billingprofile.AddressDetails
 
 	result := &billingprofile.AddressDetails{
 		AddressLine1:   addressDetails.AddressLine1,
+		CompanyName:    pointer.To(addressDetails.CompanyName),
 		Country:        addressDetails.Country,
 		IsValidAddress: pointer.To(addressDetails.ValidAddressEnabled),
 	}
@@ -738,10 +742,6 @@ func expandAddressDetails(input []AddressDetails) *billingprofile.AddressDetails
 
 	if v := addressDetails.City; v != "" {
 		result.City = pointer.To(v)
-	}
-
-	if v := addressDetails.CompanyName; v != "" {
-		result.CompanyName = pointer.To(v)
 	}
 
 	if v := addressDetails.District; v != "" {
@@ -842,10 +842,11 @@ func flattenCurrentPaymentTerm(input *billingprofile.PaymentTerm) []CurrentPayme
 }
 
 func expandEnabledAzurePlans(input []EnabledAzurePlan) *[]billingprofile.AzurePlan {
-	result := make([]billingprofile.AzurePlan, 0)
 	if len(input) == 0 {
-		return &result
+		return nil
 	}
+
+	result := make([]billingprofile.AzurePlan, 0)
 
 	for _, item := range input {
 		azurePlan := billingprofile.AzurePlan{}

@@ -55,6 +55,8 @@ A `bill_to` block supports the following:
 
 * `address_line_1` - (Required) The address line 1.
 
+* `company_name` - (Required) The company name.
+
 * `country` - (Required) The country code uses ISO 3166-1 Alpha-2 format.
 
 * `address_line_2` - (Optional) The address line 2.
@@ -62,8 +64,6 @@ A `bill_to` block supports the following:
 * `address_line_3` - (Optional) The address line 3.
 
 * `city` - (Optional) The address city.
-
-* `company_name` - (Optional) The company name.
 
 * `district` - (Optional) The address district.
 
