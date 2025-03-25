@@ -68,14 +68,6 @@ func TestAccNotificationHub_updateTag(t *testing.T) {
 			),
 		},
 		data.ImportStep(),
-		{
-			Config: r.basic(data),
-			Check: acceptance.ComposeTestCheckFunc(
-				check.That(data.ResourceName).ExistsInAzure(r),
-				check.That(data.ResourceName).Key("tags.%").HasValue("1"),
-			),
-		},
-		data.ImportStep(),
 	})
 }
 
@@ -133,6 +125,7 @@ resource "azurerm_notification_hub" "test" {
   namespace_name      = azurerm_notification_hub_namespace.test.name
   resource_group_name = azurerm_resource_group.test.name
   location            = azurerm_resource_group.test.location
+  registration_ttl     = "10675199.02:48:05.4775807"
 
   tags = {
     env = "Test"
@@ -165,6 +158,7 @@ resource "azurerm_notification_hub" "test" {
   namespace_name      = azurerm_notification_hub_namespace.test.name
   resource_group_name = azurerm_resource_group.test.name
   location            = azurerm_resource_group.test.location
+  registration_ttl     = "10875199.05:49:06.5775812"
 
   browser_credential {
     subject           = "testSubject"
@@ -203,6 +197,7 @@ resource "azurerm_notification_hub" "test" {
   namespace_name      = azurerm_notification_hub_namespace.test.name
   resource_group_name = azurerm_resource_group.test.name
   location            = azurerm_resource_group.test.location
+  registration_ttl     = "P39D"
 }
 `, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger)
 }

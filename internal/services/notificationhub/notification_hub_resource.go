@@ -6,6 +6,7 @@ package notificationhub
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"log"
 	"strconv"
 	"time"
@@ -176,6 +177,12 @@ func resourceNotificationHub() *pluginsdk.Resource {
 				},
 			},
 
+			"registration_ttl": {
+				Type:         pluginsdk.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
+			},
+
 			"tags": commonschema.Tags(),
 		},
 	}
@@ -209,6 +216,10 @@ func resourceNotificationHubCreateUpdate(d *pluginsdk.ResourceData, meta interfa
 			GcmCredential:     expandNotificationHubsGCMCredentials(d.Get("gcm_credential").([]interface{})),
 		},
 		Tags: tags.Expand(d.Get("tags").(map[string]interface{})),
+	}
+
+	if v, ok := d.GetOk("registration_ttl"); ok {
+		parameters.Properties.RegistrationTtl = pointer.To(v.(string))
 	}
 
 	if _, err := client.NotificationHubsCreateOrUpdate(ctx, id, parameters); err != nil {
@@ -306,6 +317,10 @@ func resourceNotificationHubRead(d *pluginsdk.ResourceData, meta interface{}) er
 
 	if model := resp.Model; model != nil {
 		d.Set("location", location.NormalizeNilable(&model.Location))
+
+		if props := model.Properties; props != nil {
+			d.Set("registration_ttl", pointer.From(props.RegistrationTtl))
+		}
 
 		return d.Set("tags", tags.Flatten(model.Tags))
 	}
