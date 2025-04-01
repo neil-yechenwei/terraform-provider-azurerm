@@ -942,6 +942,7 @@ github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/adminis
 github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/configurations
 github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/databases
 github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/firewallrules
+github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/migrations
 github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/serverrestart
 github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/servers
 github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/virtualendpoints

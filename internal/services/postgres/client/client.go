@@ -19,6 +19,7 @@ import (
 	flexibleserverconfigurations "github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/configurations"
 	flexibleserverdatabases "github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/databases"
 	flexibleserverfirewallrules "github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/firewallrules"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/migrations"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/serverrestart"
 	flexibleservers "github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/servers"
 	flexibleservervirtualendpoints "github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/virtualendpoints"
@@ -34,6 +35,7 @@ type Client struct {
 	FlexibleServerFirewallRuleClient    *flexibleserverfirewallrules.FirewallRulesClient
 	FlexibleServerDatabaseClient        *flexibleserverdatabases.DatabasesClient
 	FlexibleServerAdministratorsClient  *flexibleserveradministrators.AdministratorsClient
+	MigrationsClient                    *migrations.MigrationsClient
 	ServersClient                       *servers.ServersClient
 	ServerRestartClient                 *serverrestart.ServerRestartClient
 	ServerKeysClient                    *serverkeys.ServerKeysClient
@@ -62,6 +64,12 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 		return nil, fmt.Errorf("building FirewallRules client: %+v", err)
 	}
 	o.Configure(firewallRulesClient.Client, o.Authorizers.ResourceManager)
+
+	migrationsClient, err := migrations.NewMigrationsClientWithBaseURI(o.Environment.ResourceManager)
+	if err != nil {
+		return nil, fmt.Errorf("building Migrations client: %+v", err)
+	}
+	o.Configure(migrationsClient.Client, o.Authorizers.ResourceManager)
 
 	serversClient, err := servers.NewServersClientWithBaseURI(o.Environment.ResourceManager)
 	if err != nil {
@@ -151,6 +159,7 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 		FlexibleServerFirewallRuleClient:    flexibleServerFirewallRuleClient,
 		FlexibleServerDatabaseClient:        flexibleServerDatabaseClient,
 		FlexibleServerAdministratorsClient:  flexibleServerAdministratorsClient,
+		MigrationsClient:                    migrationsClient,
 		ServersClient:                       serversClient,
 		ServerKeysClient:                    serverKeysClient,
 		ServerSecurityAlertPoliciesClient:   serverSecurityAlertPoliciesClient,
