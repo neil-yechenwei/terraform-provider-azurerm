@@ -12,158 +12,100 @@ import (
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/extendedlocation/2021-08-15/customlocations"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/systemcentervirtualmachinemanager/2023-10-07/inventoryitems"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/systemcentervirtualmachinemanager/2023-10-07/vmmservers"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/migrations"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/services/systemcentervirtualmachinemanager/validate"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/postgres/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
 )
 
-type SystemCenterVirtualMachineManagerServerModel struct {
-	Name              string            `tfschema:"name"`
-	ResourceGroupName string            `tfschema:"resource_group_name"`
-	Location          string            `tfschema:"location"`
-	CustomLocationId  string            `tfschema:"custom_location_id"`
-	Fqdn              string            `tfschema:"fqdn"`
-	Username          string            `tfschema:"username"`
-	Password          string            `tfschema:"password"`
-	Port              int64             `tfschema:"port"`
-	Tags              map[string]string `tfschema:"tags"`
+type PostgresqlFlexibleServerMigrationModel struct {
+	Name     string            `tfschema:"name"`
+	Location string            `tfschema:"location"`
+	ServerId string            `tfschema:"server_id"`
+	Tags     map[string]string `tfschema:"tags"`
 }
 
-var (
-	_ sdk.Resource           = SystemCenterVirtualMachineManagerServerResource{}
-	_ sdk.ResourceWithUpdate = SystemCenterVirtualMachineManagerServerResource{}
-)
+var _ sdk.ResourceWithUpdate = PostgresqlFlexibleServerMigrationResource{}
 
-type SystemCenterVirtualMachineManagerServerResource struct{}
+type PostgresqlFlexibleServerMigrationResource struct{}
 
-func (r SystemCenterVirtualMachineManagerServerResource) ModelObject() interface{} {
-	return &SystemCenterVirtualMachineManagerServerModel{}
+func (r PostgresqlFlexibleServerMigrationResource) ModelObject() interface{} {
+	return &PostgresqlFlexibleServerMigrationModel{}
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {
-	return vmmservers.ValidateVMmServerID
+func (r PostgresqlFlexibleServerMigrationResource) IDValidationFunc() pluginsdk.SchemaValidateFunc {
+	return migrations.ValidateMigrationID
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) ResourceType() string {
-	return "azurerm_system_center_virtual_machine_manager_server"
+func (r PostgresqlFlexibleServerMigrationResource) ResourceType() string {
+	return "azurerm_postgresql_flexible_server_migration"
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) Arguments() map[string]*pluginsdk.Schema {
+func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*pluginsdk.Schema {
 	return map[string]*pluginsdk.Schema{
 		"name": {
 			Type:         pluginsdk.TypeString,
 			Required:     true,
 			ForceNew:     true,
-			ValidateFunc: validate.SystemCenterVirtualMachineManagerServerName,
+			ValidateFunc: validate.FlexibleServerMigrationName,
 		},
-
-		"resource_group_name": commonschema.ResourceGroupName(),
 
 		"location": commonschema.Location(),
 
-		"custom_location_id": commonschema.ResourceIDReferenceRequiredForceNew(&customlocations.CustomLocationId{}),
-
-		"fqdn": {
+		"server_id": {
 			Type:         pluginsdk.TypeString,
 			Required:     true,
 			ForceNew:     true,
-			ValidateFunc: validation.StringIsNotEmpty,
-		},
-
-		"username": {
-			Type:         pluginsdk.TypeString,
-			Required:     true,
-			ForceNew:     true,
-			ValidateFunc: validation.StringIsNotEmpty,
-		},
-
-		"password": {
-			Type:         pluginsdk.TypeString,
-			Required:     true,
-			ForceNew:     true,
-			Sensitive:    true,
-			ValidateFunc: validation.StringIsNotEmpty,
-		},
-
-		"port": {
-			Type:         pluginsdk.TypeInt,
-			Optional:     true,
-			ForceNew:     true,
-			ValidateFunc: validation.IntBetween(1, 65535),
+			ValidateFunc: migrations.ValidateFlexibleServerID,
 		},
 
 		"tags": commonschema.Tags(),
 	}
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) Attributes() map[string]*pluginsdk.Schema {
+func (r PostgresqlFlexibleServerMigrationResource) Attributes() map[string]*pluginsdk.Schema {
 	return map[string]*pluginsdk.Schema{}
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) Create() sdk.ResourceFunc {
+func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
-		Timeout: 180 * time.Minute,
+		Timeout: 30 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
 			subscriptionId := metadata.Client.Account.SubscriptionId
-			client := metadata.Client.SystemCenterVirtualMachineManager.VMmServers
+			client := metadata.Client.Postgres.MigrationsClient
 
-			var model SystemCenterVirtualMachineManagerServerModel
+			var model PostgresqlFlexibleServerMigrationModel
 			if err := metadata.Decode(&model); err != nil {
 				return fmt.Errorf("decoding: %+v", err)
 			}
 
-			id := vmmservers.NewVMmServerID(subscriptionId, model.ResourceGroupName, model.Name)
+			serverId, err := migrations.ParseFlexibleServerID(model.ServerId)
+			if err != nil {
+				return err
+			}
+
+			id := migrations.NewMigrationID(subscriptionId, serverId.ResourceGroupName, serverId.FlexibleServerName, model.Name)
+
+			locks.ByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
+			defer locks.UnlockByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
 
 			existing, err := client.Get(ctx, id)
-			if err != nil {
-				if !response.WasNotFound(existing.HttpResponse) {
-					return fmt.Errorf("checking for the presence of an existing %s: %+v", id, err)
-				}
+			if err != nil && !response.WasNotFound(existing.HttpResponse) {
+				return fmt.Errorf("checking for the presence of an existing %s: %+v", id, err)
 			}
 			if !response.WasNotFound(existing.HttpResponse) {
 				return metadata.ResourceRequiresImport(r.ResourceType(), id)
 			}
 
-			parameters := &vmmservers.VMmServer{
-				Location: location.Normalize(model.Location),
-				ExtendedLocation: vmmservers.ExtendedLocation{
-					Type: pointer.To("customLocation"),
-					Name: pointer.To(model.CustomLocationId),
-				},
-				Properties: &vmmservers.VMmServerProperties{
-					Credentials: &vmmservers.VMmCredential{
-						Username: pointer.To(model.Username),
-						Password: pointer.To(model.Password),
-					},
-					Fqdn: model.Fqdn,
-				},
-				Tags: pointer.To(model.Tags),
+			parameters := migrations.MigrationResource{
+				Location:   location.Normalize(model.Location),
+				Properties: &migrations.MigrationResourceProperties{},
+				Tags:       pointer.To(model.Tags),
 			}
 
-			if v := model.Port; v != 0 {
-				parameters.Properties.Port = pointer.To(v)
-			}
-
-			if err := client.CreateOrUpdateThenPoll(ctx, id, *parameters); err != nil {
+			if _, err := client.Create(ctx, id, parameters); err != nil {
 				return fmt.Errorf("creating %s: %+v", id, err)
-			}
-
-			// After System Center Virtual Machine Manager Server is created, it needs some time to sync the Inventory Items. And service team confirmed that the sync would definitely be completed within 10 minutes. In case, so we need to set a timeout of 120 minutes and check the inventory quantity continuously every minute for 10 times. If the quantity doesn't change, then we consider the sync to be complete.
-			stateConf := &pluginsdk.StateChangeConf{
-				Delay:        5 * time.Second,
-				Pending:      []string{"SyncNotCompleted"},
-				Target:       []string{"SyncCompleted"},
-				Refresh:      systemCenterVirtualMachineManagerServerStateRefreshFunc(ctx, metadata, id),
-				PollInterval: 1 * time.Minute,
-				Timeout:      120 * time.Minute,
-			}
-
-			if _, err = stateConf.WaitForStateContext(ctx); err != nil {
-				return fmt.Errorf("waiting for %s to become available: %s", id, err)
 			}
 
 			metadata.SetID(id)
@@ -172,13 +114,13 @@ func (r SystemCenterVirtualMachineManagerServerResource) Create() sdk.ResourceFu
 	}
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) Read() sdk.ResourceFunc {
+func (r PostgresqlFlexibleServerMigrationResource) Read() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
 		Timeout: 5 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
-			client := metadata.Client.SystemCenterVirtualMachineManager.VMmServers
+			client := metadata.Client.Postgres.MigrationsClient
 
-			id, err := vmmservers.ParseVMmServerID(metadata.ResourceData.Id())
+			id, err := migrations.ParseMigrationID(metadata.ResourceData.Id())
 			if err != nil {
 				return err
 			}
@@ -191,20 +133,14 @@ func (r SystemCenterVirtualMachineManagerServerResource) Read() sdk.ResourceFunc
 				return fmt.Errorf("retrieving %s: %+v", *id, err)
 			}
 
-			state := SystemCenterVirtualMachineManagerServerModel{}
-			if model := resp.Model; model != nil {
-				state.Name = id.VmmServerName
-				state.ResourceGroupName = id.ResourceGroupName
-				state.Location = location.Normalize(model.Location)
-				state.CustomLocationId = pointer.From(model.ExtendedLocation.Name)
-				state.Fqdn = model.Properties.Fqdn
-				state.Password = metadata.ResourceData.Get("password").(string)
-				state.Port = pointer.From(model.Properties.Port)
-				state.Tags = pointer.From(model.Tags)
+			state := PostgresqlFlexibleServerMigrationModel{
+				Name:     id.MigrationName,
+				ServerId: migrations.NewFlexibleServerID(id.SubscriptionId, id.ResourceGroupName, id.FlexibleServerName).ID(),
+			}
 
-				if v := model.Properties.Credentials; v != nil {
-					state.Username = pointer.From(v.Username)
-				}
+			if model := resp.Model; model != nil {
+				state.Location = location.Normalize(model.Location)
+				state.Tags = pointer.From(model.Tags)
 			}
 
 			return metadata.Encode(&state)
@@ -212,27 +148,30 @@ func (r SystemCenterVirtualMachineManagerServerResource) Read() sdk.ResourceFunc
 	}
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) Update() sdk.ResourceFunc {
+func (r PostgresqlFlexibleServerMigrationResource) Update() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
-		Timeout: 180 * time.Minute,
+		Timeout: 30 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
-			client := metadata.Client.SystemCenterVirtualMachineManager.VMmServers
+			client := metadata.Client.Postgres.MigrationsClient
 
-			id, err := vmmservers.ParseVMmServerID(metadata.ResourceData.Id())
+			id, err := migrations.ParseMigrationID(metadata.ResourceData.Id())
 			if err != nil {
 				return err
 			}
 
-			var model SystemCenterVirtualMachineManagerServerModel
+			locks.ByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
+			defer locks.UnlockByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
+
+			var model PostgresqlFlexibleServerMigrationModel
 			if err := metadata.Decode(&model); err != nil {
 				return fmt.Errorf("decoding: %+v", err)
 			}
 
-			parameters := vmmservers.VMmServerTagsUpdate{
+			parameters := migrations.MigrationResourceForPatch{
 				Tags: pointer.To(model.Tags),
 			}
 
-			if err := client.UpdateThenPoll(ctx, *id, parameters); err != nil {
+			if _, err := client.Update(ctx, *id, parameters); err != nil {
 				return fmt.Errorf("updating %s: %+v", *id, err)
 			}
 
@@ -241,57 +180,25 @@ func (r SystemCenterVirtualMachineManagerServerResource) Update() sdk.ResourceFu
 	}
 }
 
-func (r SystemCenterVirtualMachineManagerServerResource) Delete() sdk.ResourceFunc {
+func (r PostgresqlFlexibleServerMigrationResource) Delete() sdk.ResourceFunc {
 	return sdk.ResourceFunc{
-		Timeout: 180 * time.Minute,
+		Timeout: 30 * time.Minute,
 		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
-			client := metadata.Client.SystemCenterVirtualMachineManager.VMmServers
+			client := metadata.Client.Postgres.MigrationsClient
 
-			id, err := vmmservers.ParseVMmServerID(metadata.ResourceData.Id())
+			id, err := migrations.ParseMigrationID(metadata.ResourceData.Id())
 			if err != nil {
 				return err
 			}
 
-			opts := vmmservers.DefaultDeleteOperationOptions()
-			opts.Force = pointer.To(vmmservers.ForceDeleteTrue)
-			if err := client.DeleteThenPoll(ctx, *id, opts); err != nil {
+			locks.ByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
+			defer locks.UnlockByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
+
+			if _, err := client.Delete(ctx, *id); err != nil {
 				return fmt.Errorf("deleting %s: %+v", *id, err)
 			}
 
 			return nil
 		},
-	}
-}
-
-func systemCenterVirtualMachineManagerServerStateRefreshFunc(ctx context.Context, metadata sdk.ResourceMetaData, id vmmservers.VMmServerId) pluginsdk.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		client := metadata.Client.SystemCenterVirtualMachineManager.InventoryItems
-		scvmmServerId := inventoryitems.NewVMmServerID(id.SubscriptionId, id.ResourceGroupName, id.VmmServerName)
-		checkTimes := 10
-		lastInventoryItemCount := 0
-
-		for i := 0; i < checkTimes; i++ {
-			resp, err := client.ListByVMmServer(ctx, scvmmServerId)
-			if err != nil {
-				return nil, "", fmt.Errorf("polling for %s: %+v", id, err)
-			}
-
-			if model := resp.Model; model != nil {
-				currentInventoryItemCount := len(pointer.From(model))
-
-				if i == 0 {
-					lastInventoryItemCount = currentInventoryItemCount
-					continue
-				}
-
-				if currentInventoryItemCount != lastInventoryItemCount {
-					return "SyncNotCompleted", "SyncNotCompleted", nil
-				}
-
-				time.Sleep(1 * time.Second) // avoid checking too quickly
-			}
-		}
-
-		return "SyncCompleted", "SyncCompleted", nil
 	}
 }
