@@ -46,6 +46,30 @@ The following arguments are supported:
 
 * `server_id` - (Required) The ID of the PostgreSQL Flexible Server from which to create this PostgreSQL Flexible Server Migration. Changing this forces a new resource to be created.
 
+* `cancel_enabled` - (Optional) Should cancel be enabled for entire migration?
+
+* `dbs_to_cancel_migration_on` - (Optional) A list of databases to trigger cancel.
+
+* `dbs_to_migrate` - (Optional) A list of databases to migrate.
+
+* `dbs_to_trigger_cutover_on` - (Optional) A list of databases to trigger cutover.
+
+* `migrate_roles_enabled` - (Optional) Should roles and permissions migration be enabled for entire migration?
+
+* `migration_instance_resource_id` - (Optional) The ID of the Private Endpoint migration instance. Changing this forces a new resource to be created.
+
+* `migration_mode` - (Optional) The migration mode. Possible values are `Online` and `Offline`.
+
+* `migration_option` - (Optional) The migration option for the migration. Possible values are `Validate`, `Migrate` and `ValidateAndMigrate`.
+
+* `migration_window_end_time_in_utc` - (Optional) The end time in UTC for migration window. Changing this forces a new resource to be created.
+
+* `migration_window_start_time_in_utc` - (Optional) The start time in UTC for migration window.
+
+* `overwrite_dbs_in_target_enabled` - (Optional) Should the databases on the target server can be overwritten?
+
+* `trigger_cutover_enabled` - (Optional) Should cutover be enabled for entire migration?
+
 * `tags` - (Optional) A mapping of tags which should be assigned to the PostgreSQL Flexible Server Migration.
 
 ## Attributes Reference
