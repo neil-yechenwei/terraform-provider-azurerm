@@ -137,17 +137,34 @@ provider "azurerm" {
 }
 
 resource "azurerm_postgresql_flexible_server_migration" "test" {
-  name           = "acctest-pfsm-%d"
-  location       = azurerm_resource_group.test.location
-  server_id      = azurerm_postgresql_flexible_server.test.id
-  cancel_enabled = false
-  dbs_to_migrate = [azurerm_postgresql_flexible_server_database.test.name]
-  migration_instance_resource_id = azurerm_postgresql_flexible_server.test.id
-  migration_mode = "Online"
-  migration_option = "ValidateAndMigrate"
-  migration_window_start_time_in_utc = "%s"
-  migration_window_end_time_in_utc = "%s"
-  overwrite_dbs_in_target_enabled = true
+  name                                                     = "acctest-pfsm-%d"
+  location                                                 = azurerm_resource_group.test.location
+  server_id                                                = azurerm_postgresql_flexible_server.test.id
+  cancel_enabled                                           = false
+  dbs_to_migrate                                           = [azurerm_postgresql_flexible_server_database.test.name]
+  migration_instance_resource_id                           = azurerm_postgresql_flexible_server.test.id
+  migration_mode                                           = "Online"
+  migration_option                                         = "ValidateAndMigrate"
+  migration_window_start_time_in_utc                       = "%s"
+  migration_window_end_time_in_utc                         = "%s"
+  overwrite_dbs_in_target_enabled                          = true
+  setup_logical_replication_on_source_db_if_needed_enabled = true
+  source_db_server_fully_qualified_domain_name             = "never.gonna.shut.you.down"
+  source_db_server_resource_id                             = azurerm_postgresql_server.test.id
+  source_type                                              = "PostgreSQLSingleServer"
+  ssl_mode                                                 = "Prefer"
+  start_data_migration_enabled                             = true
+  target_db_server_fully_qualified_domain_name             = "never.gonna.shut.you.down"
+
+  secrets {
+    admin_credentials {
+      source_server_password = azurerm_postgresql_server.test.administrator_login_password
+      target_server_password = azurerm_postgresql_flexible_server.test.administrator_password
+    }
+
+    source_server_username = azurerm_postgresql_server.test.administrator_login
+    target_server_username = azurerm_postgresql_flexible_server.test.administrator_login
+  }
 
   tags = {
     Env = "Test"
@@ -165,16 +182,28 @@ provider "azurerm" {
 }
 
 resource "azurerm_postgresql_flexible_server_migration" "test" {
-  name                       = "acctest-pfsm-%d"
-  location                   = azurerm_resource_group.test.location
-  server_id                  = azurerm_postgresql_flexible_server.test.id
-  cancel_enabled             = true
-  dbs_to_cancel_migration_on = [azurerm_postgresql_flexible_server_database.test.name]
-  trigger_cutover_enabled = true
-  dbs_to_trigger_cutover_on = [azurerm_postgresql_flexible_server_database.test.name]
-  migrate_roles_enabled = true
- migration_mode = "Offline"
-  overwrite_dbs_in_target_enabled = false
+  name                                                     = "acctest-pfsm-%d"
+  location                                                 = azurerm_resource_group.test.location
+  server_id                                                = azurerm_postgresql_flexible_server.test.id
+  cancel_enabled                                           = true
+  dbs_to_cancel_migration_on                               = [azurerm_postgresql_flexible_server_database.test.name]
+  trigger_cutover_enabled                                  = true
+  dbs_to_trigger_cutover_on                                = [azurerm_postgresql_flexible_server_database.test.name]
+  migrate_roles_enabled                                    = true
+  migration_mode                                           = "Offline"
+  overwrite_dbs_in_target_enabled                          = false
+  setup_logical_replication_on_source_db_if_needed_enabled = false
+  start_data_migration_enabled                             = false
+
+  secrets {
+    admin_credentials {
+      source_server_password = "H@Sh1CoR34!"
+      target_server_password = "QAZwsx1234"
+    }
+
+    source_server_username = "acctestun2"
+    target_server_username = "adminTerraform2"
+  }
 
   tags = {
     Env = "Test2"
@@ -188,6 +217,19 @@ func (r PostgresqlFlexibleServerMigrationTestResource) template(data acceptance.
 resource "azurerm_resource_group" "test" {
   name     = "acctestRG-postgresql-%d"
   location = "%s"
+}
+
+resource "azurerm_postgresql_server" "test" {
+  name                         = "acctest-psql-server-%d"
+  location                     = azurerm_resource_group.test.location
+  resource_group_name          = azurerm_resource_group.test.name
+  administrator_login          = "acctestun"
+  administrator_login_password = "H@Sh1CoR3!"
+  sku_name                     = "B_Gen5_1"
+  version                      = "11"
+  storage_mb                   = 51200
+
+  ssl_enforcement_enabled = true
 }
 
 resource "azurerm_postgresql_flexible_server" "test" {
@@ -207,5 +249,5 @@ resource "azurerm_postgresql_flexible_server_database" "test" {
   collation = "en_US.utf8"
   charset   = "UTF8"
 }
-`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger)
+`, data.RandomInteger, data.Locations.Primary, data.RandomInteger, data.RandomInteger, data.RandomInteger)
 }

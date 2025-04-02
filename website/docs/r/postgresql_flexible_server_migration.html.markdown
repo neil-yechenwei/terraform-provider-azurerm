@@ -68,9 +68,43 @@ The following arguments are supported:
 
 * `overwrite_dbs_in_target_enabled` - (Optional) Should the databases on the target server can be overwritten?
 
+* `secrets` - (Optional) A `secrets` block as defined below.
+
+* `setup_logical_replication_on_source_db_if_needed_enabled` - (Optional) Should the logical replication on source database be setup?
+
+* `source_db_server_fully_qualified_domain_name` - (Optional) The source server fully qualified domain name (FQDN) or IP address.
+
+* `source_db_server_resource_id` - (Optional) The ID of the source database server.
+
+* `source_type` - (Optional) The migration source server type. Possible values are `OnPremises`, `AWS`, `GCP`, `AzureVM`, `PostgreSQLSingleServer`, `AWS_RDS`, `AWS_AURORA`, `AWS_EC2`, `GCP_CloudSQL`, `GCP_AlloyDB`, `GCP_Compute` and `EDB`. Changing this forces a new resource to be created.
+
+* `ssl_mode` - (Optional) The supported SSL modes for migration. Possible values are `Prefer`, `Require`, `VerifyCA` and `VerifyFull`. Changing this forces a new resource to be created.
+
+* `start_data_migration_enabled` - (Optional) Should the data migration start right away?
+
+* `target_db_server_fully_qualified_domain_name` - (Optional) The target server fully qualified domain name (FQDN) or IP address.
+
 * `trigger_cutover_enabled` - (Optional) Should cutover be enabled for entire migration?
 
 * `tags` - (Optional) A mapping of tags which should be assigned to the PostgreSQL Flexible Server Migration.
+
+---
+
+A `secrets` block exports the following:
+
+* `admin_credentials` - (Required) An `admin_credentials` block as defined below.
+
+* `source_server_username` - (Optional) The username for the source server.
+
+* `target_server_username` - (Optional) The username for the target server.
+
+---
+
+An `admin_credentials` block exports the following:
+
+* `source_server_password` - (Required) The password for source server.
+
+* `target_server_password` - (Required) The password for target server.
 
 ## Attributes Reference
 

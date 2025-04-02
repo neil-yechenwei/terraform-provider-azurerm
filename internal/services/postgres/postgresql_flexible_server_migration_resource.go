@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2017-12-01/servers"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/postgresql/2024-08-01/migrations"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
@@ -21,22 +22,41 @@ import (
 )
 
 type PostgresqlFlexibleServerMigrationModel struct {
-	Name                          string            `tfschema:"name"`
-	Location                      string            `tfschema:"location"`
-	ServerId                      string            `tfschema:"server_id"`
-	CancelEnabled                 bool              `tfschema:"cancel_enabled"`
-	DbsToCancelMigrationOn        []string          `tfschema:"dbs_to_cancel_migration_on"`
-	DbsToMigrate                  []string          `tfschema:"dbs_to_migrate"`
-	DbsToTriggerCutoverOn         []string          `tfschema:"dbs_to_trigger_cutover_on"`
-	MigrateRolesEnabled           bool              `tfschema:"migrate_roles_enabled"`
-	MigrationInstanceResourceId   string            `tfschema:"migration_instance_resource_id"`
-	MigrationMode                 string            `tfschema:"migration_mode"`
-	MigrationOption               string            `tfschema:"migration_option"`
-	MigrationWindowEndTimeInUtc   string            `tfschema:"migration_window_end_time_in_utc"`
-	MigrationWindowStartTimeInUtc string            `tfschema:"migration_window_start_time_in_utc"`
-	OverwriteDbsInTargetEnabled   bool              `tfschema:"overwrite_dbs_in_target_enabled"`
-	TriggerCutoverEnabled         bool              `tfschema:"trigger_cutover_enabled"`
-	Tags                          map[string]string `tfschema:"tags"`
+	Name                                             string            `tfschema:"name"`
+	Location                                         string            `tfschema:"location"`
+	ServerId                                         string            `tfschema:"server_id"`
+	CancelEnabled                                    bool              `tfschema:"cancel_enabled"`
+	DbsToCancelMigrationOn                           []string          `tfschema:"dbs_to_cancel_migration_on"`
+	DbsToMigrate                                     []string          `tfschema:"dbs_to_migrate"`
+	DbsToTriggerCutoverOn                            []string          `tfschema:"dbs_to_trigger_cutover_on"`
+	MigrateRolesEnabled                              bool              `tfschema:"migrate_roles_enabled"`
+	MigrationInstanceResourceId                      string            `tfschema:"migration_instance_resource_id"`
+	MigrationMode                                    string            `tfschema:"migration_mode"`
+	MigrationOption                                  string            `tfschema:"migration_option"`
+	MigrationWindowEndTimeInUtc                      string            `tfschema:"migration_window_end_time_in_utc"`
+	MigrationWindowStartTimeInUtc                    string            `tfschema:"migration_window_start_time_in_utc"`
+	OverwriteDbsInTargetEnabled                      bool              `tfschema:"overwrite_dbs_in_target_enabled"`
+	Secrets                                          []Secret          `tfschema:"secrets"`
+	SetupLogicalReplicationOnSourceDbIfNeededEnabled bool              `tfschema:"setup_logical_replication_on_source_db_if_needed_enabled"`
+	TriggerCutoverEnabled                            bool              `tfschema:"trigger_cutover_enabled"`
+	SourceDbServerFullyQualifiedDomainName           string            `tfschema:"source_db_server_fully_qualified_domain_name"`
+	SourceDbServerResourceId                         string            `tfschema:"source_db_server_resource_id"`
+	SourceType                                       string            `tfschema:"source_type"`
+	SslMode                                          string            `tfschema:"ssl_mode"`
+	StartDataMigrationEnabled                        bool              `tfschema:"start_data_migration_enabled"`
+	TargetDbServerFullyQualifiedDomainName           string            `tfschema:"target_db_server_fully_qualified_domain_name"`
+	Tags                                             map[string]string `tfschema:"tags"`
+}
+
+type Secret struct {
+	AdminCredentials     []AdminCredential `tfschema:"admin_credentials"`
+	SourceServerUsername string            `tfschema:"source_server_username"`
+	TargetServerUsername string            `tfschema:"target_server_username"`
+}
+
+type AdminCredential struct {
+	SourceServerPassword string `tfschema:"source_server_password"`
+	TargetServerPassword string `tfschema:"target_server_password"`
 }
 
 var _ sdk.ResourceWithUpdate = PostgresqlFlexibleServerMigrationResource{}
@@ -149,6 +169,92 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 			Optional: true,
 		},
 
+		"secrets": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			MaxItems: 1,
+			Elem: &pluginsdk.Resource{
+				Schema: map[string]*pluginsdk.Schema{
+					"admin_credentials": {
+						Type:     pluginsdk.TypeList,
+						Required: true,
+						MaxItems: 1,
+						Elem: &pluginsdk.Resource{
+							Schema: map[string]*pluginsdk.Schema{
+								"source_server_password": {
+									Type:         pluginsdk.TypeInt,
+									Required:     true,
+									Sensitive:    true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+
+								"target_server_password": {
+									Type:         pluginsdk.TypeInt,
+									Required:     true,
+									Sensitive:    true,
+									ValidateFunc: validation.StringIsNotEmpty,
+								},
+							},
+						},
+					},
+
+					"source_server_username": {
+						Type:         pluginsdk.TypeInt,
+						Optional:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+
+					"target_server_username": {
+						Type:         pluginsdk.TypeInt,
+						Optional:     true,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+				},
+			},
+		},
+
+		"setup_logical_replication_on_source_db_if_needed_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+		},
+
+		"source_db_server_fully_qualified_domain_name": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.StringIsNotEmpty,
+		},
+
+		"source_db_server_resource_id": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ValidateFunc: servers.ValidateServerID,
+		},
+
+		"source_type": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice(migrations.PossibleValuesForSourceType(), false),
+		},
+
+		"ssl_mode": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringInSlice(migrations.PossibleValuesForSslMode(), false),
+		},
+
+		"start_data_migration_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+		},
+
+		"target_db_server_fully_qualified_domain_name": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.StringIsNotEmpty,
+		},
+
 		"trigger_cutover_enabled": {
 			Type:     pluginsdk.TypeBool,
 			Optional: true,
@@ -184,6 +290,11 @@ func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 			locks.ByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
 			defer locks.UnlockByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
 
+			if model.SourceDbServerResourceId != "" {
+				locks.ByID(model.SourceDbServerResourceId)
+				defer locks.ByID(model.SourceDbServerResourceId)
+			}
+
 			existing, err := client.Get(ctx, id)
 			if err != nil && !response.WasNotFound(existing.HttpResponse) {
 				return fmt.Errorf("checking for the presence of an existing %s: %+v", id, err)
@@ -193,9 +304,11 @@ func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 			}
 
 			parameters := migrations.MigrationResource{
-				Location:   location.Normalize(model.Location),
-				Properties: &migrations.MigrationResourceProperties{},
-				Tags:       pointer.To(model.Tags),
+				Location: location.Normalize(model.Location),
+				Properties: &migrations.MigrationResourceProperties{
+					SecretParameters: expandSecrets(model.Secrets),
+				},
+				Tags: pointer.To(model.Tags),
 			}
 
 			cancelEnabled := migrations.CancelEnumFalse
@@ -247,6 +360,38 @@ func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 				overwriteDbsInTargetEnabled = migrations.OverwriteDbsInTargetEnumTrue
 			}
 			parameters.Properties.OverwriteDbsInTarget = pointer.To(overwriteDbsInTargetEnabled)
+
+			logicalReplicationOnSourceDbEnabled := migrations.LogicalReplicationOnSourceDbEnumFalse
+			if model.SetupLogicalReplicationOnSourceDbIfNeededEnabled {
+				logicalReplicationOnSourceDbEnabled = migrations.LogicalReplicationOnSourceDbEnumTrue
+			}
+			parameters.Properties.SetupLogicalReplicationOnSourceDbIfNeeded = pointer.To(logicalReplicationOnSourceDbEnabled)
+
+			if v := model.SourceDbServerFullyQualifiedDomainName; v != "" {
+				parameters.Properties.SourceDbServerFullyQualifiedDomainName = pointer.To(v)
+			}
+
+			if v := model.SourceDbServerResourceId; v != "" {
+				parameters.Properties.SourceDbServerResourceId = pointer.To(v)
+			}
+
+			if v := model.SourceType; v != "" {
+				parameters.Properties.SourceType = pointer.To(migrations.SourceType(v))
+			}
+
+			if v := model.SslMode; v != "" {
+				parameters.Properties.SslMode = pointer.To(migrations.SslMode(v))
+			}
+
+			startDataMigrationEnabled := migrations.StartDataMigrationEnumFalse
+			if model.StartDataMigrationEnabled {
+				startDataMigrationEnabled = migrations.StartDataMigrationEnumTrue
+			}
+			parameters.Properties.StartDataMigration = pointer.To(startDataMigrationEnabled)
+
+			if v := model.TargetDbServerFullyQualifiedDomainName; v != "" {
+				parameters.Properties.TargetDbServerFullyQualifiedDomainName = pointer.To(v)
+			}
 
 			triggerCutoverEnabled := migrations.TriggerCutoverEnumFalse
 			if model.TriggerCutoverEnabled {
@@ -303,7 +448,15 @@ func (r PostgresqlFlexibleServerMigrationResource) Read() sdk.ResourceFunc {
 					state.MigrationWindowEndTimeInUtc = pointer.From(props.MigrationWindowEndTimeInUtc)
 					state.MigrationWindowStartTimeInUtc = pointer.From(props.MigrationWindowStartTimeInUtc)
 					state.OverwriteDbsInTargetEnabled = pointer.From(props.OverwriteDbsInTarget) == migrations.OverwriteDbsInTargetEnumTrue
+					state.SetupLogicalReplicationOnSourceDbIfNeededEnabled = pointer.From(props.SetupLogicalReplicationOnSourceDbIfNeeded) == migrations.LogicalReplicationOnSourceDbEnumTrue
+					state.SourceDbServerFullyQualifiedDomainName = pointer.From(props.SourceDbServerFullyQualifiedDomainName)
+					state.SourceDbServerResourceId = pointer.From(props.SourceDbServerResourceId)
+					state.SourceType = string(pointer.From(props.SourceType))
+					state.SslMode = string(pointer.From(props.SslMode))
+					state.StartDataMigrationEnabled = pointer.From(props.StartDataMigration) == migrations.StartDataMigrationEnumTrue
+					state.TargetDbServerFullyQualifiedDomainName = pointer.From(props.TargetDbServerFullyQualifiedDomainName)
 					state.TriggerCutoverEnabled = pointer.From(props.TriggerCutover) == migrations.TriggerCutoverEnumTrue
+					state.Secrets = flattenSecrets(props.SecretParameters)
 				}
 
 				state.Tags = pointer.From(model.Tags)
@@ -331,6 +484,11 @@ func (r PostgresqlFlexibleServerMigrationResource) Update() sdk.ResourceFunc {
 			var model PostgresqlFlexibleServerMigrationModel
 			if err := metadata.Decode(&model); err != nil {
 				return fmt.Errorf("decoding: %+v", err)
+			}
+
+			if model.SourceDbServerResourceId != "" {
+				locks.ByID(model.SourceDbServerResourceId)
+				defer locks.ByID(model.SourceDbServerResourceId)
 			}
 
 			parameters := migrations.MigrationResourceForPatch{
@@ -381,6 +539,38 @@ func (r PostgresqlFlexibleServerMigrationResource) Update() sdk.ResourceFunc {
 				parameters.Properties.OverwriteDbsInTarget = pointer.To(overwriteDbsInTargetEnabled)
 			}
 
+			if metadata.ResourceData.HasChange("secrets") {
+				parameters.Properties.SecretParameters = expandSecrets(model.Secrets)
+			}
+
+			if metadata.ResourceData.HasChange("setup_logical_replication_on_source_db_if_needed_enabled") {
+				logicalReplicationOnSourceDbEnabled := migrations.LogicalReplicationOnSourceDbEnumFalse
+				if model.SetupLogicalReplicationOnSourceDbIfNeededEnabled {
+					logicalReplicationOnSourceDbEnabled = migrations.LogicalReplicationOnSourceDbEnumTrue
+				}
+				parameters.Properties.SetupLogicalReplicationOnSourceDbIfNeeded = pointer.To(logicalReplicationOnSourceDbEnabled)
+			}
+
+			if metadata.ResourceData.HasChange("source_db_server_fully_qualified_domain_name") {
+				parameters.Properties.SourceDbServerFullyQualifiedDomainName = pointer.To(model.SourceDbServerFullyQualifiedDomainName)
+			}
+
+			if metadata.ResourceData.HasChange("source_db_server_resource_id") {
+				parameters.Properties.SourceDbServerResourceId = pointer.To(model.SourceDbServerResourceId)
+			}
+
+			if metadata.ResourceData.HasChange("start_data_migration_enabled") {
+				startDataMigrationEnabled := migrations.StartDataMigrationEnumFalse
+				if model.StartDataMigrationEnabled {
+					startDataMigrationEnabled = migrations.StartDataMigrationEnumTrue
+				}
+				parameters.Properties.StartDataMigration = pointer.To(startDataMigrationEnabled)
+			}
+
+			if metadata.ResourceData.HasChange("target_db_server_fully_qualified_domain_name") {
+				parameters.Properties.TargetDbServerFullyQualifiedDomainName = pointer.To(model.TargetDbServerFullyQualifiedDomainName)
+			}
+
 			if metadata.ResourceData.HasChange("trigger_cutover_enabled") {
 				triggerCutoverEnabled := migrations.TriggerCutoverEnumFalse
 				if model.TriggerCutoverEnabled {
@@ -416,6 +606,19 @@ func (r PostgresqlFlexibleServerMigrationResource) Delete() sdk.ResourceFunc {
 			locks.ByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
 			defer locks.UnlockByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
 
+			resp, err := client.Get(ctx, *id)
+			if err != nil {
+				return err
+			}
+			if model := resp.Model; model != nil {
+				if props := model.Properties; props != nil {
+					if props.SourceDbServerResourceId != nil {
+						locks.ByID(pointer.From(props.SourceDbServerResourceId))
+						defer locks.ByID(pointer.From(props.SourceDbServerResourceId))
+					}
+				}
+			}
+
 			if _, err := client.Delete(ctx, *id); err != nil {
 				return fmt.Errorf("deleting %s: %+v", *id, err)
 			}
@@ -423,4 +626,61 @@ func (r PostgresqlFlexibleServerMigrationResource) Delete() sdk.ResourceFunc {
 			return nil
 		},
 	}
+}
+
+func expandSecrets(input []Secret) *migrations.MigrationSecretParameters {
+	if len(input) == 0 {
+		return nil
+	}
+
+	secret := input[0]
+
+	result := &migrations.MigrationSecretParameters{
+		AdminCredentials: expandAdminCredentials(secret.AdminCredentials),
+	}
+
+	if v := secret.SourceServerUsername; v != "" {
+		result.SourceServerUsername = pointer.To(v)
+	}
+
+	if v := secret.TargetServerUsername; v != "" {
+		result.TargetServerUsername = pointer.To(v)
+	}
+
+	return result
+}
+
+func expandAdminCredentials(input []AdminCredential) migrations.AdminCredentials {
+	if len(input) == 0 {
+		return migrations.AdminCredentials{}
+	}
+
+	adminCredential := input[0]
+
+	return migrations.AdminCredentials{
+		SourceServerPassword: adminCredential.SourceServerPassword,
+		TargetServerPassword: adminCredential.TargetServerPassword,
+	}
+}
+
+func flattenSecrets(input *migrations.MigrationSecretParameters) []Secret {
+	result := make([]Secret, 0)
+	if input == nil {
+		return result
+	}
+
+	return append(result, Secret{
+		AdminCredentials:     flattenAdminCredentials(input.AdminCredentials),
+		SourceServerUsername: pointer.From(input.SourceServerUsername),
+		TargetServerUsername: pointer.From(input.TargetServerUsername),
+	})
+}
+
+func flattenAdminCredentials(input migrations.AdminCredentials) []AdminCredential {
+	result := make([]AdminCredential, 0)
+
+	return append(result, AdminCredential{
+		SourceServerPassword: input.SourceServerPassword,
+		TargetServerPassword: input.TargetServerPassword,
+	})
 }
