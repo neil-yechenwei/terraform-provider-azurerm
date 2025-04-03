@@ -50,9 +50,19 @@ resource "azurerm_postgresql_flexible_server" "example" {
 }
 
 resource "azurerm_postgresql_flexible_server_migration" "example" {
-  name      = "example-pfsm"
-  location  = azurerm_resource_group.example.location
-  server_id = azurerm_postgresql_flexible_server.example.id
+  name                            = "example-pfsm"
+  location                        = azurerm_resource_group.example.location
+  server_id                       = azurerm_postgresql_flexible_server.example.id
+  source_db_server_resource_id    = azurerm_postgresql_server.example.id
+  dbs_to_migrate                  = [azurerm_postgresql_database.example.name]
+  overwrite_dbs_in_target_enabled = true
+
+  secrets {
+    admin_credentials {
+      source_server_password = azurerm_postgresql_server.test.administrator_login_password
+      target_server_password = azurerm_postgresql_flexible_server.test.administrator_password
+    }
+  }
 }
 ```
 
@@ -66,11 +76,17 @@ The following arguments are supported:
 
 * `server_id` - (Required) The ID of the PostgreSQL Flexible Server from which to create this PostgreSQL Flexible Server Migration. Changing this forces a new resource to be created.
 
+* `dbs_to_migrate` - (Required) A list of databases to migrate.
+
+* `overwrite_dbs_in_target_enabled` - (Required) Should the databases on the target server can be overwritten?
+
+* `secrets` - (Required) A `secrets` block as defined below.
+
+* `source_db_server_resource_id` - (Required) The ID of the source database server.
+
 * `cancel_enabled` - (Optional) Should cancel be enabled for entire migration?
 
 * `dbs_to_cancel_migration_on` - (Optional) A list of databases to trigger cancel.
-
-* `dbs_to_migrate` - (Optional) A list of databases to migrate.
 
 * `dbs_to_trigger_cutover_on` - (Optional) A list of databases to trigger cutover.
 
@@ -86,15 +102,9 @@ The following arguments are supported:
 
 * `migration_window_start_time_in_utc` - (Optional) The start time in UTC for migration window.
 
-* `overwrite_dbs_in_target_enabled` - (Optional) Should the databases on the target server can be overwritten?
-
-* `secrets` - (Optional) A `secrets` block as defined below.
-
 * `setup_logical_replication_on_source_db_if_needed_enabled` - (Optional) Should the logical replication on source database be setup?
 
 * `source_db_server_fully_qualified_domain_name` - (Optional) The source server fully qualified domain name (FQDN) or IP address.
-
-* `source_db_server_resource_id` - (Optional) The ID of the source database server.
 
 * `source_type` - (Optional) The migration source server type. Possible values are `OnPremises`, `AWS`, `GCP`, `AzureVM`, `PostgreSQLSingleServer`, `AWS_RDS`, `AWS_AURORA`, `AWS_EC2`, `GCP_CloudSQL`, `GCP_AlloyDB`, `GCP_Compute` and `EDB`. Changing this forces a new resource to be created.
 

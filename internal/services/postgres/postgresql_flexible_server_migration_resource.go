@@ -93,6 +93,27 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 			ValidateFunc: migrations.ValidateFlexibleServerID,
 		},
 
+		"dbs_to_migrate": {
+			Type:     pluginsdk.TypeList,
+			Required: true,
+			MaxItems: 50,
+			Elem: &pluginsdk.Schema{
+				Type:         pluginsdk.TypeString,
+				ValidateFunc: validate.FlexibleServerDatabaseName,
+			},
+		},
+
+		"overwrite_dbs_in_target_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Required: true,
+		},
+
+		"source_db_server_resource_id": {
+			Type:         pluginsdk.TypeString,
+			Required:     true,
+			ValidateFunc: servers.ValidateServerID,
+		},
+
 		"cancel_enabled": {
 			Type:     pluginsdk.TypeBool,
 			Optional: true,
@@ -101,16 +122,6 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 		"dbs_to_cancel_migration_on": {
 			Type:     pluginsdk.TypeList,
 			Optional: true,
-			Elem: &pluginsdk.Schema{
-				Type:         pluginsdk.TypeString,
-				ValidateFunc: validate.FlexibleServerDatabaseName,
-			},
-		},
-
-		"dbs_to_migrate": {
-			Type:     pluginsdk.TypeList,
-			Optional: true,
-			MaxItems: 50,
 			Elem: &pluginsdk.Schema{
 				Type:         pluginsdk.TypeString,
 				ValidateFunc: validate.FlexibleServerDatabaseName,
@@ -164,14 +175,9 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 			ValidateFunc: validation.IsRFC3339Time,
 		},
 
-		"overwrite_dbs_in_target_enabled": {
-			Type:     pluginsdk.TypeBool,
-			Optional: true,
-		},
-
 		"secrets": {
 			Type:     pluginsdk.TypeList,
-			Optional: true,
+			Required: true,
 			MaxItems: 1,
 			Elem: &pluginsdk.Resource{
 				Schema: map[string]*pluginsdk.Schema{
@@ -222,12 +228,6 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 			Type:         pluginsdk.TypeString,
 			Optional:     true,
 			ValidateFunc: validation.StringIsNotEmpty,
-		},
-
-		"source_db_server_resource_id": {
-			Type:         pluginsdk.TypeString,
-			Optional:     true,
-			ValidateFunc: servers.ValidateServerID,
 		},
 
 		"source_type": {
@@ -290,10 +290,8 @@ func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 			locks.ByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
 			defer locks.UnlockByName(id.FlexibleServerName, postgresqlFlexibleServerResourceName)
 
-			if model.SourceDbServerResourceId != "" {
-				locks.ByID(model.SourceDbServerResourceId)
-				defer locks.ByID(model.SourceDbServerResourceId)
-			}
+			locks.ByID(model.SourceDbServerResourceId)
+			defer locks.ByID(model.SourceDbServerResourceId)
 
 			existing, err := client.Get(ctx, id)
 			if err != nil && !response.WasNotFound(existing.HttpResponse) {
@@ -306,7 +304,9 @@ func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 			parameters := migrations.MigrationResource{
 				Location: location.Normalize(model.Location),
 				Properties: &migrations.MigrationResourceProperties{
-					SecretParameters: expandSecrets(model.Secrets),
+					DbsToMigrate:             pointer.To(model.DbsToMigrate),
+					SecretParameters:         expandSecrets(model.Secrets),
+					SourceDbServerResourceId: pointer.To(model.SourceDbServerResourceId),
 				},
 				Tags: pointer.To(model.Tags),
 			}
@@ -319,10 +319,6 @@ func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 
 			if v := model.DbsToCancelMigrationOn; v != nil {
 				parameters.Properties.DbsToCancelMigrationOn = pointer.To(v)
-			}
-
-			if v := model.DbsToMigrate; v != nil {
-				parameters.Properties.DbsToMigrate = pointer.To(v)
 			}
 
 			if v := model.DbsToTriggerCutoverOn; v != nil {
@@ -369,10 +365,6 @@ func (r PostgresqlFlexibleServerMigrationResource) Create() sdk.ResourceFunc {
 
 			if v := model.SourceDbServerFullyQualifiedDomainName; v != "" {
 				parameters.Properties.SourceDbServerFullyQualifiedDomainName = pointer.To(v)
-			}
-
-			if v := model.SourceDbServerResourceId; v != "" {
-				parameters.Properties.SourceDbServerResourceId = pointer.To(v)
 			}
 
 			if v := model.SourceType; v != "" {
@@ -486,10 +478,8 @@ func (r PostgresqlFlexibleServerMigrationResource) Update() sdk.ResourceFunc {
 				return fmt.Errorf("decoding: %+v", err)
 			}
 
-			if model.SourceDbServerResourceId != "" {
-				locks.ByID(model.SourceDbServerResourceId)
-				defer locks.ByID(model.SourceDbServerResourceId)
-			}
+			locks.ByID(model.SourceDbServerResourceId)
+			defer locks.ByID(model.SourceDbServerResourceId)
 
 			parameters := migrations.MigrationResourceForPatch{
 				Properties: &migrations.MigrationResourcePropertiesForPatch{},
@@ -612,10 +602,8 @@ func (r PostgresqlFlexibleServerMigrationResource) Delete() sdk.ResourceFunc {
 			}
 			if model := resp.Model; model != nil {
 				if props := model.Properties; props != nil {
-					if props.SourceDbServerResourceId != nil {
-						locks.ByID(pointer.From(props.SourceDbServerResourceId))
-						defer locks.ByID(pointer.From(props.SourceDbServerResourceId))
-					}
+					locks.ByID(pointer.From(props.SourceDbServerResourceId))
+					defer locks.ByID(pointer.From(props.SourceDbServerResourceId))
 				}
 			}
 
