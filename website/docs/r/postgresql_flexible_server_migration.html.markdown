@@ -82,7 +82,7 @@ The following arguments are supported:
 
 * `secrets` - (Required) A `secrets` block as defined below.
 
-* `source_db_server_resource_id` - (Required) The ID of the source database server.
+* `source_db_server_resource_id` - (Required) The ID of the source database server. Changing this forces a new resource to be created.
 
 * `cancel_enabled` - (Optional) Should cancel be enabled for entire migration?
 

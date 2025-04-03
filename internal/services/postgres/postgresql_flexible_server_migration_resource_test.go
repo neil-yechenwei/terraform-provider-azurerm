@@ -199,22 +199,10 @@ provider "azurerm" {
   features {}
 }
 
-resource "azurerm_postgresql_server" "test2" {
-  name                         = "acctest-psql-server2-%d"
-  location                     = azurerm_resource_group.test.location
-  resource_group_name          = azurerm_resource_group.test.name
-  administrator_login          = "acctestun"
-  administrator_login_password = "H@Sh1CoR3!"
-  sku_name                     = "B_Gen5_1"
-  version                      = "11"
-  storage_mb                   = 51200
-  ssl_enforcement_enabled      = true
-}
-
 resource "azurerm_postgresql_database" "test2" {
   name                = "acctest-postgresqldb2-%d"
   resource_group_name = azurerm_resource_group.test.name
-  server_name         = azurerm_postgresql_server.test2.name
+  server_name         = azurerm_postgresql_server.test.name
   charset             = "UTF8"
   collation           = "English_United States.1252"
 }
@@ -232,7 +220,7 @@ resource "azurerm_postgresql_flexible_server_migration" "test" {
   overwrite_dbs_in_target_enabled                          = false
   setup_logical_replication_on_source_db_if_needed_enabled = false
   start_data_migration_enabled                             = false
-  source_db_server_resource_id                             = azurerm_postgresql_server.test2.id
+  source_db_server_resource_id                             = azurerm_postgresql_server.test.id
   dbs_to_migrate                                           = [azurerm_postgresql_database.test2.name]
 
   secrets {
@@ -249,7 +237,7 @@ resource "azurerm_postgresql_flexible_server_migration" "test" {
     Env = "Test2"
   }
 }
-`, r.template(data), data.RandomInteger, data.RandomInteger, data.RandomInteger)
+`, r.template(data), data.RandomInteger, data.RandomInteger)
 }
 
 func (r PostgresqlFlexibleServerMigrationTestResource) template(data acceptance.TestData) string {

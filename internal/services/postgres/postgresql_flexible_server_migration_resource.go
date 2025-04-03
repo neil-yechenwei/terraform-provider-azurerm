@@ -111,6 +111,7 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 		"source_db_server_resource_id": {
 			Type:         pluginsdk.TypeString,
 			Required:     true,
+			ForceNew:     true,
 			ValidateFunc: servers.ValidateServerID,
 		},
 
@@ -543,10 +544,6 @@ func (r PostgresqlFlexibleServerMigrationResource) Update() sdk.ResourceFunc {
 
 			if metadata.ResourceData.HasChange("source_db_server_fully_qualified_domain_name") {
 				parameters.Properties.SourceDbServerFullyQualifiedDomainName = pointer.To(model.SourceDbServerFullyQualifiedDomainName)
-			}
-
-			if metadata.ResourceData.HasChange("source_db_server_resource_id") {
-				parameters.Properties.SourceDbServerResourceId = pointer.To(model.SourceDbServerResourceId)
 			}
 
 			if metadata.ResourceData.HasChange("start_data_migration_enabled") {
