@@ -189,14 +189,14 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 						Elem: &pluginsdk.Resource{
 							Schema: map[string]*pluginsdk.Schema{
 								"source_server_password": {
-									Type:         pluginsdk.TypeInt,
+									Type:         pluginsdk.TypeString,
 									Required:     true,
 									Sensitive:    true,
 									ValidateFunc: validation.StringIsNotEmpty,
 								},
 
 								"target_server_password": {
-									Type:         pluginsdk.TypeInt,
+									Type:         pluginsdk.TypeString,
 									Required:     true,
 									Sensitive:    true,
 									ValidateFunc: validation.StringIsNotEmpty,
@@ -206,13 +206,13 @@ func (r PostgresqlFlexibleServerMigrationResource) Arguments() map[string]*plugi
 					},
 
 					"source_server_username": {
-						Type:         pluginsdk.TypeInt,
+						Type:         pluginsdk.TypeString,
 						Optional:     true,
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
 
 					"target_server_username": {
-						Type:         pluginsdk.TypeInt,
+						Type:         pluginsdk.TypeString,
 						Optional:     true,
 						ValidateFunc: validation.StringIsNotEmpty,
 					},
