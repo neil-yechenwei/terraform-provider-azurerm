@@ -137,6 +137,8 @@ The following arguments are supported:
 
 * `point_in_time_restore_time_in_utc` - (Optional) The point in time to restore from `source_server_id` when `create_mode` is `GeoRestore`, `PointInTimeRestore`. Changing this forces a new PostgreSQL Flexible Server to be created.
 
+* `replica` - (Optional) A `replica` block as defined below.
+
 * `replication_role` - (Optional) The replication role for the PostgreSQL Flexible Server. Possible value is `None`.
 
 ~> **Note:** The `replication_role` cannot be set while creating and only can be updated to `None` for replica server.
@@ -234,6 +236,16 @@ A `high_availability` block supports the following:
 -> **Note:** Azure will automatically assign an Availability Zone if one is not specified. If the PostgreSQL Flexible Server fails-over to the Standby Availability Zone, the `zone` will be updated to reflect the current Primary Availability Zone. You can use [Terraform's `ignore_changes` functionality](https://www.terraform.io/docs/language/meta-arguments/lifecycle.html#ignore_changes) to ignore changes to the `zone` and `high_availability[0].standby_availability_zone` fields should you wish for Terraform to not migrate the PostgreSQL Flexible Server back to it's primary Availability Zone after a fail-over.
 
 -> **Note:** The Availability Zones available depend on the Azure Region that the PostgreSQL Flexible Server is being deployed into - see [the Azure Availability Zones documentation](https://azure.microsoft.com/global-infrastructure/geographies/#geographies) for more information on which Availability Zones are available in each Azure Region.
+
+---
+
+A `replica` block supports the following:
+
+* `promote_mode` - (Optional) The promote mode that is used to set the promote mode for a replica server. Possible values are `standalone` and `switchover`.
+
+* `promote_option` - (Optional) The promote mode that is used to set the promote option for a replica server. Possible values are `planned` and `forced`.
+
+* `role` - (Optional) The role that is used to indicate role of the server in replication set. Possible values are `None`, `Primary`, `AsyncReplica` and `GeoAsyncReplica`.
 
 ---
 

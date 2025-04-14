@@ -347,6 +347,33 @@ func resourcePostgresqlFlexibleServer() *pluginsdk.Resource {
 				},
 			},
 
+			"replica": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"promote_mode": {
+							Type:         pluginsdk.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice(servers.PossibleValuesForReadReplicaPromoteMode(), false),
+						},
+
+						"promote_option": {
+							Type:         pluginsdk.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice(servers.PossibleValuesForReplicationPromoteOption(), false),
+						},
+
+						"role": {
+							Type:         pluginsdk.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice(servers.PossibleValuesForReplicationRole(), false),
+						},
+					},
+				},
+			},
+
 			"tags": commonschema.Tags(),
 		},
 
@@ -468,6 +495,10 @@ func resourcePostgresqlFlexibleServerCreate(d *pluginsdk.ResourceData, meta inte
 	}
 
 	createMode := d.Get("create_mode").(string)
+
+	if _, ok := d.GetOk("replica"); ok {
+		return fmt.Errorf("`replica` cannot be set while creating")
+	}
 
 	if _, ok := d.GetOk("replication_role"); ok {
 		return fmt.Errorf("`replication_role` cannot be set while creating")
@@ -741,6 +772,10 @@ func resourcePostgresqlFlexibleServerRead(d *pluginsdk.ResourceData, meta interf
 			if err := d.Set("identity", identity); err != nil {
 				return fmt.Errorf("setting `identity`: %+v", err)
 			}
+
+			if err := d.Set("replica", flattenFlexibleServerReplica(props.Replica)); err != nil {
+				return fmt.Errorf("setting `replica`: %+v", err)
+			}
 		}
 
 		sku, err := flattenFlexibleServerSku(model.Sku)
@@ -963,6 +998,10 @@ func resourcePostgresqlFlexibleServerUpdate(d *pluginsdk.ResourceData, meta inte
 		if err = client.CreateThenPoll(ctx, *id, loginParameters); err != nil {
 			return fmt.Errorf("updating %s: %+v", id, err)
 		}
+	}
+
+	if d.HasChange("replica") {
+		parameters.Properties.Replica = expandFlexibleServerReplica(d.Get("replica").([]interface{}))
 	}
 
 	if err = client.UpdateThenPoll(ctx, *id, parameters); err != nil {
@@ -1313,4 +1352,41 @@ func flattenFlexibleServerDataEncryption(de *servers.DataEncryption) ([]interfac
 	}
 
 	return []interface{}{item}, nil
+}
+
+func expandFlexibleServerReplica(input []interface{}) *servers.Replica {
+	if len(input) == 0 || input[0] == nil {
+		return nil
+	}
+
+	replica := input[0].(map[string]interface{})
+
+	result := &servers.Replica{}
+
+	if v := replica["promote_mode"].(string); v != "" {
+		result.PromoteMode = pointer.To(servers.ReadReplicaPromoteMode(v))
+	}
+
+	if v := replica["promote_option"].(string); v != "" {
+		result.PromoteOption = pointer.To(servers.ReplicationPromoteOption(v))
+	}
+
+	if v := replica["role"].(string); v != "" {
+		result.Role = pointer.To(servers.ReplicationRole(v))
+	}
+
+	return result
+}
+
+func flattenFlexibleServerReplica(input *servers.Replica) []interface{} {
+	results := make([]interface{}, 0)
+	if input == nil {
+		return results
+	}
+
+	return append(results, map[string]interface{}{
+		"promote_mode":   pointer.From(input.PromoteMode),
+		"promote_option": pointer.From(input.PromoteOption),
+		"role":           pointer.From(input.Role),
+	})
 }
