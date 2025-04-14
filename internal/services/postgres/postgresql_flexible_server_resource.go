@@ -773,7 +773,7 @@ func resourcePostgresqlFlexibleServerRead(d *pluginsdk.ResourceData, meta interf
 				return fmt.Errorf("setting `identity`: %+v", err)
 			}
 
-			if err := d.Set("replica", flattenFlexibleServerReplica(props.Replica)); err != nil {
+			if err := d.Set("replica", flattenFlexibleServerReplica(props.Replica, d)); err != nil {
 				return fmt.Errorf("setting `replica`: %+v", err)
 			}
 		}
@@ -1361,10 +1361,8 @@ func expandFlexibleServerReplica(input []interface{}) *servers.Replica {
 
 	replica := input[0].(map[string]interface{})
 
-	result := &servers.Replica{}
-
-	if v := replica["promote_mode"].(string); v != "" {
-		result.PromoteMode = pointer.To(servers.ReadReplicaPromoteMode(v))
+	result := &servers.Replica{
+		PromoteMode: pointer.To(servers.ReadReplicaPromoteMode(replica["promote_mode"].(string))),
 	}
 
 	if v := replica["promote_option"].(string); v != "" {
@@ -1378,15 +1376,15 @@ func expandFlexibleServerReplica(input []interface{}) *servers.Replica {
 	return result
 }
 
-func flattenFlexibleServerReplica(input *servers.Replica) []interface{} {
+func flattenFlexibleServerReplica(input *servers.Replica, d *pluginsdk.ResourceData) []interface{} {
 	results := make([]interface{}, 0)
 	if input == nil {
 		return results
 	}
 
 	return append(results, map[string]interface{}{
-		"promote_mode":   pointer.From(input.PromoteMode),
-		"promote_option": pointer.From(input.PromoteOption),
-		"role":           pointer.From(input.Role),
+		"promote_mode":   d.Get("replica.0.promote_mode").(string),
+		"promote_option": d.Get("replica.0.promote_option").(string),
+		"role":           string(pointer.From(input.Role)),
 	})
 }

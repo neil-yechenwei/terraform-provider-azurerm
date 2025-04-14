@@ -682,7 +682,7 @@ func TestAccPostgresqlFlexibleServer_promoteServer(t *testing.T) {
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
 		{
-			Config: r.basic(data),
+			Config: r.serverWithVirtualEndpoint(data),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
 			),
@@ -694,7 +694,7 @@ func TestAccPostgresqlFlexibleServer_promoteServer(t *testing.T) {
 				check.That(data.ResourceName).ExistsInAzure(r),
 			),
 		},
-		data.ImportStep("administrator_password", "create_mode"),
+		data.ImportStep("administrator_password", "create_mode", "promote_mode", "promote_option"),
 	})
 }
 
@@ -1554,19 +1554,75 @@ resource "azurerm_postgresql_flexible_server" "test" {
 `, r.template(data), acceptance.WriteOnlyKeyVaultSecretTemplate(data, secret), data.RandomInteger, version)
 }
 
+func (r PostgresqlFlexibleServerResource) serverWithVirtualEndpoint(data acceptance.TestData) string {
+	return fmt.Sprintf(`
+%s
+
+resource "azurerm_postgresql_flexible_server" "test" {
+  name                          = "acctest-ve-primary-%d"
+  resource_group_name           = azurerm_resource_group.test.name
+  location                      = azurerm_resource_group.test.location
+  version                       = "16"
+  public_network_access_enabled = false
+  administrator_login           = "psqladmin"
+  administrator_password        = "H@Sh1CoR3!"
+  zone                          = "1"
+  storage_mb                    = 32768
+  storage_tier                  = "P30"
+  sku_name                      = "GP_Standard_D2ads_v5"
+}
+
+resource "azurerm_postgresql_flexible_server" "replica" {
+  name                          = "acctest-ve-replica-%d"
+  resource_group_name           = azurerm_postgresql_flexible_server.test.resource_group_name
+  location                      = azurerm_postgresql_flexible_server.test.location
+  create_mode                   = "Replica"
+  source_server_id              = azurerm_postgresql_flexible_server.test.id
+  version                       = "16"
+  public_network_access_enabled = false
+  zone                          = "1"
+  storage_mb                    = 32768
+  storage_tier                  = "P30"
+}
+
+resource "azurerm_postgresql_flexible_server_virtual_endpoint" "test" {
+  name              = "acctest-ve-%d"
+  source_server_id  = azurerm_postgresql_flexible_server.test.id
+  replica_server_id = azurerm_postgresql_flexible_server.replica.id
+  type              = "ReadWrite"
+}
+`, r.template(data), data.RandomInteger, data.RandomInteger, data.RandomInteger)
+}
+
 func (r PostgresqlFlexibleServerResource) promoteServer(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 %s
 
 resource "azurerm_postgresql_flexible_server" "test" {
-  name                   = "acctest-fs-%d"
-  resource_group_name    = azurerm_resource_group.test.name
-  location               = azurerm_resource_group.test.location
-  administrator_login    = "adminTerraform"
-  administrator_password = "QAZwsx123"
-  version                = "12"
-  sku_name               = "GP_Standard_D2s_v3"
-  zone                   = "2"
+  name                          = "acctest-ve-primary-%d"
+  resource_group_name           = azurerm_resource_group.test.name
+  location                      = azurerm_resource_group.test.location
+  version                       = "16"
+  public_network_access_enabled = false
+  administrator_login           = "psqladmin"
+  administrator_password        = "H@Sh1CoR3!"
+  zone                          = "1"
+  storage_mb                    = 32768
+  storage_tier                  = "P30"
+  sku_name                      = "GP_Standard_D2ads_v5"
+}
+
+resource "azurerm_postgresql_flexible_server" "replica" {
+  name                          = "acctest-ve-replica-%d"
+  resource_group_name           = azurerm_postgresql_flexible_server.test.resource_group_name
+  location                      = azurerm_postgresql_flexible_server.test.location
+  create_mode                   = "Replica"
+  source_server_id              = azurerm_postgresql_flexible_server.test.id
+  version                       = "16"
+  public_network_access_enabled = false
+  zone                          = "1"
+  storage_mb                    = 32768
+  storage_tier                  = "P30"
 
   replica {
     promote_mode   = "switchover"
@@ -1574,5 +1630,12 @@ resource "azurerm_postgresql_flexible_server" "test" {
     role           = "AsyncReplica"
   }
 }
-`, r.template(data), data.RandomInteger)
+
+resource "azurerm_postgresql_flexible_server_virtual_endpoint" "test" {
+  name              = "acctest-ve-%d"
+  source_server_id  = azurerm_postgresql_flexible_server.test.id
+  replica_server_id = azurerm_postgresql_flexible_server.replica.id
+  type              = "ReadWrite"
+}
+`, r.template(data), data.RandomInteger, data.RandomInteger, data.RandomInteger)
 }
