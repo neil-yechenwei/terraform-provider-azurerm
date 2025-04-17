@@ -38,6 +38,7 @@ func (r Registration) DataSources() []sdk.DataSource {
 		ManagerNetworkGroupDataSource{},
 		ManagerConnectivityConfigurationDataSource{},
 		VPNServerConfigurationDataSource{},
+		VirtualNetworkGatewayLearnedRoutesDataSource{},
 		VirtualNetworkPeeringDataSource{},
 	}
 }
