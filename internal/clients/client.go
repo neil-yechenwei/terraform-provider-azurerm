@@ -20,7 +20,7 @@ import (
 	servicenetworking_2023_11_01 "github.com/hashicorp/go-azure-sdk/resource-manager/servicenetworking/2023-11-01"
 	storagecache_2023_05_01 "github.com/hashicorp/go-azure-sdk/resource-manager/storagecache/2023-05-01"
 	storagecache_2024_07_01 "github.com/hashicorp/go-azure-sdk/resource-manager/storagecache/2024-07-01"
-	systemcentervirtualmachinemanager_2023_10_07 "github.com/hashicorp/go-azure-sdk/resource-manager/systemcentervirtualmachinemanager/2023-10-07"
+	systemcentervirtualmachinemanager_2025_03_13 "github.com/hashicorp/go-azure-sdk/resource-manager/systemcentervirtualmachinemanager/2025-03-13"
 	workloads_v2024_09_01 "github.com/hashicorp/go-azure-sdk/resource-manager/workloads/2024-09-01"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/common"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
@@ -279,7 +279,7 @@ type Client struct {
 	StreamAnalytics                   *streamAnalytics.Client
 	Subscription                      *subscription.Client
 	Synapse                           *synapse.Client
-	SystemCenterVirtualMachineManager *systemcentervirtualmachinemanager_2023_10_07.Client
+	SystemCenterVirtualMachineManager *systemcentervirtualmachinemanager_2025_03_13.Client
 	TrafficManager                    *trafficManager.Client
 	VideoIndexer                      *videoindexer.Client
 	Vmware                            *vmware.Client
