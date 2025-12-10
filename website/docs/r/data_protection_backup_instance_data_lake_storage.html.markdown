@@ -30,6 +30,11 @@ resource "azurerm_storage_account" "example" {
   is_hns_enabled           = true
 }
 
+resource "azurerm_storage_data_lake_gen2_filesystem" "example" {
+  name               = "example-datalake-fs"
+  storage_account_id = azurerm_storage_account.example.id
+}
+
 resource "azurerm_data_protection_backup_vault" "example" {
   name                = "example-backupvault"
   resource_group_name = azurerm_resource_group.example.name
@@ -70,6 +75,7 @@ resource "azurerm_data_protection_backup_instance_data_lake_storage" "example" {
   vault_id           = azurerm_data_protection_backup_vault.example.id
   storage_account_id = azurerm_storage_account.example.id
   backup_policy_id   = azurerm_data_protection_backup_policy_data_lake_storage.example.id
+  container_names    = [azurerm_storage_data_lake_gen2_filesystem.example.name]
 }
 ```
 
@@ -86,6 +92,8 @@ The following arguments are supported:
 * `storage_account_id` - (Required) The ID of the source Data Lake Storage (Storage Account with HNS enabled). Changing this forces a new resource to be created.
 
 * `backup_policy_id` - (Required) The ID of the Backup Policy.
+
+* `container_names` - (Required) A list of Data Lake Gen2 filesystem (container) names to be backed up. Changing this forces a new resource to be created.
 
 ## Attributes Reference
 

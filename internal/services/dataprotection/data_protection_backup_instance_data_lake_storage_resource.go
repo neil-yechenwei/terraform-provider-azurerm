@@ -21,12 +21,13 @@ import (
 )
 
 type BackupInstanceDataLakeStorageModel struct {
-	Name             string `tfschema:"name"`
-	Location         string `tfschema:"location"`
-	VaultId          string `tfschema:"vault_id"`
-	BackupPolicyId   string `tfschema:"backup_policy_id"`
-	StorageAccountId string `tfschema:"storage_account_id"`
-	ProtectionState  string `tfschema:"protection_state"`
+	Name             string   `tfschema:"name"`
+	Location         string   `tfschema:"location"`
+	VaultId          string   `tfschema:"vault_id"`
+	BackupPolicyId   string   `tfschema:"backup_policy_id"`
+	StorageAccountId string   `tfschema:"storage_account_id"`
+	ContainerNames   []string `tfschema:"container_names"`
+	ProtectionState  string   `tfschema:"protection_state"`
 }
 
 type DataProtectionBackupInstanceDataLakeStorageResource struct{}
@@ -61,6 +62,15 @@ func (r DataProtectionBackupInstanceDataLakeStorageResource) Arguments() map[str
 		"backup_policy_id": commonschema.ResourceIDReferenceRequired(&backuppolicies.BackupPolicyId{}),
 
 		"storage_account_id": commonschema.ResourceIDReferenceRequiredForceNew(&commonids.StorageAccountId{}),
+
+		"container_names": {
+			Type:     pluginsdk.TypeList,
+			Required: true,
+			ForceNew: true,
+			Elem: &pluginsdk.Schema{
+				Type: pluginsdk.TypeString,
+			},
+		},
 	}
 }
 
@@ -135,8 +145,14 @@ func (r DataProtectionBackupInstanceDataLakeStorageResource) Create() sdk.Resour
 					FriendlyName: pointer.To(id.BackupInstanceName),
 					PolicyInfo: backupinstances.PolicyInfo{
 						PolicyId: policyId.ID(),
+						PolicyParameters: &backupinstances.PolicyParameters{
+							BackupDatasourceParametersList: &[]backupinstances.BackupDatasourceParameters{
+								backupinstances.BlobBackupDatasourceParameters{
+									ContainersList: model.ContainerNames,
+								},
+							},
+						},
 					},
-					//ObjectType: "BackupInstance",
 				},
 			}
 
@@ -213,6 +229,16 @@ func (r DataProtectionBackupInstanceDataLakeStorageResource) Read() sdk.Resource
 					state.BackupPolicyId = backupPolicyId.ID()
 
 					state.ProtectionState = pointer.FromEnum(props.CurrentProtectionState)
+
+					if policyParams := props.PolicyInfo.PolicyParameters; policyParams != nil {
+						if dataStoreParams := policyParams.BackupDatasourceParametersList; dataStoreParams != nil {
+							if dsp := pointer.From(dataStoreParams); len(dsp) > 0 {
+								if parameter, ok := dsp[0].(backupinstances.BlobBackupDatasourceParameters); ok {
+									state.ContainerNames = parameter.ContainersList
+								}
+							}
+						}
+					}
 				}
 			}
 

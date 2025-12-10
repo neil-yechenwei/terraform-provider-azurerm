@@ -99,6 +99,11 @@ resource "azurerm_storage_account" "test" {
   is_hns_enabled           = true
 }
 
+resource "azurerm_storage_data_lake_gen2_filesystem" "test" {
+  name               = "acctest-datalake-%d"
+  storage_account_id = azurerm_storage_account.test.id
+}
+
 resource "azurerm_data_protection_backup_vault" "test" {
   name                = "acctest-dataprotection-vault-%d"
   resource_group_name = azurerm_resource_group.test.name
@@ -132,7 +137,7 @@ resource "azurerm_data_protection_backup_policy_data_lake_storage" "test" {
 
   depends_on = [azurerm_role_assignment.test]
 }
-`, data.RandomInteger, data.Locations.Primary, data.RandomString, data.RandomInteger, data.RandomInteger)
+`, data.RandomInteger, data.Locations.Primary, data.RandomString, data.RandomInteger, data.RandomInteger, data.RandomInteger)
 }
 
 func (r DataProtectionBackupInstanceDataLakeStorageResource) basic(data acceptance.TestData) string {
@@ -149,6 +154,7 @@ resource "azurerm_data_protection_backup_instance_data_lake_storage" "test" {
   vault_id           = azurerm_data_protection_backup_vault.test.id
   storage_account_id = azurerm_storage_account.test.id
   backup_policy_id   = azurerm_data_protection_backup_policy_data_lake_storage.test.id
+  container_names    = [azurerm_storage_data_lake_gen2_filesystem.test.name]
 }
 `, r.template(data), data.RandomInteger)
 }
@@ -163,6 +169,7 @@ resource "azurerm_data_protection_backup_instance_data_lake_storage" "import" {
   vault_id           = azurerm_data_protection_backup_instance_data_lake_storage.test.vault_id
   storage_account_id = azurerm_data_protection_backup_instance_data_lake_storage.test.storage_account_id
   backup_policy_id   = azurerm_data_protection_backup_instance_data_lake_storage.test.backup_policy_id
+  container_names    = azurerm_data_protection_backup_instance_data_lake_storage.test.container_names
 }
 `, r.basic(data))
 }
@@ -196,6 +203,7 @@ resource "azurerm_data_protection_backup_instance_data_lake_storage" "test" {
   vault_id           = azurerm_data_protection_backup_vault.test.id
   storage_account_id = azurerm_storage_account.test.id
   backup_policy_id   = azurerm_data_protection_backup_policy_data_lake_storage.test2.id
+  container_names    = [azurerm_storage_data_lake_gen2_filesystem.test.name]
 }
 `, r.template(data), data.RandomInteger, data.RandomInteger)
 }
